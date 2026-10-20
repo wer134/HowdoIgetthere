@@ -65,12 +65,15 @@ function darken(hex, amount = 0.28) {
 }
 
 export class MapView {
-  constructor(el, { mapId, onSelect, onMove, onSelectLeg }) {
+  constructor(el, { mapId, onSelect, onMove, onSelectLeg, onSelectRec }) {
     this.el = el;
     this.mapId = mapId;
     this.onSelect = onSelect;
     this.onMove = onMove;
     this.onSelectLeg = onSelectLeg;
+    this.onSelectRec = onSelectRec;
+    this.recs = new Map(); // 추천 장소 키 → { marker, el }
+    this.anchor = null;
     this.markers = new Map(); // 행 번호 → { marker, pin, visible }
     this.legs = new Map(); // 구간 키 → { lines: [{ line, kind }], color, visible, points }
     this.selected = null;
@@ -265,6 +268,62 @@ export class MapView {
     entry.points.forEach(([lat, lng]) => bounds.extend({ lat, lng }));
     this.info.close();
     this.map.fitBounds(bounds, 80);
+  }
+
+  /* ── 주변 추천 ── */
+
+  /** list: [{ key, lat, lng, label, color, title }] — 일정 핀과 헷갈리지 않게 동그란 번호 표시 */
+  setRecs(list) {
+    this.clearRecs();
+    for (const r of list) {
+      const el = document.createElement('div');
+      el.className = 'rec-pin';
+      el.style.setProperty('--c', r.color);
+      el.textContent = r.label;
+      const marker = new this.lib.AdvancedMarkerElement({
+        position: { lat: r.lat, lng: r.lng }, title: r.title, content: el, gmpClickable: true, zIndex: 500, map: this.map,
+      });
+      marker.addEventListener('gmp-click', () => this.onSelectRec?.(r.key));
+      this.recs.set(r.key, { marker, el });
+    }
+  }
+
+  clearRecs() {
+    for (const { marker } of this.recs.values()) marker.map = null;
+    this.recs.clear();
+    this.setAnchor(null);
+  }
+
+  // 일정에 없는 대표 장소(직접 검색한 곳)는 별 핀으로
+  setAnchor(anchor) {
+    if (this.anchor) this.anchor.map = null;
+    this.anchor = null;
+    if (!anchor) return;
+    const pin = new this.lib.PinElement({ background: '#202928', borderColor: '#000', glyphColor: '#fff', glyphText: '★' });
+    this.anchor = new this.lib.AdvancedMarkerElement({
+      position: { lat: anchor.lat, lng: anchor.lng },
+      title: anchor.name,
+      content: typeof HTMLElement !== 'undefined' && pin instanceof HTMLElement ? pin : pin.element,
+      zIndex: 900,
+      map: this.map,
+    });
+  }
+
+  focusRec(key, html, pan = true) {
+    for (const [k, { el }] of this.recs) el.classList.toggle('active', k === key);
+    const entry = this.recs.get(key);
+    if (!entry) return;
+    if (pan) this.map.panTo(toLiteral(entry.marker.position));
+    this.info.setContent(html);
+    this.info.open({ map: this.map, anchor: entry.marker, shouldFocus: false });
+  }
+
+  fitPoints(points) {
+    if (!points.length) return;
+    const bounds = new this.lib.LatLngBounds();
+    points.forEach((p) => bounds.extend(p));
+    this.info.close();
+    this.map.fitBounds(bounds, 56);
   }
 
   startPick(callback) {

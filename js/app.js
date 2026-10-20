@@ -14,6 +14,12 @@ import {
   FIXED_TAG, LUGGAGE_TAG, PACES, paceNote, hasTag, travelPlan, checkTravel, fixOptions, boardingRisks, boardingFix,
 } from './plan.js';
 import { writeEditedWorkbook } from './xlsxedit.js';
+import {
+  KINDS, countryAt, findNearby, rankPlaces, dropParts, withoutBars, nowAt, priceOf, levelSigns, typeLabel, ratingSource, googleUrl, scoreOnGoogleScale,
+} from './nearby.js';
+import {
+  CURRENCIES, COUNTRY_CURRENCY, dayCosts, formatMoney, fareClass, mealOf, mostCommon,
+} from './budget.js';
 
 const CFG = {
   googleMapsApiKey: '',
@@ -25,6 +31,14 @@ const CFG = {
 };
 const KEY_STORAGE = 'googleMapsApiKey';
 const PACE_STORAGE = 'pace'; // 일정 점검의 여유 정도 (이 브라우저에 기억)
+const BUDGET_STORAGE = 'budget.v1'; // 하루 예산 { amount, currency, trip(현지 통화, 비우면 자동) }
+const OVERRIDE_STORAGE = 'budgetOverrides.v1'; // 파일·시트별로 직접 고친 금액 { '파일|시트': { 엑셀 행: 금액 } }
+const SCORE_STORAGE = 'ratingScores.v1'; // 타베로그·카카오맵에서 보고 직접 적은 점수 { 구글 장소 ID: 점수 }
+const FX_STORAGE = 'fxRates.v1'; // 환율 { 'JPY>KRW': { rate, date, t } }
+
+function loadJson(key, fallback) {
+  try { return JSON.parse(storage.get(key)) ?? fallback; } catch { return fallback; }
+}
 
 const els = Object.fromEntries([
   // 설정 · 상단
@@ -36,6 +50,9 @@ const els = Object.fromEntries([
   'sheetField', 'sheetSelect', 'mappingFields', 'commonRegion', 'rowSummary', 'runBtn', 'runText',
   // 동선 카드
   'routeCard', 'routeKicker', 'routeTitle', 'routeCopy', 'routeMetrics', 'routeStatus', 'routeAlert', 'routeBtn', 'routeBtnText',
+  // 주변 추천 · 하루 예산
+  'recsCard', 'recsClose', 'recsForm', 'recsQuery', 'recsBody',
+  'budgetCard', 'budgetForm', 'budgetAmount', 'budgetCurrency', 'tripCurrency', 'budgetFx', 'budgetDays',
   // 02 일정
   'planCard', 'planSummary', 'progressBar', 'progressText', 'runAlert', 'planCheck', 'dayTabs', 'statusChips', 'resultList',
   // 03 지도
@@ -78,6 +95,15 @@ const state = {
   planEdits: [],
   pace: PACES[storage.get(PACE_STORAGE)] ? storage.get(PACE_STORAGE) : 'tight', // PACES 키
   openRide: null, // 일정 점검에서 펼친 '놓치면 오래 기다리는 차' (records 번호)
+  // 주변 추천: { anchor, kind, keyword, places, list, loading, error, more, focus, at, allowance }
+  //   anchor: { name, lat, lng, item(일정 장소)|null, slot(빈 끼니 행 records 번호)|null, at, meal, hints }
+  recs: null,
+  // 하루 예산 (1인, 숙박·항공 제외)
+  budget: { amount: null, currency: 'KRW', trip: '', ...loadJson(BUDGET_STORAGE, {}) },
+  budgetOpen: null, // 펼친 날
+  editAmount: null, // 금액을 고치는 중인 행 (records 번호)
+  overrides: new Map(), // records 번호 → 직접 고친 금액 (그날 통화)
+  picks: new Map(), // records 번호 → 추천에서 고른 가게의 1인 가격 (메모 열이 없을 때 셈에 쓴다)
 };
 
 let mapView = null;
@@ -183,12 +209,14 @@ async function initMap() {
       onSelect: (idx, from) => select(idx, from),
       onMove: (idx, lat, lng) => placeManually(idx, lat, lng),
       onSelectLeg: (key) => selectLeg(key, 'map'),
+      onSelectRec: (id) => focusRec(id, 'map'),
     });
     await mapView.init();
     if (mapState === 'error') return; // 그사이 gm_authFailure가 불린 경우
     mapState = 'ready';
     els.mapPlaceholder.classList.add('hidden');
     setKeyStatus('지도 연결됨', 'ok');
+    renderRecs();
   } catch (err) {
     mapState = 'error';
     setKeyStatus(`지도를 불러오지 못했습니다: ${err?.message || err}`, 'error');
@@ -243,6 +271,10 @@ function loadSheet(name) {
   state.startCol = startCol;
   state.planEdits = [];
   state.openRide = null;
+  state.picks = new Map();
+  state.budgetOpen = null;
+  state.editAmount = null;
+  state.overrides = loadOverrides();
   state.mapping = autoMap(headers);
   state.resultCols = Object.fromEntries(Object.entries(RESULT_COLUMNS).map(([k, h]) => [k, headers.indexOf(h)]));
   const kb = Math.max(1, Math.round(state.fileSize / 1024));
@@ -449,6 +481,7 @@ async function run() {
   state.legModes.clear();
   state.day = null;
   state.openRide = null;
+  closeRecs();
   assignColors();
   cancelPick();
   mapView.clear();
@@ -1126,14 +1159,21 @@ function syncItemTimes() {
   for (const it of state.items) it.timeText = col >= 0 ? cellText(state.records[it.recordIndex].cells[col]) : '';
 }
 
-// 고침안의 시간 칸을 바꾸고(되돌릴 수 있게 원래 칸을 남긴다) 구간·화면을 다시 만든다
+// 칸을 바꾼다. 되돌릴 수 있게 원래 칸을 남기고, 엑셀로 저장할 때 이 목록의 칸만 원래 파일에 써 넣는다
+// changes: [{ index(records 번호), col, text } | { index, col, number }(위도·경도) | { index, col, text, minutes }(시각)]
+function applyCellEdits(changes) {
+  for (const c of changes) {
+    const rec = state.records[c.index];
+    const text = c.number != null ? String(c.number) : c.text;
+    state.planEdits.push({ index: c.index, col: c.col, before: rec.cells[c.col], text, minutes: c.minutes ?? null, number: c.number ?? null });
+    rec.cells[c.col] = c.number != null ? { v: c.number, w: text } : { v: text, w: text };
+  }
+}
+
+// 고침안의 시간 칸을 바꾸고 구간·화면을 다시 만든다
 function applyChanges(fix) {
   const col = state.mapping.time;
-  for (const change of fix.changes) {
-    const rec = state.records[change.index];
-    state.planEdits.push({ index: change.index, col, before: rec.cells[col], text: change.text, minutes: change.minutes });
-    rec.cells[col] = { v: change.text, w: change.text };
-  }
+  applyCellEdits(fix.changes.map((change) => ({ index: change.index, col, text: change.text, minutes: change.minutes })));
   syncItemTimes();
   refreshLegs();
   render();
@@ -1195,6 +1235,14 @@ function rideFlag(leg) {
 function undoEdits() {
   for (const e of [...state.planEdits].reverse()) state.records[e.index].cells[e.col] = e.before;
   state.planEdits = [];
+  state.picks.clear();
+  // 추천에서 고른 가게로 채웠던 끼니 행은 다시 빈 행이 되므로 지도에서도 뺀다
+  const keep = new Set(buildItems().items.map((it) => it.recordIndex));
+  if (state.items.some((it) => !keep.has(it.recordIndex))) {
+    const selected = state.items[state.selected];
+    state.items = state.items.filter((it) => keep.has(it.recordIndex));
+    renumberItems(selected);
+  }
   syncItemTimes();
   refreshLegs();
   render();
@@ -1205,8 +1253,9 @@ function undoEdits() {
 function editedRows() {
   const rows = new Map();
   for (const e of state.planEdits) {
-    const from = rows.get(e.index)?.from ?? cellText(e.before);
-    rows.set(e.index, { index: e.index, col: e.col, from, text: e.text, minutes: e.minutes });
+    const key = `${e.index}:${e.col}`;
+    const from = rows.get(key)?.from ?? cellText(e.before);
+    rows.set(key, { index: e.index, col: e.col, from, text: e.text, minutes: e.minutes, number: e.number });
   }
   return [...rows.values()].filter((r) => r.text !== r.from);
 }
@@ -1224,6 +1273,7 @@ function saveEditedPlan() {
       ref: XLSX.utils.encode_cell({ r: state.records[r.index].rowNumber - 1, c: state.startCol + r.col }),
       text: r.text,
       minutes: r.minutes,
+      number: r.number,
     })),
   });
   downloadBlob(new Blob([out.data], { type: out.type }), out.fileName);
@@ -1250,8 +1300,9 @@ function renderPlanCheck() {
       + `${manyDays ? `<small>${escapeHtml(dayInfo(leg.from.category).label)}</small>` : ''}${escapeHtml(leg.from.name)} → ${escapeHtml(leg.to.name)}`
       + ` <b>${checkLabel(check)}</b></button>`).join('');
     const edits = rows.length ? `<div class="plan-edits">
-        <div class="plan-edits-label">고친 시간 ${rows.length}칸 · 저장하면 원래 엑셀에서 이 칸만 바뀌어요</div>
-        <ul>${rows.map((r) => `<li><span>${escapeHtml(rowTitle(r.index))}</span><s>${escapeHtml(r.from)}</s><b>${escapeHtml(r.text)}</b></li>`).join('')}</ul>
+        <div class="plan-edits-label">고친 칸 ${rows.length}개 · 저장하면 원래 엑셀에서 이 칸만 바뀌어요</div>
+        <ul>${rows.map((r) => `<li><span>${escapeHtml(rowTitle(r.index))}${r.col !== state.mapping.time ? ` <small>${escapeHtml(state.headers[r.col])}</small>` : ''}</span>`
+          + `<s>${escapeHtml(r.from || '(빈 칸)')}</s><b>${escapeHtml(r.text)}</b></li>`).join('')}</ul>
         <div class="detail-actions">
           <button type="button" class="primary-button small" data-plan="save">고친 일정 엑셀로 저장</button>
           <button type="button" class="secondary-button" data-plan="undo">모두 되돌리기</button>
@@ -1293,6 +1344,654 @@ function goToLeg(key) {
   selectLeg(key, 'check');
 }
 
+/* ───────────── 주변 명소·맛집 ───────────── */
+
+const REC_COLORS = { food: '#e8710a', cafe: '#8d6e63', sights: '#00897b' };
+const REC_SHOWN = 10; // 처음 보여 줄 곳 수 (더 보기로 20곳까지)
+const ratingScores = loadJson(SCORE_STORAGE, {});
+
+function atOf(dateCell, minutes) {
+  const d = parseDay(dateCell);
+  if (!d || minutes == null) return null;
+  return { weekday: d.getDay(), minutes, label: `${d.getMonth() + 1}/${d.getDate()} (${WEEKDAYS[d.getDay()]}) ${hm(minutes)} 기준` };
+}
+
+// 일정의 장소를 기준으로: 그곳을 다 본 뒤(끝 시각)에 갈 곳을 찾는다
+function itemAnchor(it) {
+  const { start, end } = parseTimeRange(it.timeText);
+  return { name: it.name, ...latLng(it.place), item: it, slot: null, at: atOf(it.dateCell, end ?? start), hints: [] };
+}
+
+function openRecs(anchor, { kind = 'food', keyword = '' } = {}) {
+  state.recs = { anchor, kind, keyword, places: null, list: null, loading: false, error: '', more: false, focus: null };
+  els.recsQuery.value = anchor.item || anchor.slot != null ? '' : anchor.name;
+  loadRecs();
+  els.recsCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function closeRecs() {
+  state.recs = null;
+  mapView?.clearRecs();
+  mapView?.closeInfo();
+  render();
+}
+
+async function loadRecs() {
+  const recs = state.recs;
+  if (!recs) return;
+  const { anchor, kind, keyword } = recs;
+  Object.assign(recs, { loading: true, error: '', places: null, list: null, focus: null, more: false });
+  mapView?.clearRecs();
+  render();
+  const country = countryAt(anchor);
+  // 일본 가게는 일본어 이름이라야 타베로그에서 찾을 수 있고 간판과도 맞는다
+  const language = country === 'JP' ? 'ja' : country === 'KR' ? 'ko' : CFG.language;
+  try {
+    const places = await findNearby({ center: latLng(anchor), kind, keyword, language, region: CFG.region });
+    if (state.recs !== recs || recs.kind !== kind || recs.keyword !== keyword) return; // 그사이 다른 것을 골랐다
+    recs.places = kind === 'sights' ? dropParts(places) : ['breakfast', 'lunch'].includes(anchor.meal) ? withoutBars(places) : places;
+  } catch (err) {
+    if (state.recs !== recs || recs.kind !== kind || recs.keyword !== keyword) return;
+    const why = classifyError(err);
+    recs.error = why === 'fatal'
+      ? `주변 검색이 거부되었습니다. Google Cloud 콘솔에서 "Places API (New)"가 켜져 있는지, API 키 제한 목록에 있는지 확인하세요. (${err?.message || err})`
+      : why === 'rate' ? '요청 한도를 넘었어요. 잠시 뒤 다시 골라 주세요.' : `주변을 찾지 못했어요: ${err?.message || err}`;
+    recs.places = [];
+  }
+  recs.loading = false;
+  rankRecs();
+  render();
+  showRecPins(true);
+}
+
+// 그 장소가 일정에 이미 있는지 (구글 장소 ID가 같거나 거의 같은 자리)
+function plannedItem(p) {
+  return state.items.find((it) => it.place && ((p.id && it.place.id === p.id) || distanceMeters(it.place, p) < 15));
+}
+
+function recCurrency(recs) {
+  const day = recs.anchor.slot != null ? budgetDays.find((d) => d.lines.some((l) => l.index === recs.anchor.slot)) : null;
+  return day?.currency || COUNTRY_CURRENCY[countryAt(recs.anchor)] || mostCommon((recs.places || []).map((p) => p.price?.currency)) || '';
+}
+
+function rankRecs() {
+  const recs = state.recs;
+  if (!recs?.places) return;
+  const { anchor, kind } = recs;
+  recs.at = anchor.at || (recs.places[0] ? nowAt(recs.places[0]) : null);
+  recs.allowance = kind === 'sights' ? null : slotAllowance(anchor.slot);
+  const currency = recCurrency(recs);
+  const ranked = rankPlaces(recs.places, {
+    center: latLng(anchor),
+    kind,
+    at: recs.at,
+    allowance: recs.allowance?.over != null ? null : recs.allowance,
+    costOf: (p) => priceOf(p, currency),
+    extraScore: (p) => {
+      const src = ratingSource(p, kind);
+      return src && ratingScores[p.id] != null ? scoreOnGoogleScale(src.key, ratingScores[p.id]) : null;
+    },
+  }).map((p) => ({ ...p, planned: plannedItem(p) || null }));
+  // 일정에 이미 있는 곳은 맨 뒤로
+  recs.list = [...ranked.filter((p) => !p.planned), ...ranked.filter((p) => p.planned)];
+}
+
+function shownRecs(recs) {
+  return (recs?.list || []).slice(0, recs.more ? 20 : REC_SHOWN);
+}
+
+function showRecPins(fit) {
+  if (!mapView) return;
+  const recs = state.recs;
+  const shown = shownRecs(recs);
+  if (!shown.length) {
+    mapView.clearRecs();
+    return;
+  }
+  mapView.setRecs(shown.map((p, i) => ({ key: p.id, lat: p.lat, lng: p.lng, label: String(i + 1), color: REC_COLORS[recs.kind], title: p.name })));
+  if (!recs.anchor.item) mapView.setAnchor(recs.anchor);
+  if (fit) mapView.fitPoints([latLng(recs.anchor), ...shown.slice(0, 6).map(latLng)]);
+}
+
+function focusRec(id, from) {
+  const recs = state.recs;
+  const p = recs?.list?.find((x) => x.id === id);
+  if (!p) return;
+  recs.focus = id;
+  render();
+  mapView?.focusRec(id, recInfoHtml(p, recs));
+  if (from === 'map') els.recsBody.querySelector(`[data-rec="${CSS.escape(id)}"]`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+function priceText(p) {
+  const c = p.cost;
+  if (!c) return '';
+  if (c.from === 'level') return levelSigns(p.priceLevel, c.currency);
+  if (c.max == null) return `${formatMoney(c.min, c.currency)}~`;
+  return c.min ? `${formatMoney(c.min, c.currency).replace(/[^\d,.]+$/, '')}–${formatMoney(c.max, c.currency)}` : `~${formatMoney(c.max, c.currency)}`;
+}
+
+function recMeta(p, kind) {
+  return [
+    p.rating != null ? `★${p.rating.toFixed(1)}` : '평점 없음',
+    p.count ? `리뷰 ${p.count.toLocaleString('en-US')}` : '',
+    priceText(p) || (kind === 'sights' ? '' : '가격 정보 없음'),
+    `걸어서 ${p.walk}분`,
+  ].filter(Boolean).join(' · ');
+}
+
+function openText(p) {
+  if (!p.open || p.open.state === 'unknown') return '';
+  return `<span class="rec-open ${p.open.state}">${escapeHtml(p.open.text)}</span>`;
+}
+
+function recInfoHtml(p, recs) {
+  const src = ratingSource(p, recs.kind);
+  return `<div class="info">
+    <div class="info-title">${escapeHtml(p.name)}</div>
+    <span class="info-cat" style="--c:${REC_COLORS[recs.kind]}">${escapeHtml(typeLabel(p, recs.kind))}</span>
+    <p class="info-memo">${escapeHtml(recMeta(p, recs.kind))}</p>
+    ${openText(p)}
+    <a class="info-link" href="${escapeHtml(googleUrl(p))}" target="_blank" rel="noopener">구글 지도에서 열기 ↗</a>
+    ${src ? `<a class="info-link" href="${escapeHtml(src.url)}" target="_blank" rel="noopener">${src.label}에서 보기 ↗</a>` : ''}
+  </div>`;
+}
+
+function recCardHtml(p, i, recs) {
+  const { kind } = recs;
+  const src = ratingSource(p, kind);
+  const score = ratingScores[p.id];
+  const fit = { over: '<span class="rec-fit over">예산 초과</span>', tight: '<span class="rec-fit tight">빠듯해요</span>' }[p.fit] || '';
+  const canPick = recs.anchor.slot != null && kind !== 'sights' && state.mapping.name >= 0;
+  return `<li class="rec${recs.focus === p.id ? ' active' : ''}${p.planned ? ' planned' : ''}" data-rec="${escapeHtml(p.id)}" style="--c:${REC_COLORS[kind]}">
+    <span class="rec-num">${i + 1}</span>
+    <div class="rec-main">
+      <div class="rec-title"><b>${escapeHtml(p.name)}</b><span class="rec-type">${escapeHtml(typeLabel(p, kind))}</span>${fit}${p.planned ? '<span class="rec-fit planned">일정에 있음</span>' : ''}</div>
+      <div class="rec-meta">${escapeHtml(recMeta(p, kind))}${src && score != null ? ` · <b>${src.label} ${escapeHtml(String(score))}</b>` : ''}</div>
+      ${openText(p)}
+      <div class="rec-actions">
+        ${src ? `<a class="rec-link" href="${escapeHtml(src.url)}" target="_blank" rel="noopener">${src.label} ↗</a>
+        <input class="rec-score" inputmode="decimal" data-rec-score="${escapeHtml(p.id)}" value="${score ?? ''}" placeholder="점수 적기" aria-label="${src.label} 점수" title="${src.label}에서 본 점수를 적으면 순위에 반영해요 (${escapeHtml(src.hint)})">` : ''}
+        <a class="rec-link" href="${escapeHtml(googleUrl(p))}" target="_blank" rel="noopener">구글 지도 ↗</a>
+        ${canPick ? `<button type="button" class="secondary-button rec-pick" data-rec-pick="${i}">이 가게로 정하기</button>` : ''}
+      </div>
+    </div>
+  </li>`;
+}
+
+function recsHtml(recs) {
+  const { anchor, kind, keyword } = recs;
+  const facts = [
+    anchor.at?.label,
+    recs.allowance?.over != null ? `이 끼니를 빼도 그날 예산을 ${formatMoney(recs.allowance.over, recs.allowance.currency)} 넘어요`
+      : recs.allowance ? `이 끼니에 쓸 수 있는 돈 약 ${formatMoney(recs.allowance.amount, recs.allowance.currency)}` : '',
+  ].filter(Boolean);
+  const head = `<div class="recs-anchor"><span><b>${escapeHtml(anchor.name)}</b> 주변</span>`
+    + `${anchor.slot != null ? `<span class="recs-slot">${escapeHtml(rowTitle(anchor.slot))}</span>` : ''}`
+    + `${facts.length ? `<small>${facts.map(escapeHtml).join(' · ')}</small>` : ''}</div>`;
+  const tabs = `<div class="pace-switch recs-tabs" role="group" aria-label="추천 종류">${Object.entries(KINDS).map(([key, k]) => (
+    `<button type="button" data-rec-kind="${key}" aria-pressed="${kind === key}"${kind === key ? ' class="active"' : ''}>${k.label}</button>`
+  )).join('')}</div>`;
+  const chips = kind === 'sights' ? '' : ['', ...new Set([...(anchor.hints || []), keyword].filter(Boolean))].map((w) => (
+    `<button type="button" class="chip${w === keyword ? ' active' : ''}" data-rec-keyword="${escapeHtml(w)}">${w ? escapeHtml(w) : '인기 있는 곳'}</button>`
+  )).join('');
+  const search = `<div class="recs-keywords">${chips}
+    <form class="recs-keyword" data-rec-keyword-form><input name="keyword" placeholder="${kind === 'sights' ? '찾을 것 (예: 전망대)' : '음식 (예: 우동)'}" aria-label="찾을 말" spellcheck="false" autocomplete="off"><button type="submit" class="secondary-button">찾기</button></form>
+  </div>`;
+  let body;
+  if (recs.loading) body = '<p class="recs-status">주변을 찾는 중…</p>';
+  else if (recs.error) body = `<p class="alert">${escapeHtml(recs.error)}</p>`;
+  else if (!recs.list?.length) body = `<p class="recs-status">걸어갈 만한 곳에서 ${keyword ? `“${escapeHtml(keyword)}”을(를) ` : ''}찾지 못했어요.</p>`;
+  else {
+    const shown = shownRecs(recs);
+    const more = recs.list.length > shown.length ? `<button type="button" class="secondary-button" data-rec-more>${recs.list.length - shown.length}곳 더 보기</button>` : '';
+    const source = recs.list.some((p) => ratingSource(p, kind)?.key === 'tabelog') ? '일본 가게는 타베로그 링크에서 점수를 보고 적어 두면 순위에 반영돼요(타베로그는 점수를 가져다 쓸 수 없어요).'
+      : recs.list.some((p) => ratingSource(p, kind)?.key === 'kakao') ? '카카오맵 링크에서 평점을 보고 적어 두면 순위에 반영돼요(카카오는 평점을 API로 주지 않아요).' : '';
+    body = `<p class="recs-status">구글 평점을 리뷰 수로 보정하고, 가깝고${recs.at ? ' 그 시각에 여는' : ''} 곳을 위로 올렸어요. ${source}</p>
+      <ol class="recs-list">${shown.map((p, i) => recCardHtml(p, i, recs)).join('')}</ol>${more}`;
+  }
+  return head + tabs + search + body;
+}
+
+let lastRecsHtml = '';
+function renderRecs() {
+  els.recsCard.classList.toggle('hidden', mapState !== 'ready');
+  els.recsClose.classList.toggle('hidden', !state.recs);
+  const html = state.recs ? recsHtml(state.recs)
+    : '<p class="recs-empty">대표 장소를 적거나, 일정에서 장소를 눌러 <b>주변 맛집</b>·<b>주변 명소</b>를 고르세요. 빈 끼니는 아래 <b>하루 예산</b>에서 바로 찾을 수 있어요.</p>';
+  if (html !== lastRecsHtml) {
+    els.recsBody.innerHTML = html;
+    lastRecsHtml = html;
+  }
+}
+
+function setRecKind(kind) {
+  const recs = state.recs;
+  if (!recs || !KINDS[kind] || recs.kind === kind) return;
+  recs.kind = kind;
+  recs.keyword = kind === 'sights' ? '' : recs.anchor.hints?.[0] && recs.anchor.slot != null ? recs.anchor.hints[0] : '';
+  if (recs.anchor.lat == null) {
+    render(); // 대표 장소를 아직 찾는 중이면 찾은 뒤 이 종류로 찾는다
+    return;
+  }
+  loadRecs();
+}
+
+function setRecKeyword(keyword) {
+  const recs = state.recs;
+  if (!recs || recs.keyword === keyword) return;
+  recs.keyword = keyword;
+  loadRecs();
+}
+
+// 직접 검색한 대표 장소. 일정에 같은 이름이 있으면 그 장소(시각 포함)를 쓴다
+async function searchAnchor(query) {
+  if (!query || mapState !== 'ready') return;
+  const n = normalizeText(query);
+  const item = state.items.find((it) => it.place && normalizeText(it.name) === n);
+  if (item) {
+    openRecs(itemAnchor(item), { kind: state.recs?.kind || 'food' });
+    return;
+  }
+  const kind = state.recs?.kind || 'food';
+  state.recs = { anchor: { name: query }, kind, keyword: '', loading: true, error: '', list: null };
+  mapView?.clearRecs();
+  render();
+  try {
+    const [top] = await searchPlaces(query, searchOptions(languageFor(query, CFG.language)));
+    if (!top) {
+      Object.assign(state.recs, { loading: false, error: `“${query}”을(를) 구글 지도에서 찾지 못했어요. 현지어 이름으로도 찾아보세요.` });
+      render();
+      return;
+    }
+    openRecs({ name: top.name || query, lat: top.lat, lng: top.lng, item: null, slot: null, at: null, hints: [] }, { kind });
+  } catch (err) {
+    Object.assign(state.recs, { loading: false, error: `대표 장소를 찾지 못했어요: ${err?.message || err}` });
+    render();
+  }
+}
+
+/* ── 빈 끼니에 맞는 가게 찾기 ── */
+
+// "점심 (하카타 라멘·모츠나베)" → 음식 ['하카타 라멘', '모츠나베'] / "아침 (하카타역 주변)" → 장소 ['하카타역']
+const NEAR_WORD = /\s*(주변|근처|부근|일대|쪽)\s*$/;
+function slotHints(title) {
+  const inner = [...String(title).matchAll(/[(（]([^)）]+)[)）]/g)].map((m) => m[1].trim());
+  const split = (s) => s.replace(NEAR_WORD, '').split(/[·,/、]+/).map((w) => w.trim()).filter((w) => w.length >= 2);
+  return {
+    areas: inner.filter((s) => NEAR_WORD.test(s)).flatMap(split),
+    foods: inner.filter((s) => !NEAR_WORD.test(s)).flatMap(split),
+  };
+}
+
+// 그 끼니 때 있을 곳: 1) 괄호 속 장소 이름 2) 바로 앞 장소(그 사이에 이동했으면 다음 장소)
+async function slotPlace(index, rows) {
+  const row = rows[index];
+  const placed = state.items.filter((it) => it.place);
+  const near = (it) => ({ name: it.name, ...latLng(it.place), item: it });
+  const { areas } = slotHints(row.title);
+  for (const word of areas) {
+    const n = normalizeText(word);
+    const match = placed.filter((it) => {
+      const name = normalizeText(it.name);
+      return name.includes(n) || n.includes(name);
+    }).sort((a, b) => (b.day === row.day) - (a.day === row.day) || Math.abs(a.recordIndex - index) - Math.abs(b.recordIndex - index))[0];
+    if (match) return near(match);
+  }
+  if (areas.length) {
+    const ref = placed.find((it) => it.day === row.day);
+    const region = [ref && state.mapping.region >= 0 ? cellText(ref.cells[state.mapping.region]) : '', els.commonRegion.value.trim()].filter(Boolean).join(' ');
+    const [top] = await searchPlaces(`${areas[0]} ${region}`.trim(), searchOptions(languageFor(areas[0], CFG.language))).catch(() => []);
+    if (top) return { name: top.name || areas[0], lat: top.lat, lng: top.lng, item: null };
+  }
+  for (let i = index - 1; i >= 0 && rows[i].day === row.day; i--) {
+    const it = placed.find((x) => x.recordIndex === i);
+    if (it) return near(it);
+    if (rows[i].travel) break; // 이미 다음 장소로 옮겨 갔다
+  }
+  const next = placed.find((it) => it.recordIndex > index && it.day === row.day);
+  if (next) return near(next);
+  const prev = [...placed].reverse().find((it) => it.recordIndex < index);
+  return prev ? near(prev) : null;
+}
+
+async function openSlotRecs(index) {
+  const rows = budgetRows();
+  const row = rows[index];
+  if (!row || mapState !== 'ready') return;
+  const near = await slotPlace(index, rows);
+  if (!near) {
+    showToast('이 끼니 근처의 장소를 몰라요 · 대표 장소를 직접 적어 주세요');
+    return;
+  }
+  const meal = mealOf(row.title, row.time);
+  // 아침은 인기 있는 식당 대부분이 아직 닫혀 있으니, 음식을 적지 않았으면 '아침 식사'로 찾는다
+  const foods = slotHints(row.title).foods;
+  const hints = foods.length || meal !== 'breakfast' ? foods : ['아침 식사'];
+  const at = atOf(dayCellOf(index), parseTimeRange(row.time).start);
+  openRecs({ ...near, slot: index, at, meal, hints }, { kind: meal === 'cafe' ? 'cafe' : 'food', keyword: hints[0] || '' });
+}
+
+// 이 끼니에 쓸 수 있는 돈 = 하루 예산 − 이 끼니를 뺀 그날 지출
+function slotAllowance(slot) {
+  if (slot == null || !state.budget.amount) return null;
+  const day = budgetDays.find((d) => d.lines.some((l) => l.index === slot));
+  if (!day) return null;
+  const limit = convert(state.budget.amount, state.budget.currency, day.currency);
+  if (limit == null) return null;
+  const line = day.lines.find((l) => l.index === slot);
+  const amount = limit - (day.total - (line.value ?? 0));
+  // 이 끼니를 빼고도 이미 예산을 넘었으면 가게마다 '예산 초과'를 붙여 봐야 쓸모가 없다
+  return amount > 0 ? { amount: Math.round(amount), currency: day.currency } : { amount: 0, over: Math.round(-amount), currency: day.currency };
+}
+
+// 고른 가게를 빈 끼니 행에 넣는다: 장소(·주소·위도·경도) 칸을 채우고 메모에 가격대를 적어, 엑셀로 저장할 수 있게 한다
+function pickRec(i) {
+  const recs = state.recs;
+  const p = recs?.list?.[i];
+  const index = recs?.anchor.slot;
+  const m = state.mapping;
+  if (!p || index == null || m.name < 0) return;
+  const round7 = (v) => Math.round(v * 1e7) / 1e7;
+  const changes = [{ index, col: m.name, text: p.name }];
+  if (m.address >= 0 && p.address) changes.push({ index, col: m.address, text: p.address });
+  if (m.lat >= 0 && m.lng >= 0) changes.push({ index, col: m.lat, number: round7(p.lat) }, { index, col: m.lng, number: round7(p.lng) });
+  const src = ratingSource(p, recs.kind);
+  const score = ratingScores[p.id];
+  const note = [p.cost?.from === 'range' ? `가격대 ${priceText(p)}` : '', src && score != null ? `${src.label} ${score}` : ''].filter(Boolean).join(' · ');
+  if (m.memo >= 0 && note) {
+    const memo = cellText(state.records[index].cells[m.memo]);
+    changes.push({ index, col: m.memo, text: memo ? `${memo} · ${note}` : note });
+  }
+  if (p.cost) state.picks.set(index, { ...p.cost, note: `고른 가게 · ${priceText(p)}` });
+  applyCellEdits(changes);
+  addPickedItem(index, p);
+  const title = rowTitle(index);
+  closeRecs();
+  showToast(`${title} → ${p.name} · 엑셀 저장은 일정 점검에서`);
+}
+
+// 채운 행을 장소 목록에 끼운다. 다른 장소의 검색 결과·찾은 경로는 그대로 둔다
+function addPickedItem(index, p) {
+  const fresh = buildItems().items.find((it) => it.recordIndex === index);
+  if (!fresh) return;
+  Object.assign(fresh, {
+    status: 'confirmed', note: '주변 추천에서 고른 곳', candidates: [],
+    place: { id: p.id, name: p.name, address: p.address, url: p.url, lat: p.lat, lng: p.lng },
+  });
+  const selected = state.items[state.selected];
+  const at = state.items.findIndex((it) => it.recordIndex > index);
+  state.items.splice(at < 0 ? state.items.length : at, 0, fresh);
+  if (!state.colors.has(fresh.category)) state.colors.set(fresh.category, PALETTE[state.colors.size % PALETTE.length]);
+  renumberItems(selected);
+}
+
+// 장소가 끼거나 빠지면 번호(idx)를 엑셀 순서대로 다시 매긴다. 구간 키·핀·목록도 새 번호로
+function renumberItems(selected) {
+  const legs = state.legs.map((leg) => [leg, state.legModes.get(leg.key), state.selectedLeg === leg.key]);
+  state.items.forEach((it, i) => { it.idx = i; });
+  state.legModes.clear();
+  state.selectedLeg = null;
+  state.legs = [];
+  for (const [leg, mode, wasSelected] of legs) {
+    if (!state.items.includes(leg.from) || !state.items.includes(leg.to)) continue;
+    leg.key = `${leg.from.idx}>${leg.to.idx}`;
+    if (mode) state.legModes.set(leg.key, mode);
+    if (wasSelected) state.selectedLeg = leg.key;
+    state.legs.push(leg);
+  }
+  state.selected = selected && state.items.includes(selected) ? selected.idx : null;
+  if (state.recs?.anchor.item && !state.items.includes(state.recs.anchor.item)) state.recs.anchor.item = null;
+  rendered.clear();
+  els.resultList.innerHTML = '';
+  if (mapView) {
+    mapView.clear();
+    state.items.forEach((it) => { if (it.place) placeMarker(it); });
+    mapView.highlight(state.selected);
+  }
+  refreshLegs();
+  render();
+}
+
+/* ───────────── 하루 예산 ───────────── */
+
+const FX_TTL = 12 * 60 * 60 * 1000;
+const fxRates = loadJson(FX_STORAGE, {});
+const fxTried = new Set();
+let budgetDays = []; // 마지막으로 셈한 날짜별 지출 (추천의 '쓸 수 있는 돈'에도 쓴다)
+
+// 환율: 같은 통화면 그대로, 아니면 바로 가는 환율이나 예산 통화를 거쳐서
+function convert(amount, from, to) {
+  if (amount == null || !from || !to) return null;
+  if (from === to) return amount;
+  const direct = fxRates[`${from}>${to}`];
+  if (direct) return amount * direct.rate;
+  const pivot = state.budget.currency;
+  const a = fxRates[`${from}>${pivot}`];
+  const b = fxRates[`${pivot}>${to}`];
+  return a && b ? amount * a.rate * b.rate : null;
+}
+
+// 무료 환율 API(frankfurter.dev, 유럽중앙은행 기준). 같은 조합은 12시간 동안 다시 묻지 않는다
+async function ensureRates(currencies, base) {
+  const fresh = (c) => fxRates[`${c}>${base}`] && Date.now() - fxRates[`${c}>${base}`].t < FX_TTL;
+  const need = [...new Set(currencies)].filter((c) => c && c !== base && CURRENCIES[c] && !fresh(c)).sort();
+  const key = `${base}:${need.join(',')}`;
+  if (!need.length || fxTried.has(key)) return;
+  fxTried.add(key);
+  try {
+    const res = await fetch(`https://api.frankfurter.dev/v2/rates?base=${base}&quotes=${need.join(',')}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    for (const { quote, rate, date } of await res.json()) {
+      if (!(rate > 0)) continue;
+      fxRates[`${base}>${quote}`] = { rate, date, t: Date.now() };
+      fxRates[`${quote}>${base}`] = { rate: 1 / rate, date, t: Date.now() };
+    }
+    storage.set(FX_STORAGE, JSON.stringify(fxRates));
+  } catch (err) {
+    console.warn('환율을 가져오지 못했습니다:', err);
+  }
+  rankRecs();
+  render();
+}
+
+const overrideKey = () => `${state.fileName}|${state.sheetName}`;
+
+function loadOverrides() {
+  const saved = loadJson(OVERRIDE_STORAGE, {})[overrideKey()] || {};
+  const byRow = new Map(state.records.map((r, i) => [String(r.rowNumber), i]));
+  return new Map(Object.entries(saved).filter(([row]) => byRow.has(row)).map(([row, amount]) => [byRow.get(row), amount]));
+}
+
+function setOverride(index, value, original) {
+  state.editAmount = null;
+  if (String(value).trim() === String(original ?? '').trim()) {
+    render(); // 고치지 않고 나갔다
+    return;
+  }
+  const amount = parseFloat(String(value).replace(/[^\d.]/g, ''));
+  if (Number.isFinite(amount)) state.overrides.set(index, amount);
+  else state.overrides.delete(index);
+  const all = loadJson(OVERRIDE_STORAGE, {});
+  all[overrideKey()] = Object.fromEntries([...state.overrides].map(([i, a]) => [state.records[i].rowNumber, a]));
+  storage.set(OVERRIDE_STORAGE, JSON.stringify(all));
+  rankRecs();
+  render();
+}
+
+function saveBudget() {
+  const amount = parseFloat(els.budgetAmount.value.replace(/[^\d.]/g, ''));
+  state.budget = {
+    amount: Number.isFinite(amount) && amount > 0 ? amount : null,
+    currency: els.budgetCurrency.value || 'KRW',
+    trip: els.tripCurrency.value,
+  };
+  storage.set(BUDGET_STORAGE, JSON.stringify(state.budget));
+  rankRecs();
+  render();
+}
+
+// 날짜 열이 비어 있으면 위의 날짜를 이어 쓴다 (buildItems와 같은 규칙)
+function budgetRows() {
+  const m = state.mapping;
+  const get = (cells, i) => (i >= 0 ? cellText(cells[i]) : '');
+  let lastDate = null;
+  return state.records.map((rec, index) => {
+    if (m.date >= 0 && rec.cells[m.date]) lastDate = rec.cells[m.date];
+    const place = get(rec.cells, m.name) || get(rec.cells, m.address);
+    const mode = get(rec.cells, m.mode);
+    return {
+      index,
+      day: m.date >= 0 && lastDate ? cellText(lastDate) : '',
+      dateCell: m.date >= 0 ? lastDate : null,
+      title: rowTitle(index),
+      memo: get(rec.cells, m.memo),
+      mode,
+      place,
+      time: get(rec.cells, m.time),
+      travel: !!mode && !place,
+      fixed: hasTag(rec),
+    };
+  });
+}
+
+function dayCellOf(index) {
+  const m = state.mapping;
+  if (m.date < 0) return null;
+  for (let i = index; i >= 0; i--) if (state.records[i].cells[m.date]) return state.records[i].cells[m.date];
+  return null;
+}
+
+// 그날 장소들의 나라로 현지 통화를 짐작한다 (메모에 금액이 있으면 그 통화가 먼저)
+function dayCurrency(day) {
+  const country = (list) => mostCommon(list.filter((it) => it.place).map((it) => countryAt(it.place)));
+  return COUNTRY_CURRENCY[country(state.items.filter((it) => it.day === day))] || COUNTRY_CURRENCY[country(state.items)] || '';
+}
+
+const PAID = (cls) => cls && !['walk', 'free', 'flight'].includes(cls);
+
+// 이동 행이 그 구간의 유일한 유료 이동이면 구간 거리·구글 요금을 그 행에 쓴다
+function soleLeg(index) {
+  const leg = state.legs.find((l) => l.plan?.travel.includes(index));
+  if (!leg) return null;
+  const paid = leg.plan.travel.filter((i) => PAID(fareClass(cellText(state.records[i].cells[state.mapping.mode]))));
+  return paid.length === 1 && paid[0] === index ? leg : null;
+}
+const legKm = (index) => {
+  const leg = soleLeg(index);
+  return leg ? (leg.route?.distance || leg.dist * 1.2) / 1000 : null;
+};
+const googleFare = (index) => soleLeg(index)?.route?.fare || null;
+
+const SOURCE_LABELS = {
+  memo: '메모', manual: '직접 고침', google: '구글 요금', pick: '고른 가게', estimate: '어림', pass: '1일권', free: '무료', unknown: '미정',
+};
+const KIND_LABELS = { food: '식비', transport: '교통', locker: '코인로커', ticket: '입장·기타', lodging: '숙박', flight: '항공' };
+
+function dayLabelOf(cell, day) {
+  const d = parseDay(cell);
+  return d ? `${d.getMonth() + 1}/${d.getDate()} (${WEEKDAYS[d.getDay()]})` : day || '날짜 없음';
+}
+
+function budgetLineHtml(line, row) {
+  const start = parseTimeRange(row.time).start;
+  const editing = state.editAmount === line.index;
+  const money = line.amount == null ? '미정' : line.min != null && line.max != null && line.min !== line.max && line.source !== 'manual'
+    ? `${formatMoney(line.min, line.currency).replace(/[^\d,.]+$/, '')}–${formatMoney(line.max, line.currency)}`
+    : formatMoney(line.amount, line.currency);
+  const amount = editing
+    ? `<input class="bl-input" data-amount-input="${line.index}" data-original="${line.amount ?? ''}" inputmode="decimal" value="${line.amount ?? ''}" aria-label="금액">`
+    : `<button type="button" class="bl-amount" data-amount="${line.index}" title="눌러서 금액 고치기"${line.excluded ? ' disabled' : ''}>${escapeHtml(money)}</button>`;
+  const what = [SOURCE_LABELS[line.source], line.note && line.note !== SOURCE_LABELS[line.source] ? line.note : ''].filter(Boolean).join(' · ');
+  return `<li class="budget-line src-${line.source}${line.excluded ? ' excluded' : ''}">
+    <span class="bl-time">${start != null ? hm(start) : ''}</span>
+    <span class="bl-title"><span class="bl-kind">${KIND_LABELS[line.kind] || ''}</span>${escapeHtml(row.title)}<small>${escapeHtml(what)}</small></span>
+    ${amount}
+    ${line.slot && mapState === 'ready' ? `<button type="button" class="secondary-button small" data-slot-recs="${line.index}">${line.meal === 'cafe' ? '카페 추천' : '맛집 추천'}</button>` : ''}
+  </li>`;
+}
+
+let lastBudgetHtml = '';
+function renderBudget() {
+  const show = state.items.length > 0 && !state.running;
+  els.budgetCard.classList.toggle('hidden', !show);
+  if (!show) {
+    budgetDays = [];
+    return;
+  }
+  const rows = budgetRows();
+  const base = state.budget.currency;
+  budgetDays = dayCosts(rows, {
+    currencyOf: dayCurrency, fixedCurrency: state.budget.trip, legKm, googleFare, picks: state.picks, overrides: state.overrides, convert,
+  });
+  ensureRates(budgetDays.flatMap((d) => [d.currency, ...d.lines.map((l) => l.currency)]), base);
+
+  // 예산 칸: 다른 칸을 고치는 동안 지워지지 않도록 바뀐 경우에만 채운다
+  const currencies = [...new Set(['KRW', 'JPY', 'USD', 'EUR', base, ...budgetDays.map((d) => d.currency)].filter((c) => CURRENCIES[c]))];
+  const options = currencies.map((c) => `<option value="${c}">${CURRENCIES[c].label}</option>`).join('');
+  if (els.budgetCurrency.innerHTML !== options) els.budgetCurrency.innerHTML = options;
+  els.budgetCurrency.value = base;
+  const tripOptions = `<option value="">자동</option>${Object.entries(CURRENCIES).map(([c, v]) => `<option value="${c}">${v.label}</option>`).join('')}`;
+  if (els.tripCurrency.innerHTML !== tripOptions) els.tripCurrency.innerHTML = tripOptions;
+  els.tripCurrency.value = state.budget.trip || '';
+  if (document.activeElement !== els.budgetAmount) els.budgetAmount.value = state.budget.amount ?? '';
+
+  const foreign = [...new Set(budgetDays.map((d) => d.currency))].filter((c) => c && c !== base);
+  els.budgetFx.innerHTML = foreign.map((c) => {
+    const r = fxRates[`${c}>${base}`];
+    return r ? `1${escapeHtml(CURRENCIES[c]?.label || c)} = ${escapeHtml(formatMoney(r.rate, base, r.rate < 100 ? 2 : 0))} <small>${escapeHtml(r.date || '')} 기준 · 유럽중앙은행</small>`
+      : `${escapeHtml(CURRENCIES[c]?.label || c)} 환율을 가져오지 못했어요 <small>예산을 현지 통화로 적으면 그대로 견줘요</small>`;
+  }).join(' · ');
+  els.budgetFx.classList.toggle('hidden', !foreign.length);
+
+  const totals = budgetDays.map((d) => convert(d.total, d.currency, base) ?? 0);
+  const limit = state.budget.amount;
+  const scale = Math.max(limit || 0, ...totals) || 1;
+  const html = budgetDays.map((d, i) => {
+    const open = state.budgetOpen === d.day || (state.day != null && dayOfCategory(state.day) === d.day);
+    const local = limit != null ? convert(limit, base, d.currency) : null;
+    const left = local != null ? local - d.total : null;
+    const fixedPct = ((convert(d.fixed, d.currency, base) ?? 0) / scale) * 100;
+    const estPct = ((convert(d.estimated, d.currency, base) ?? 0) / scale) * 100;
+    const inBase = d.currency && d.currency !== base && convert(d.total, d.currency, base) != null ? ` <small>약 ${formatMoney(Math.round(convert(d.total, d.currency, base) / 100) * 100, base)}</small>` : '';
+    const status = left == null ? '' : left >= 0 ? `<span class="budget-left ok">남음 ${formatMoney(Math.round(left), d.currency)}</span>`
+      : `<span class="budget-left over">${formatMoney(Math.round(-left), d.currency)} 넘음</span>`;
+    const label = dayLabelOf(rows.find((r) => r.day === d.day)?.dateCell, d.day);
+    const color = state.colors.get(state.items.find((it) => it.day === d.day)?.category) || PALETTE[i % PALETTE.length];
+    const lines = open ? `<ul class="budget-lines">${d.lines.map((l) => budgetLineHtml(l, rows[l.index])).join('')}</ul>
+      <p class="budget-note">${[
+        Object.entries(KIND_LABELS).map(([k, name]) => {
+          const v = d.lines.filter((l) => l.kind === k && !l.excluded && l.value != null).reduce((n, l) => n + l.value, 0);
+          return v ? `${name} ${formatMoney(Math.round(v), d.currency)}` : '';
+        }).filter(Boolean).join(' · '),
+        d.excluded.length ? `${d.excluded.map((l) => KIND_LABELS[l.kind]).filter((v, j, a) => a.indexOf(v) === j).join('·')}은 뺐어요` : '',
+        '입장료는 메모에 적은 것만 더해요',
+      ].filter(Boolean).map(escapeHtml).join(' · ')}</p>` : '';
+    return `<div class="budget-day${open ? ' open' : ''}" style="--c:${color}">
+      <button type="button" class="budget-day-head" data-budget-day="${escapeHtml(d.day)}" aria-expanded="${open}">
+        <span class="budget-day-name">${escapeHtml(label)}</span>
+        <span class="budget-bar" aria-hidden="true"><i class="fixed" style="width:${fixedPct.toFixed(1)}%"></i><i class="est" style="width:${estPct.toFixed(1)}%"></i>${limit ? `<b style="left:${Math.min(100, (limit / scale) * 100).toFixed(1)}%"></b>` : ''}</span>
+        <span class="budget-day-sum"><strong>${d.currency ? formatMoney(Math.round(d.total), d.currency) : '통화 모름'}</strong>${local != null ? ` / ${formatMoney(Math.round(local), d.currency)}` : ''}${inBase}</span>
+        <span class="budget-day-meta">${status}${d.unknown ? `<span class="budget-unknown">미정 ${d.unknown}건</span>` : ''}</span>
+      </button>
+      ${lines}
+    </div>`;
+  }).join('');
+  const legend = '<div class="budget-legend"><span><i class="fixed"></i>메모·확정</span><span><i class="est"></i>어림</span>'
+    + `${limit ? '<span><i class="limit"></i>하루 예산</span>' : '<span class="muted">하루 예산을 적으면 남은 돈을 알려 줘요</span>'}</div>`;
+  const all = legend + html;
+  if (all !== lastBudgetHtml) {
+    els.budgetDays.innerHTML = all;
+    lastBudgetHtml = all;
+    els.budgetDays.querySelector('[data-amount-input]')?.focus();
+  }
+}
+
+// 날짜 탭의 분류 값 → 예산의 날짜 (분류 열이 날짜 열과 같을 때만 이어진다)
+function dayOfCategory(category) {
+  return state.items.find((it) => it.category === category)?.day ?? null;
+}
+
 /* ───────────── 결과 목록 ───────────── */
 
 let renderQueued = false;
@@ -1320,6 +2019,8 @@ function render() {
   els.navCount.textContent = state.items.length ? String(placed).padStart(2, '0') : '';
   els.planSummary.textContent = planSummaryText();
   if (state.items.length) renderTrip(state.items);
+  renderBudget();
+  renderRecs();
   renderPlanCheck();
   renderChips();
   renderDayTabs();
@@ -1483,6 +2184,11 @@ function renderDetail(it) {
       <button type="button" class="secondary-button" data-action="pick">지도에서 직접 찍기</button>
       ${it.place ? `<a class="secondary-button" href="${escapeHtml(placeUrl(it.place))}" target="_blank" rel="noopener">구글 지도 ↗</a>` : ''}
     </div>
+    ${it.place && mapState === 'ready' ? `<div class="detail-actions recs-actions">
+      <button type="button" class="secondary-button" data-action="recs" data-kind="food">주변 맛집</button>
+      <button type="button" class="secondary-button" data-action="recs" data-kind="cafe">카페</button>
+      <button type="button" class="secondary-button" data-action="recs" data-kind="sights">주변 명소</button>
+    </div>` : ''}
     <p class="meta">엑셀 ${it.rowNumber}행${it.place ? ' · 핀을 끌어서 위치를 고칠 수도 있어요' : ''}</p>
   </div>`;
 }
@@ -1729,6 +2435,9 @@ els.resultList.addEventListener('click', (e) => {
     case 'pick':
       startPick(it);
       break;
+    case 'recs':
+      openRecs(itemAnchor(it), { kind: actionEl.dataset.kind });
+      break;
     default:
   }
 });
@@ -1772,6 +2481,102 @@ els.planCheck.addEventListener('click', (e) => {
   const action = e.target.closest('[data-plan]')?.dataset.plan;
   if (action === 'save') saveEditedPlan();
   else if (action === 'undo') undoEdits();
+});
+
+/* 주변 추천 */
+els.recsForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  searchAnchor(els.recsQuery.value.trim());
+});
+els.recsClose.addEventListener('click', closeRecs);
+
+els.recsBody.addEventListener('click', (e) => {
+  const kindButton = e.target.closest('[data-rec-kind]');
+  if (kindButton) {
+    setRecKind(kindButton.dataset.recKind);
+    return;
+  }
+  const chip = e.target.closest('[data-rec-keyword]');
+  if (chip) {
+    setRecKeyword(chip.dataset.recKeyword);
+    return;
+  }
+  const pickButton = e.target.closest('[data-rec-pick]');
+  if (pickButton) {
+    pickRec(Number(pickButton.dataset.recPick));
+    return;
+  }
+  if (e.target.closest('[data-rec-more]')) {
+    state.recs.more = true;
+    render();
+    showRecPins(false);
+    return;
+  }
+  const card = e.target.closest('.rec');
+  if (card && !e.target.closest('a, input, button')) focusRec(card.dataset.rec, 'list');
+});
+
+els.recsBody.addEventListener('submit', (e) => {
+  if (!e.target.matches('[data-rec-keyword-form]')) return;
+  e.preventDefault();
+  setRecKeyword(e.target.elements.keyword.value.trim());
+});
+
+// 타베로그·카카오맵에서 보고 적은 점수 (비우면 지운다)
+els.recsBody.addEventListener('change', (e) => {
+  const id = e.target.dataset.recScore;
+  if (!id) return;
+  const score = parseFloat(e.target.value);
+  if (Number.isFinite(score) && score > 0 && score <= 5) ratingScores[id] = Math.round(score * 100) / 100;
+  else delete ratingScores[id];
+  storage.set(SCORE_STORAGE, JSON.stringify(ratingScores));
+  rankRecs();
+  render();
+  showRecPins(false);
+});
+
+/* 하루 예산 */
+els.budgetForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  saveBudget();
+});
+els.budgetForm.addEventListener('change', saveBudget);
+
+els.budgetDays.addEventListener('click', (e) => {
+  const slot = e.target.closest('[data-slot-recs]');
+  if (slot) {
+    openSlotRecs(Number(slot.dataset.slotRecs));
+    return;
+  }
+  const amount = e.target.closest('[data-amount]');
+  if (amount) {
+    state.editAmount = Number(amount.dataset.amount);
+    render();
+    return;
+  }
+  const head = e.target.closest('[data-budget-day]');
+  if (head) {
+    const { budgetDay } = head.dataset;
+    const open = head.getAttribute('aria-expanded') === 'true';
+    state.budgetOpen = open ? null : budgetDay;
+    // 날짜 탭으로 그날을 보고 있으면 탭을 풀어야 접힌다
+    if (open && state.day != null && dayOfCategory(state.day) === budgetDay) setDay(null);
+    else render();
+  }
+});
+
+els.budgetDays.addEventListener('keydown', (e) => {
+  if (!e.target.matches('[data-amount-input]')) return;
+  if (e.key === 'Enter') setOverride(Number(e.target.dataset.amountInput), e.target.value, e.target.dataset.original);
+  if (e.key === 'Escape') {
+    state.editAmount = null;
+    render();
+  }
+});
+els.budgetDays.addEventListener('focusout', (e) => {
+  if (e.target.matches('[data-amount-input]') && state.editAmount === Number(e.target.dataset.amountInput)) {
+    setOverride(state.editAmount, e.target.value, e.target.dataset.original);
+  }
 });
 
 els.resultList.addEventListener('keydown', (e) => {

@@ -3,10 +3,11 @@ import { createStore } from './util.js';
 import { CACHE_TTL, withRetry } from './places.js';
 
 // 경로를 그리는 데 필요한 것만 요청한다. 대중교통·도보·차 모두 Compute Routes Essentials 등급
-const ROUTE_FIELDS = ['path', 'legs', 'distanceMeters', 'durationMillis', 'localizedValues'];
+// (travelAdvisory는 대중교통 요금용. 통행료는 따로 요청해야 셈하므로 등급이 오르지 않는다)
+const ROUTE_FIELDS = ['path', 'legs', 'distanceMeters', 'durationMillis', 'localizedValues', 'travelAdvisory'];
 const DAY = 24 * 60 * 60 * 1000;
 
-const store = createStore('routesCache.v1', CACHE_TTL);
+const store = createStore('routesCache.v2', CACHE_TTL); // v2: 대중교통 요금을 함께 저장
 const inflight = new Map();
 
 export const MODES = {
@@ -199,10 +200,17 @@ function simplify(route, mode) {
   }
   return {
     mode,
+    fare: fareOf(route.travelAdvisory?.transitFare),
     distance: route.distanceMeters ?? leg?.distanceMeters ?? 0,
     duration: route.durationMillis ?? leg?.durationMillis ?? 0,
     durationText: route.localizedValues?.duration || '',
     distanceText: route.localizedValues?.distance || '',
     segments,
   };
+}
+
+// 구글이 모든 구간의 요금을 알 때만 대중교통 요금을 준다 (한국·영국 등. 일본은 대중교통 경로 자체가 없다)
+function fareOf(money) {
+  if (!money?.currencyCode || money.units == null) return null;
+  return { amount: Number(money.units) + Number(money.nanos || 0) / 1e9, currency: money.currencyCode };
 }

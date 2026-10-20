@@ -30,6 +30,8 @@
       <a class="nav-item active" href="#top"><span class="nav-icon grid-icon" aria-hidden="true"></span><span class="nav-text">일정 지도</span></a>
       <a class="nav-item" href="#planCard"><span class="nav-icon calendar-icon" aria-hidden="true"></span><span class="nav-text">내 일정</span><span class="nav-count" id="navCount"></span></a>
       <a class="nav-item" href="#mapPanel"><span class="nav-icon pin-icon" aria-hidden="true"></span><span class="nav-text">지도</span></a>
+      <a class="nav-item" href="#recsCard"><span class="nav-icon star-icon" aria-hidden="true">✦</span><span class="nav-text">주변 추천</span></a>
+      <a class="nav-item" href="#budgetCard"><span class="nav-icon coin-icon" aria-hidden="true">₩</span><span class="nav-text">예산</span></a>
     </nav>
 
     <div class="sidebar-section-label sidebar-section-label--second">SETTINGS</div>
@@ -132,6 +134,34 @@
             <button class="primary-button hidden" id="routeBtn" type="button">
               <span class="button-icon">✦</span><span id="routeBtnText">경로 찾기</span><span class="button-arrow">→</span>
             </button>
+          </article>
+
+          <article class="surface-card recs-card hidden" id="recsCard" aria-live="polite">
+            <div class="card-heading-row">
+              <div class="step-heading"><span class="step-number">✦</span><div><div class="section-kicker">NEARBY</div><h2>주변 명소·맛집</h2></div></div>
+              <button type="button" class="text-link hidden" id="recsClose">닫기</button>
+            </div>
+            <form class="research recs-form" id="recsForm">
+              <input id="recsQuery" placeholder="대표 장소 (예: 하카타역)" aria-label="대표 장소" spellcheck="false" autocomplete="off">
+              <button type="submit" class="secondary-button">주변 찾기</button>
+            </form>
+            <div class="recs-body" id="recsBody"></div>
+          </article>
+
+          <article class="surface-card budget-card hidden" id="budgetCard">
+            <div class="card-heading-row">
+              <div class="step-heading"><span class="step-number">₩</span><div><div class="section-kicker">BUDGET</div><h2>하루 예산</h2></div></div>
+              <span class="budget-scope">1인 · 숙박·항공 제외</span>
+            </div>
+            <form class="budget-form" id="budgetForm">
+              <label for="budgetAmount">하루에 쓸 돈</label>
+              <input id="budgetAmount" inputmode="decimal" placeholder="예: 100000" autocomplete="off">
+              <select id="budgetCurrency" aria-label="예산 통화"></select>
+              <label for="tripCurrency" class="budget-trip-label">현지 통화</label>
+              <select id="tripCurrency"></select>
+            </form>
+            <p class="budget-fx" id="budgetFx"></p>
+            <div class="budget-days" id="budgetDays"></div>
           </article>
 
           <article class="surface-card plan-card hidden" id="planCard">
@@ -239,11 +269,24 @@
   </section>
 
   <section class="dialog-section">
+    <h3>주변 명소·맛집</h3>
+    <p>일정의 장소를 누르고 <b>주변 맛집</b>·<b>주변 명소</b>를 고르거나, 위 칸에 대표 장소를 적으면 걸어갈 만한 곳을 구글 평점·리뷰 수로 순위를 매겨 보여 줘요. 리뷰가 적은 곳의 높은 평점은 주변 평균 쪽으로 낮춰 보고, 일정 시각에 문을 닫는 곳과 예산을 넘는 곳은 뒤로 보내요.</p>
+    <p>일본은 <b>타베로그</b>, 한국은 <b>카카오맵</b> 링크를 함께 달아요. 두 곳은 점수를 가져다 쓸 수 있는 공개 API가 없고 약관도 막고 있어, 링크로 열어 확인한 점수를 옆 칸에 적으면 순위에 반영해요(이 브라우저에만 저장).</p>
+  </section>
+
+  <section class="dialog-section">
+    <h3>하루 예산</h3>
+    <p>메모에 적은 금액(“1,800엔”, “1만 5천원”)을 먼저 쓰고, 금액이 없는 끼니·교통·코인로커는 어림해 날짜별로 더해요. 숙박·항공은 빼요. “+2,200엔”, “별도”는 선택 비용, “대안:” 뒤의 금액은 다른 선택지로 보고 더하지 않아요.</p>
+    <p>교통비는 구글 경로에 요금이 있으면 그 값을, 없으면 이동 수단과 일정표의 이동 시간으로 어림해요(일본은 구글이 대중교통 경로를 주지 않아 모두 어림). 금액을 눌러 고칠 수 있고, 빈 끼니의 <b>맛집 추천</b>에서 가게를 고르면 그 행의 장소 칸에 넣어 엑셀로 저장할 수 있어요.</p>
+  </section>
+
+  <section class="dialog-section">
     <h3>매달 무료 사용량</h3>
     <table class="price-table">
       <tr><th>지도 표시</th><td>10,000회</td></tr>
       <tr><th>장소 검색</th><td>5,000건 · 넘으면 1,000건당 $32</td></tr>
       <tr><th>경로 찾기</th><td>10,000건 · 넘으면 1,000건당 $5</td></tr>
+      <tr><th>주변 추천</th><td>1,000건 · 넘으면 1,000건당 $35 (평점·가격대·영업시간 포함)</td></tr>
     </table>
   </section>
 </dialog>

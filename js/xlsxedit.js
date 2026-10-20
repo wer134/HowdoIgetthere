@@ -17,8 +17,8 @@ const attr = (tag, name) => tag.match(new RegExp(`\\s${name}="([^"]*)"`))?.[1] ?
  * @param {string} o.fileName 올린 파일 이름
  * @param {object} o.workbook SheetJS로 읽은 통합 문서 (xlsx가 아닐 때 다시 쓰는 데 쓴다)
  * @param {string} o.sheetName 고칠 시트
- * @param {Array<{ref: string, text: string, minutes: number|null}>} o.edits 칸 주소(B16)와 새 글자.
- *   원래 칸이 엑셀 시간 값(숫자)이고 minutes가 있으면 숫자로 써서 표시 형식을 살린다
+ * @param {Array<{ref: string, text: string, minutes?: number|null, number?: number|null}>} o.edits 칸 주소(B16)와 새 글자.
+ *   원래 칸이 엑셀 시간 값(숫자)이고 minutes가 있으면 숫자로 써서 표시 형식을 살린다. number가 있으면 숫자 칸(위도·경도)으로 쓴다
  * @returns {{data: Uint8Array|string, fileName: string, type: string, keptFormat: boolean}}
  */
 export function writeEditedWorkbook({ buffer, fileName, workbook, sheetName, edits }) {
@@ -73,9 +73,9 @@ function patchXlsx(buffer, sheetName, edits) {
 }
 
 // <c r="B16" s="3" t="inlineStr"><is><t>17:40–17:55</t></is></c> 하나를 바꾼다. 서식 번호(s)는 그대로 둔다
-function patchCell(xml, { ref, text, minutes }) {
+function patchCell(xml, { ref, text, minutes, number }) {
   const found = xml.match(new RegExp(`<c\\b(?=[^>]*\\sr="${ref}")[^>]*?(?:/>|>[\\s\\S]*?</c>)`));
-  if (!found) throw new Error(`${ref} 칸을 찾지 못했습니다`);
+  if (!found) return insertCell(xml, { ref, text, number });
   const cell = found[0];
   const open = cell.match(/^<c\b[^>]*>/)[0];
   if (/<f[\s>]/.test(cell)) throw new Error(`${ref} 칸이 수식입니다`);
@@ -84,7 +84,9 @@ function patchCell(xml, { ref, text, minutes }) {
   const old = cell.match(/<v>([^<]*)<\/v>/)?.[1];
   const s = style != null ? ` s="${style}"` : '';
   let next;
-  if (type === 'n' && old && minutes != null) {
+  if (number != null) {
+    next = `<c r="${ref}"${s}><v>${number}</v></c>`;
+  } else if (type === 'n' && old && minutes != null) {
     // 날짜와 시각이 함께 든 값이면 날짜(정수 부분)는 살린다
     next = `<c r="${ref}"${s}><v>${Math.floor(Number(old)) + minutes / 1440}</v></c>`;
   } else {
@@ -93,10 +95,46 @@ function patchCell(xml, { ref, text, minutes }) {
   return xml.slice(0, found.index) + next + xml.slice(found.index + cell.length);
 }
 
+// 빈 칸은 XML에 아예 없을 수 있다(예: 끼니 행의 장소 칸). 그 행 안의 열 순서 자리에 새 칸을 끼우고, 바로 위 행의 같은 열 서식을 빌린다
+function insertCell(xml, { ref, text, number }) {
+  const [, col, row] = ref.match(/^([A-Z]+)(\d+)$/);
+  const rowTag = xml.match(new RegExp(`<row\\b(?=[^>]*\\sr="${row}")[^>]*?(?:/>|>[\\s\\S]*?</row>)`));
+  if (!rowTag) throw new Error(`${row}행을 찾지 못했습니다`);
+  let style = '';
+  for (let r = Number(row) - 1; r >= Math.max(1, Number(row) - 5) && !style; r--) {
+    const above = xml.match(new RegExp(`<c\\b[^>]*\\sr="${col}${r}"[^>]*>`));
+    const s = above && attr(above[0], 's');
+    if (s != null) style = ` s="${s}"`;
+  }
+  const cell = number != null
+    ? `<c r="${ref}"${style}><v>${number}</v></c>`
+    : `<c r="${ref}"${style} t="inlineStr"><is><t xml:space="preserve">${escapeXml(text)}</t></is></c>`;
+  let rowXml = rowTag[0];
+  if (rowXml.endsWith('/>')) {
+    rowXml = `${rowXml.slice(0, -2)}>${cell}</row>`;
+  } else {
+    const at = colNumber(col);
+    const next = [...rowXml.matchAll(/<c\b[^>]*\sr="([A-Z]+)\d+"/g)].find((m) => colNumber(m[1]) > at);
+    const pos = next ? next.index : rowXml.lastIndexOf('</row>');
+    rowXml = rowXml.slice(0, pos) + cell + rowXml.slice(pos);
+  }
+  return xml.slice(0, rowTag.index) + rowXml + xml.slice(rowTag.index + rowTag[0].length);
+}
+
+const colNumber = (letters) => [...letters].reduce((n, ch) => n * 26 + ch.charCodeAt(0) - 64, 0);
+
 // .xls·.csv 또는 직접 고치지 못한 파일: 바뀐 칸만 갈아 끼운 사본을 SheetJS로 쓴다 (서식은 남지 않는다)
 function rewriteWithSheetJS({ workbook, sheetName, edits, base, ext }) {
   const sheet = { ...workbook.Sheets[sheetName] };
-  for (const { ref, text } of edits) sheet[ref] = { t: 's', v: text };
+  for (const { ref, text, number } of edits) sheet[ref] = number != null ? { t: 'n', v: number } : { t: 's', v: text };
+  // 범위 밖 칸(빈 열)을 채웠으면 시트 범위를 넓힌다
+  const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1');
+  for (const { ref } of edits) {
+    const c = XLSX.utils.decode_cell(ref);
+    range.e.r = Math.max(range.e.r, c.r);
+    range.e.c = Math.max(range.e.c, c.c);
+  }
+  sheet['!ref'] = XLSX.utils.encode_range(range);
   const book = { ...workbook, Sheets: { ...workbook.Sheets, [sheetName]: sheet } };
   if (ext === 'csv') {
     // 엑셀이 한글을 깨뜨리지 않도록 BOM을 붙인 UTF-8로
