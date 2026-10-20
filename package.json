@@ -1,0 +1,11 @@
+{
+  "name": "excel-map-maker",
+  "version": "0.1.0",
+  "private": true,
+  "description": "엑셀의 장소 이름을 구글 지도에서 찾아 지도로 만들어 주는 웹앱",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "sample": "node tools/make-sample.js"
+  }
+}
