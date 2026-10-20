@@ -21,6 +21,9 @@ import {
 import {
   CURRENCIES, COUNTRY_CURRENCY, dayCosts, formatMoney, fareClass, mealOf, mostCommon,
 } from './budget.js';
+import {
+  INTERESTS, CLAUDE_MODEL, planWithClaude, verifyPlan, planWithGoogle, planIssues, planToWorkbook,
+} from './planner.js';
 
 const CFG = {
   googleMapsApiKey: '',
@@ -36,6 +39,8 @@ const BUDGET_STORAGE = 'budget.v1'; // 하루 예산 { amount, currency, trip(�
 const OVERRIDE_STORAGE = 'budgetOverrides.v1'; // 파일·시트별로 직접 고친 금액 { '파일|시트': { 엑셀 행: 금액 } }
 const SCORE_STORAGE = 'ratingScores.v1'; // 타베로그·카카오맵에서 보고 직접 적은 점수 { 구글 장소 ID: 점수 }
 const FX_STORAGE = 'fxRates.v1'; // 환율 { 'JPY>KRW': { rate, date, t } }
+const CLAUDE_KEY_STORAGE = 'anthropicApiKey'; // 일정 추천용 Claude API 키 (이 브라우저에만)
+const PLANNER_STORAGE = 'planner.v1'; // 일정 추천 칸에 마지막으로 넣은 값
 
 function loadJson(key, fallback) {
   try { return JSON.parse(storage.get(key)) ?? fallback; } catch { return fallback; }
@@ -51,6 +56,10 @@ const els = Object.fromEntries([
   'sheetField', 'sheetSelect', 'mappingFields', 'commonRegion', 'rowSummary', 'runBtn', 'runText',
   // 동선 카드
   'routeCard', 'routeKicker', 'routeTitle', 'routeCopy', 'routeMetrics', 'routeStatus', 'routeAlert', 'routeBtn', 'routeBtnText',
+  // 여행 일정 추천
+  'plannerCard', 'plannerToggle', 'plannerForm', 'planRegion', 'planStart', 'planDays', 'planStay', 'planTransport', 'planPace',
+  'planBudget', 'planBudgetCurrency', 'planInterests', 'planNotes', 'plannerEngine', 'plannerBtn', 'plannerBtnText', 'plannerStatus',
+  'claudeKeyForm', 'claudeKeyInput', 'claudeKeyStatus',
   // 주변 추천 · 하루 예산
   'recsCard', 'recsClose', 'recsForm', 'recsQuery', 'recsBody',
   'budgetCard', 'budgetForm', 'budgetAmount', 'budgetCurrency', 'tripCurrency', 'budgetFx', 'budgetDays',
@@ -105,6 +114,8 @@ const state = {
   editAmount: null, // 금액을 고치는 중인 행 (records 번호)
   overrides: new Map(), // records 번호 → 직접 고친 금액 (그날 통화)
   picks: new Map(), // records 번호 → 추천에서 고른 가게의 1인 가격 (메모 열이 없을 때 셈에 쓴다)
+  // 여행 일정 추천: { running, engine, step, progress, error, result: { plan, req, raw, cost, engine, buffer, fileName } }
+  planner: { running: false, engine: '', step: '', progress: null, error: '', result: null },
 };
 
 let mapView = null;
@@ -218,6 +229,7 @@ async function initMap() {
     els.mapPlaceholder.classList.add('hidden');
     setKeyStatus('지도 연결됨', 'ok');
     renderRecs();
+    renderPlanner();
   } catch (err) {
     mapState = 'error';
     setKeyStatus(`지도를 불러오지 못했습니다: ${err?.message || err}`, 'error');
@@ -1343,6 +1355,191 @@ function goToLeg(key) {
   }
   if (!legVisible(leg)) setDay(leg.from.category);
   selectLeg(key, 'check');
+}
+
+/* ───────────── 여행 일정 추천 ───────────── */
+
+const claudeKey = () => storage.get(CLAUDE_KEY_STORAGE) || '';
+const PLAN_CURRENCIES = ['KRW', 'JPY', 'USD', 'EUR'];
+
+function setupPlanner() {
+  const saved = loadJson(PLANNER_STORAGE, {});
+  els.planPace.innerHTML = Object.entries(PACES).map(([key, p]) => `<option value="${key}">${p.label}</option>`).join('');
+  els.planBudgetCurrency.innerHTML = PLAN_CURRENCIES.map((c) => `<option value="${c}">${CURRENCIES[c].label}</option>`).join('');
+  const chosen = new Set(saved.interests || ['sights', 'food']);
+  els.planInterests.innerHTML = Object.entries(INTERESTS).map(([key, v]) => (
+    `<label class="interest-chip"><input type="checkbox" value="${key}"${chosen.has(key) ? ' checked' : ''}><span>${escapeHtml(v.label)}</span></label>`
+  )).join('');
+  els.planRegion.value = saved.region || '';
+  els.planDays.value = saved.days || 3;
+  els.planStay.value = saved.stay || '';
+  els.planTransport.value = saved.transport || 'transit';
+  els.planPace.value = PACES[saved.pace] ? saved.pace : 'normal';
+  els.planNotes.value = saved.notes || '';
+  els.planBudget.value = state.budget.amount ?? '';
+  els.planBudgetCurrency.value = PLAN_CURRENCIES.includes(state.budget.currency) ? state.budget.currency : 'KRW';
+  const key = claudeKey();
+  els.claudeKeyInput.value = key;
+  els.claudeKeyStatus.textContent = key ? `저장된 키를 쓰고 있어요 (…${key.slice(-4)}). 지우려면 칸을 비우고 저장하세요.` : els.claudeKeyStatus.textContent;
+}
+
+function readPlanner() {
+  const amount = parseFloat(els.planBudget.value.replace(/[^\d.]/g, ''));
+  return {
+    region: els.planRegion.value.trim(),
+    start: els.planStart.value,
+    days: Math.min(14, Math.max(1, parseInt(els.planDays.value, 10) || 3)),
+    stay: els.planStay.value.trim(),
+    transport: els.planTransport.value,
+    pace: els.planPace.value,
+    interests: [...els.planInterests.querySelectorAll('input:checked')].map((i) => i.value),
+    budget: Number.isFinite(amount) && amount > 0 ? { amount, currency: els.planBudgetCurrency.value } : null,
+    notes: els.planNotes.value.trim(),
+  };
+}
+
+function setPlannerOpen(open) {
+  els.plannerForm.classList.toggle('hidden', !open);
+  els.plannerToggle.setAttribute('aria-expanded', String(open));
+  els.plannerToggle.textContent = open ? '접기' : '열기';
+}
+
+// 일정 짜기: Claude 키가 있으면 Claude 초안 → 구글 지도로 확인, 없으면 구글 지도 데이터만으로. 다 되면 엑셀을 올린 것처럼 지도에 올린다
+// revise: 지난 결과에서 확인에 걸린 곳만 Claude에게 고쳐 달라고 한다
+async function generateTrip({ revise = false } = {}) {
+  if (state.planner.running || mapState !== 'ready') return;
+  const previous = state.planner.result;
+  const req = revise && previous ? previous.req : readPlanner();
+  if (!req.region) {
+    setPlannerOpen(true);
+    els.planRegion.focus();
+    return;
+  }
+  if (!revise) {
+    const { region, days, stay, transport, pace, interests, notes } = req;
+    storage.set(PLANNER_STORAGE, JSON.stringify({ region, days, stay, transport, pace, interests, notes }));
+    if (req.budget) {
+      state.budget = { ...state.budget, ...req.budget };
+      storage.set(BUDGET_STORAGE, JSON.stringify(state.budget));
+    }
+  }
+  const key = claudeKey();
+  const engine = key ? 'claude' : 'google';
+  state.planner = { running: true, engine, step: engine === 'claude' ? 'draft' : 'area', progress: null, error: '', result: revise ? previous : null };
+  renderPlanner();
+  const onProgress = (p) => {
+    state.planner.progress = p;
+    if (p.step) state.planner.step = p.step;
+    renderPlanner();
+  };
+  let stage = engine === 'claude' ? 'claude' : 'google';
+  try {
+    let plan;
+    let raw = '';
+    let cost = null;
+    if (engine === 'claude') {
+      const issues = revise ? planIssues(previous.plan).map((x) => `${x.label} ${x.item.place_ko || x.item.place}: ${x.text}`) : [];
+      const out = await planWithClaude(req, { apiKey: key, onProgress, previous: revise ? previous.raw : null, issues });
+      ({ plan, raw } = out);
+      cost = (revise ? previous.cost || 0 : 0) + out.cost;
+      stage = 'google';
+      Object.assign(state.planner, { step: 'verify', progress: null });
+      renderPlanner();
+      await verifyPlan(plan, { onProgress });
+    } else {
+      plan = await planWithGoogle(req, { language: CFG.language, onProgress });
+    }
+    stage = 'load';
+    Object.assign(state.planner, { step: 'load', progress: null });
+    renderPlanner();
+    const { buffer, fileName } = planToWorkbook(plan, req, engine);
+    state.planner = { running: false, engine, step: '', progress: null, error: '', result: { plan, req, raw, cost, engine, buffer, fileName } };
+    setPlannerOpen(false);
+    renderPlanner();
+    await handleFile(new File([buffer], fileName, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+    await run();
+    const issues = planIssues(plan).length;
+    showToast(`${plan.days.length}일 일정을 지도에 올렸어요${issues ? ` · 확인할 곳 ${issues}곳` : ''}`);
+  } catch (err) {
+    const why = stage === 'google' ? classifyError(err) : 'other';
+    const message = why === 'fatal' ? `구글 장소 검색이 거부되었어요. "Places API (New)"가 켜져 있는지 확인하세요. (${err?.message || err})`
+      : why === 'rate' ? '구글 장소 검색 한도를 넘었어요. 잠시 뒤 다시 눌러 주세요.' : err?.message || String(err);
+    state.planner = { ...state.planner, running: false, error: message };
+    renderPlanner();
+  }
+}
+
+const PLANNER_STEPS = {
+  claude: [['draft', 'Claude가 일정을 짜는 중'], ['verify', '장소를 구글 지도에서 확인하는 중'], ['load', '지도에 올리는 중']],
+  google: [['area', '지역 찾는 중'], ['collect', '인기 장소 모으는 중'], ['arrange', '가까운 곳끼리 날짜별로 묶는 중'], ['load', '지도에 올리는 중']],
+};
+
+function plannerProgressHtml(p) {
+  const steps = PLANNER_STEPS[p.engine] || [];
+  const at = steps.findIndex(([key]) => key === p.step);
+  const detail = (key) => {
+    if (key !== p.step || !p.progress) {
+      return key === 'draft' && key === p.step ? '보통 30초~2분 걸려요' : '';
+    }
+    if (key === 'draft') return p.progress.days ? `${p.progress.days}일차를 쓰는 중 · ${p.progress.chars.toLocaleString('en-US')}자` : '생각을 정리하는 중';
+    if (key === 'verify') return `${p.progress.done} / ${p.progress.total}`;
+    return '';
+  };
+  return `<ol class="planner-steps">${steps.map(([key, label], i) => {
+    const cls = i < at ? 'done' : i === at ? 'now' : '';
+    const extra = detail(key);
+    return `<li class="${cls}"><span>${label}${i === at ? '…' : ''}</span>${extra ? `<small>${escapeHtml(extra)}</small>` : ''}</li>`;
+  }).join('')}</ol>`;
+}
+
+function plannerResultHtml(result) {
+  const { plan, engine, cost } = result;
+  const issues = planIssues(plan);
+  const days = plan.days.map((d, i) => {
+    const label = d.date ? (() => {
+      const [y, m, dd] = d.date.split('-').map(Number);
+      const date = new Date(y, m - 1, dd);
+      return `${m}/${dd} (${WEEKDAYS[date.getDay()]})`;
+    })() : `${i + 1}일차`;
+    const stops = d.items.filter((it) => it.kind === 'place').length;
+    return `<li><b>${escapeHtml(label)}</b><span>${escapeHtml([d.city, d.theme].filter(Boolean).join(' · '))}</span><small>${stops}곳</small></li>`;
+  }).join('');
+  const by = engine === 'claude' ? `Claude 초안 · 구글 지도로 확인${cost != null ? ` · 사용료 약 $${cost.toFixed(2)}` : ''}` : '구글 지도 평점으로 추천';
+  return `<div class="planner-result">
+    <div class="planner-title"><b>${escapeHtml(plan.title)}</b><small>${escapeHtml(by)}</small></div>
+    ${plan.summary ? `<p class="planner-summary">${escapeHtml(plan.summary)}</p>` : ''}
+    <ol class="planner-days">${days}</ol>
+    ${issues.length ? `<div class="planner-issues"><div class="rd-label">확인이 필요한 곳 ${issues.length}</div><ul>${issues.map((x) => (
+      `<li><b>${escapeHtml(x.label)}</b> ${escapeHtml(x.item.place_ko || x.item.place)} <span>${escapeHtml(x.text)}</span></li>`
+    )).join('')}</ul></div>` : ''}
+    ${plan.tips.length ? `<div class="planner-tips"><div class="rd-label">알아 둘 점</div><ul>${plan.tips.map((t) => `<li>${escapeHtml(t)}</li>`).join('')}</ul></div>` : ''}
+    <div class="detail-actions">
+      <button type="button" class="secondary-button" data-planner="download">추천 일정 엑셀 내려받기</button>
+      ${engine === 'claude' && issues.length && claudeKey() ? `<button type="button" class="secondary-button" data-planner="revise">Claude에게 고쳐 달라고 하기 (${issues.length}곳)</button>` : ''}
+    </div>
+    <p class="meta">일정 점검·하루 예산·빈 끼니의 맛집 추천은 아래에서 그대로 쓸 수 있어요.</p>
+  </div>`;
+}
+
+let lastPlannerHtml = '';
+function renderPlanner() {
+  els.plannerCard.classList.toggle('hidden', mapState !== 'ready');
+  const p = state.planner;
+  els.plannerEngine.innerHTML = claudeKey()
+    ? `<b>Claude</b>(${escapeHtml(CLAUDE_MODEL)})가 짜고 구글 지도로 확인해요 · 일정 하나에 약 $0.2~0.3`
+    : '구글 지도 평점으로 짜요 · <button type="button" class="link-button" data-open="settingsDialog">Claude 키를 넣으면</button> 도시 배분·교통편까지 짜요';
+  els.plannerBtn.disabled = p.running;
+  els.plannerBtn.classList.toggle('is-loading', p.running);
+  els.plannerBtnText.textContent = p.running ? '짜는 중…' : p.result ? '새로 짜기' : '일정 짜기';
+  let html = '';
+  if (p.running) html = plannerProgressHtml(p);
+  else if (p.result) html = plannerResultHtml(p.result);
+  if (p.error) html = `<p class="alert">${escapeHtml(p.error)}</p>${p.running ? '' : html}`;
+  els.plannerStatus.classList.toggle('hidden', !html);
+  if (html !== lastPlannerHtml) {
+    els.plannerStatus.innerHTML = html;
+    lastPlannerHtml = html;
+  }
 }
 
 /* ───────────── 주변 명소·맛집 ───────────── */
@@ -2553,6 +2750,32 @@ els.planCheck.addEventListener('click', (e) => {
   else if (action === 'undo') undoEdits();
 });
 
+/* 여행 일정 추천 */
+els.plannerToggle.addEventListener('click', () => setPlannerOpen(els.plannerForm.classList.contains('hidden')));
+els.plannerForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  generateTrip();
+});
+els.plannerStatus.addEventListener('click', (e) => {
+  const action = e.target.closest('[data-planner]')?.dataset.planner;
+  const result = state.planner.result;
+  if (!action || !result) return;
+  if (action === 'download') {
+    downloadBlob(new Blob([result.buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), result.fileName);
+  } else if (action === 'revise') {
+    generateTrip({ revise: true });
+  }
+});
+els.claudeKeyForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const key = els.claudeKeyInput.value.trim();
+  if (key) storage.set(CLAUDE_KEY_STORAGE, key);
+  else storage.remove(CLAUDE_KEY_STORAGE);
+  els.claudeKeyStatus.textContent = key ? `저장했어요 (…${key.slice(-4)}). 일정 추천을 Claude가 짜요.` : '키를 지웠어요. 일정 추천은 구글 지도 데이터만으로 짜요.';
+  els.claudeKeyStatus.className = `status ${key ? 'ok' : ''}`;
+  renderPlanner();
+});
+
 /* 주변 추천 */
 els.recsForm.addEventListener('submit', (e) => {
   e.preventDefault();
@@ -2691,4 +2914,5 @@ if (typeof XLSX === 'undefined') {
   els.dropTitle.textContent = '엑셀 라이브러리(vendor/xlsx.full.min.js)를 불러오지 못했습니다';
 }
 updateRunButton();
+setupPlanner();
 initMap();

@@ -172,6 +172,7 @@ export function fareClass(text) {
   if (/지하철|subway|metro|모노레일|monorail|트램|tram|노면|streetcar/i.test(s)) return 'metro';
   if (/버스|bus/i.test(s)) return 'bus';
   if (/JR|전철|열차|기차|보통|쾌속|무궁화|train|rail|니시테츠|西鉄|사철|급행/i.test(s)) return 'rail';
+  if (/대중교통|public transport|transit/i.test(s)) return 'metro'; // 무엇을 탈지 모르면 시내 지하철 요금으로
   if (/도보|걸어|걷|walk/i.test(s)) return 'walk';
   return null;
 }

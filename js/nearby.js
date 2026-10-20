@@ -112,6 +112,29 @@ async function fetchNearby({ center, kind, keyword, language, region }) {
 // 아침·점심 끼니에는 술집을 빼고 보여 준다
 export const withoutBars = (places) => places.filter((p) => !BARS.has(p.type));
 
+/**
+ * 말로 찾기 (평점·영업시간 포함, Text Search Enterprise). 일정 추천에서 장소를 확인하거나 지역의 인기 장소를 모을 때 쓴다
+ * center를 주면 그 둘레(radius m)를 먼저 찾는다
+ */
+export function searchText({ query, center = null, radius = 20000, type = '', language, region, max = MAX_RESULTS }) {
+  const key = ['text', query, center ? `${center.lat.toFixed(3)},${center.lng.toFixed(3)},${radius}` : '', type, language, region, max].join('|');
+  if (!results.has(key)) {
+    const job = (async () => {
+      const { Place } = await google.maps.importLibrary('places');
+      const request = { fields: FIELDS, textQuery: query, maxResultCount: max };
+      if (language) request.language = language;
+      if (region) request.region = region;
+      if (type) request.includedType = type;
+      if (center) request.locationBias = { center, radius };
+      const { places } = await withRetry(() => Place.searchByText(request));
+      return (places || []).map(normalizePlace).filter((p) => p && p.status !== 'CLOSED_PERMANENTLY');
+    })();
+    results.set(key, job);
+    job.catch(() => results.delete(key));
+  }
+  return results.get(key);
+}
+
 const num = (v) => (v == null || v === '' ? null : Number(v));
 const money = (m) => (m ? { amount: num(m.units) ?? 0, currency: m.currencyCode || '' } : null);
 
