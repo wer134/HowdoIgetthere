@@ -16,6 +16,7 @@ import {
 import { writeEditedWorkbook } from './xlsxedit.js';
 import {
   KINDS, countryAt, findNearby, rankPlaces, dropParts, withoutBars, nowAt, priceOf, levelSigns, typeLabel, ratingSource, googleUrl, scoreOnGoogleScale,
+  placeDetails, weekHours, walkUrl,
 } from './nearby.js';
 import {
   CURRENCIES, COUNTRY_CURRENCY, dayCosts, formatMoney, fareClass, mealOf, mostCommon,
@@ -1363,7 +1364,7 @@ function itemAnchor(it) {
 }
 
 function openRecs(anchor, { kind = 'food', keyword = '' } = {}) {
-  state.recs = { anchor, kind, keyword, places: null, list: null, loading: false, error: '', more: false, focus: null };
+  state.recs = { anchor, kind, keyword, places: null, list: null, loading: false, error: '', more: false, focus: null, open: null };
   els.recsQuery.value = anchor.item || anchor.slot != null ? '' : anchor.name;
   loadRecs();
   els.recsCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1380,7 +1381,7 @@ async function loadRecs() {
   const recs = state.recs;
   if (!recs) return;
   const { anchor, kind, keyword } = recs;
-  Object.assign(recs, { loading: true, error: '', places: null, list: null, focus: null, more: false });
+  Object.assign(recs, { loading: true, error: '', places: null, list: null, focus: null, open: null, more: false });
   mapView?.clearRecs();
   render();
   const country = countryAt(anchor);
@@ -1453,14 +1454,77 @@ function showRecPins(fit) {
   if (fit) mapView.fitPoints([latLng(recs.anchor), ...shown.slice(0, 6).map(latLng)]);
 }
 
+// 추천을 누르면 그 칸을 펼쳐 사진·리뷰·영업시간을 보여 주고 지도에서도 가리킨다. 펼친 칸을 다시 누르면 접는다
 function focusRec(id, from) {
   const recs = state.recs;
   const p = recs?.list?.find((x) => x.id === id);
   if (!p) return;
+  recs.open = recs.open === id && from === 'list' ? null : id;
   recs.focus = id;
+  if (recs.open) loadDetails(p);
   render();
   mapView?.focusRec(id, recInfoHtml(p, recs));
   if (from === 'map') els.recsBody.querySelector(`[data-rec="${CSS.escape(id)}"]`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+// 장소 ID → { loading } | { data } | { error } (구글 약관상 이 페이지를 연 동안만 기억한다)
+const recDetails = new Map();
+
+async function loadDetails(p) {
+  const known = recDetails.get(p.id);
+  if (known && !known.error) return;
+  recDetails.set(p.id, { loading: true });
+  try {
+    recDetails.set(p.id, { data: await placeDetails(p.id, CFG.language) });
+  } catch (err) {
+    const why = classifyError(err);
+    recDetails.set(p.id, {
+      error: why === 'fatal' ? '자세한 정보를 받을 수 없어요. API 키 제한에 Places API (New)가 들어 있는지 확인하세요.'
+        : why === 'rate' ? '요청 한도를 넘었어요. 잠시 뒤 다시 눌러 주세요.' : `자세한 정보를 불러오지 못했어요: ${err?.message || err}`,
+    });
+  }
+  render();
+  // 지도 말풍선에도 사진을 넣는다 (그 가게를 아직 보고 있을 때만)
+  if (state.recs?.focus === p.id) mapView?.focusRec(p.id, recInfoHtml(p, state.recs), false);
+}
+
+const stars = (n) => '★★★★★'.slice(0, Math.round(n)) + '☆☆☆☆☆'.slice(0, 5 - Math.round(n));
+
+function recDetailHtml(p, recs) {
+  const { data, loading, error } = recDetails.get(p.id) || {};
+  const hours = weekHours(p);
+  const today = recs.at?.weekday;
+  const hoursHtml = hours.length ? `<div class="rd-block"><div class="rd-label">영업시간${recs.at ? ` <small>${recs.at.now ? '오늘' : `${WEEKDAYS[today]}요일`} 굵게</small>` : ''}</div>
+    <ul class="rd-hours">${hours.map((h) => `<li${h.day === today ? ' class="today"' : ''}><b>${h.label}</b>${escapeHtml(h.text)}</li>`).join('')}</ul></div>` : '';
+  const links = [
+    `<a href="${escapeHtml(walkUrl(recs.anchor, p))}" target="_blank" rel="noopener">${escapeHtml(recs.anchor.name)}에서 걸어가기 ↗</a>`,
+    data?.phone ? `<a href="tel:${escapeHtml(data.phone.replace(/[^\d+]/g, ''))}">${escapeHtml(data.phone)}</a>` : '',
+    data?.website ? `<a href="${escapeHtml(data.website)}" target="_blank" rel="noopener">웹사이트 ↗</a>` : '',
+  ].filter(Boolean).join('');
+  let more = '';
+  if (loading) more = '<p class="rd-status">사진·리뷰를 불러오는 중…</p>';
+  else if (error) more = `<p class="rd-status warn">${escapeHtml(error)}</p>`;
+  else if (data) {
+    const photos = data.photos.filter((ph) => ph.url);
+    const authors = [...new Map(photos.flatMap((ph) => ph.authors).filter((a) => a.name).map((a) => [a.name, a])).values()];
+    const credit = (a) => (a.uri ? `<a href="${escapeHtml(a.uri)}" target="_blank" rel="noopener">${escapeHtml(a.name)}</a>` : escapeHtml(a.name));
+    more = [
+      photos.length ? `<div class="rd-photos">${photos.map((ph) => `<a href="${escapeHtml(ph.link || googleUrl(p))}" target="_blank" rel="noopener"><img src="${escapeHtml(ph.url)}" alt="${escapeHtml(p.name)} 사진" loading="lazy"></a>`).join('')}</div>` : '',
+      data.about ? `<p class="rd-about">${escapeHtml(data.about)}</p>` : '',
+      data.features.length ? `<div class="rd-features">${data.features.map((f) => `<span>${escapeHtml(f)}</span>`).join('')}</div>` : '',
+      data.reviewSummary?.text ? `<div class="rd-block"><div class="rd-label">리뷰 요약 <small>${escapeHtml(data.reviewSummary.disclosure)}</small></div><p class="rd-summary">${escapeHtml(data.reviewSummary.text)}</p></div>` : '',
+      data.reviews.length ? `<div class="rd-block"><div class="rd-label">리뷰</div><ul class="rd-reviews">${data.reviews.map((r) => `<li>
+          <div class="rd-review-head"><span class="rd-stars" aria-label="별 ${r.rating}개">${stars(r.rating || 0)}</span>${r.authorUri ? credit({ name: r.author, uri: r.authorUri }) : escapeHtml(r.author)}<small>${escapeHtml(r.when)}</small></div>
+          <p class="rd-review" data-review title="눌러서 펼치기">${escapeHtml(r.text)}</p>
+        </li>`).join('')}</ul><a class="rd-more" href="${escapeHtml(data.reviewSummary?.uri || googleUrl(p))}" target="_blank" rel="noopener">구글 지도에서 리뷰 더 보기 ↗</a></div>` : '',
+      `<p class="rd-credit">${authors.length ? `사진: ${authors.slice(0, 3).map(credit).join(', ')} · ` : ''}정보: Google 지도</p>`,
+    ].join('');
+  }
+  return `<div class="rec-detail">
+    ${more}
+    ${hoursHtml}
+    <div class="rd-block"><div class="rd-label">주소</div><p class="rd-address">${escapeHtml(p.address || '')}</p><div class="rd-links">${links}</div></div>
+  </div>`;
 }
 
 function priceText(p) {
@@ -1490,10 +1554,13 @@ function recInfoHtml(p, recs) {
   return `<div class="info">
     <div class="info-title">${escapeHtml(p.name)}</div>
     <span class="info-cat" style="--c:${REC_COLORS[recs.kind]}">${escapeHtml(typeLabel(p, recs.kind))}</span>
+    ${recDetails.get(p.id)?.data?.photos[0]?.url ? `<img class="info-photo" src="${escapeHtml(recDetails.get(p.id).data.photos[0].url)}" alt="">` : ''}
     <p class="info-memo">${escapeHtml(recMeta(p, recs.kind))}</p>
     ${openText(p)}
-    <a class="info-link" href="${escapeHtml(googleUrl(p))}" target="_blank" rel="noopener">구글 지도에서 열기 ↗</a>
-    ${src ? `<a class="info-link" href="${escapeHtml(src.url)}" target="_blank" rel="noopener">${src.label}에서 보기 ↗</a>` : ''}
+    <div class="info-links">
+      <a class="info-link" href="${escapeHtml(googleUrl(p))}" target="_blank" rel="noopener">구글 지도에서 열기 ↗</a>
+      ${src ? `<a class="info-link" href="${escapeHtml(src.url)}" target="_blank" rel="noopener">${src.label}에서 보기 ↗</a>` : ''}
+    </div>
   </div>`;
 }
 
@@ -1503,7 +1570,8 @@ function recCardHtml(p, i, recs) {
   const score = ratingScores[p.id];
   const fit = { over: '<span class="rec-fit over">예산 초과</span>', tight: '<span class="rec-fit tight">빠듯해요</span>' }[p.fit] || '';
   const canPick = recs.anchor.slot != null && kind !== 'sights' && state.mapping.name >= 0;
-  return `<li class="rec${recs.focus === p.id ? ' active' : ''}${p.planned ? ' planned' : ''}" data-rec="${escapeHtml(p.id)}" style="--c:${REC_COLORS[kind]}">
+  const open = recs.open === p.id;
+  return `<li class="rec${recs.focus === p.id ? ' active' : ''}${open ? ' open' : ''}${p.planned ? ' planned' : ''}" data-rec="${escapeHtml(p.id)}" style="--c:${REC_COLORS[kind]}" aria-expanded="${open}">
     <span class="rec-num">${i + 1}</span>
     <div class="rec-main">
       <div class="rec-title"><b>${escapeHtml(p.name)}</b><span class="rec-type">${escapeHtml(typeLabel(p, kind))}</span>${fit}${p.planned ? '<span class="rec-fit planned">일정에 있음</span>' : ''}</div>
@@ -1515,7 +1583,9 @@ function recCardHtml(p, i, recs) {
         <a class="rec-link" href="${escapeHtml(googleUrl(p))}" target="_blank" rel="noopener">구글 지도 ↗</a>
         ${canPick ? `<button type="button" class="secondary-button rec-pick" data-rec-pick="${i}">이 가게로 정하기</button>` : ''}
       </div>
+      ${open ? recDetailHtml(p, recs) : ''}
     </div>
+    <span class="rec-chev" aria-hidden="true">⌄</span>
   </li>`;
 }
 
@@ -1547,7 +1617,7 @@ function recsHtml(recs) {
     const more = recs.list.length > shown.length ? `<button type="button" class="secondary-button" data-rec-more>${recs.list.length - shown.length}곳 더 보기</button>` : '';
     const source = recs.list.some((p) => ratingSource(p, kind)?.key === 'tabelog') ? '일본 가게는 타베로그 링크에서 점수를 보고 적어 두면 순위에 반영돼요(타베로그는 점수를 가져다 쓸 수 없어요).'
       : recs.list.some((p) => ratingSource(p, kind)?.key === 'kakao') ? '카카오맵 링크에서 평점을 보고 적어 두면 순위에 반영돼요(카카오는 평점을 API로 주지 않아요).' : '';
-    body = `<p class="recs-status">구글 평점을 리뷰 수로 보정하고, 가깝고${recs.at ? ' 그 시각에 여는' : ''} 곳을 위로 올렸어요. ${source}</p>
+    body = `<p class="recs-status">구글 평점을 리뷰 수로 보정하고, 가깝고${recs.at ? ' 그 시각에 여는' : ''} 곳을 위로 올렸어요. 가게를 누르면 사진·리뷰·영업시간이 나와요. ${source}</p>
       <ol class="recs-list">${shown.map((p, i) => recCardHtml(p, i, recs)).join('')}</ol>${more}`;
   }
   return head + tabs + search + body;
@@ -2512,8 +2582,14 @@ els.recsBody.addEventListener('click', (e) => {
     showRecPins(false);
     return;
   }
+  // 긴 리뷰는 눌러서 펼친다 (다시 그리면 접힌다)
+  const review = e.target.closest('[data-review]');
+  if (review) {
+    review.classList.toggle('full');
+    return;
+  }
   const card = e.target.closest('.rec');
-  if (card && !e.target.closest('a, input, button')) focusRec(card.dataset.rec, 'list');
+  if (card && !e.target.closest('a, input, button, .rec-detail')) focusRec(card.dataset.rec, 'list');
 });
 
 els.recsBody.addEventListener('submit', (e) => {

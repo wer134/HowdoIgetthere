@@ -357,3 +357,108 @@ export function scoreOnGoogleScale(source, score) {
   if (source === 'tabelog') return Math.min(5, 3.6 + (score - 3.0) * 1.4);
   return Math.min(5, score);
 }
+
+/* ── 눌렀을 때 보여 줄 자세한 정보 ── */
+// Place Details Enterprise + Atmosphere(매달 1,000건 무료, 넘으면 1,000건당 $25). 사진은 한 장마다 Place Photo(1,000장 무료, $7)
+const DETAIL_FIELDS = [
+  'photos', 'reviews', 'reviewSummary', 'editorialSummary', 'websiteURI', 'nationalPhoneNumber',
+  'isReservable', 'hasTakeout', 'hasDineIn', 'hasDelivery', 'servesBreakfast', 'servesLunch', 'servesDinner',
+  'servesVegetarianFood', 'paymentOptions', 'isGoodForChildren', 'isGoodForGroups', 'hasOutdoorSeating', 'hasRestroom',
+];
+const PHOTOS = 3;
+const REVIEWS = 3;
+const details = new Map(); // 장소 ID|언어 → Promise (이 페이지를 연 동안만)
+
+/** 사진·리뷰·특징. 한국어로 요청하면 한국어로 쓴 리뷰가 먼저 온다 */
+export function placeDetails(id, language) {
+  const key = `${id}|${language}`;
+  if (!details.has(key)) {
+    const job = fetchDetails(id, language);
+    details.set(key, job);
+    job.catch(() => details.delete(key));
+  }
+  return details.get(key);
+}
+
+async function fetchDetails(id, language) {
+  const { Place } = await google.maps.importLibrary('places');
+  const place = new Place({ id, requestedLanguage: language });
+  await withRetry(() => place.fetchFields({ fields: DETAIL_FIELDS }));
+  return normalizeDetails(place);
+}
+
+const textOf = (v) => (v == null ? '' : typeof v === 'string' ? v : v.text || '');
+const flag = (p, jsName, restName) => p[jsName] ?? p[restName] ?? null;
+
+// [JS 이름, REST 이름, 그렇다, 아니다(보여 줄 때만)]
+const FEATURES = [
+  ['hasDineIn', 'dineIn', '매장 식사'],
+  ['hasTakeout', 'takeout', '포장'],
+  ['hasDelivery', 'delivery', '배달'],
+  ['isReservable', 'reservable', '예약 가능', '예약 안 받음'],
+  ['servesVegetarianFood', 'servesVegetarianFood', '채식 메뉴'],
+  ['isGoodForGroups', 'goodForGroups', '단체 가능'],
+  ['isGoodForChildren', 'goodForChildren', '아이와 가기 좋음'],
+  ['hasOutdoorSeating', 'outdoorSeating', '야외 좌석'],
+  ['hasRestroom', 'restroom', '화장실'],
+];
+
+/** JS SDK의 Place든 REST 응답이든 같은 모양으로 */
+export function normalizeDetails(p) {
+  const meals = [['servesBreakfast', '아침'], ['servesLunch', '점심'], ['servesDinner', '저녁']].filter(([k]) => p[k]).map(([, label]) => label);
+  const pay = p.paymentOptions || {};
+  const features = [
+    meals.length ? `${meals.join('·')} 영업` : '',
+    pay.acceptsCashOnly ? '현금만' : pay.acceptsCreditCards ? '카드 가능' : '',
+    ...FEATURES.map(([js, rest, yes, no]) => {
+      const v = flag(p, js, rest);
+      return v === true ? yes : v === false && no ? no : '';
+    }),
+  ].filter(Boolean);
+  const summary = p.reviewSummary;
+  return {
+    photos: (p.photos || []).slice(0, PHOTOS).map((ph) => ({
+      url: typeof ph.getURI === 'function' ? ph.getURI({ maxWidth: 480, maxHeight: 360 }) : '',
+      link: ph.googleMapsURI || ph.googleMapsUri || '',
+      authors: (ph.authorAttributions || []).map((a) => ({ name: a.displayName || '', uri: a.uri || '' })),
+    })),
+    reviews: (p.reviews || []).slice(0, REVIEWS).map((r) => ({
+      rating: num(r.rating),
+      when: r.relativePublishTimeDescription || '',
+      author: r.authorAttribution?.displayName || '',
+      authorUri: r.authorAttribution?.uri || '',
+      text: textOf(r.text) || textOf(r.originalText),
+      link: r.googleMapsURI || r.googleMapsUri || '',
+    })).filter((r) => r.text),
+    about: textOf(p.editorialSummary),
+    reviewSummary: summary ? {
+      text: textOf(summary.text),
+      disclosure: textOf(summary.disclosureText) || 'Gemini로 요약됨',
+      uri: summary.reviewsURI || summary.reviewsUri || '',
+    } : null,
+    features,
+    website: p.websiteURI || p.websiteUri || '',
+    phone: p.nationalPhoneNumber || '',
+  };
+}
+
+const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0]; // 월요일부터
+
+/** 요일별 영업시간 [{ day, label: '월', text: '11:00–14:30, 18:00–21:00' | '휴무' | '24시간' }] (주변 검색에서 받은 것으로) */
+export function weekHours(place) {
+  if (!place.hoursKnown || !place.periods.length) return [];
+  if (place.periods.some((p) => !p.close)) return WEEK_ORDER.map((day) => ({ day, label: DAY_NAMES[day], text: '24시간' }));
+  return WEEK_ORDER.map((day) => {
+    const spans = place.periods.filter((p) => p.open.day === day)
+      .sort((a, b) => a.open.hour * 60 + a.open.minute - (b.open.hour * 60 + b.open.minute))
+      .map(({ open, close }) => `${hm(open.hour * 60 + open.minute)}–${hm(close.hour * 60 + close.minute)}`);
+    return { day, label: DAY_NAMES[day], text: spans.length ? spans.join(', ') : '휴무' };
+  });
+}
+
+/** 대표 장소에서 걸어가는 구글 지도 길찾기 */
+export function walkUrl(from, place) {
+  const params = new URLSearchParams({ api: '1', origin: `${from.lat},${from.lng}`, destination: `${place.lat},${place.lng}`, travelmode: 'walking' });
+  if (place.id) params.set('destination_place_id', place.id);
+  return `https://www.google.com/maps/dir/?${params}`;
+}
