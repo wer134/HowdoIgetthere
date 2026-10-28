@@ -267,7 +267,7 @@ async function handleFile(file) {
   els.sheetField.classList.toggle('hidden', names.length < 2);
   loadSheet(pickDefaultSheet(state.workbook));
   els.columnsPanel.classList.remove('hidden');
-  setColumnsOpen(true);
+  setColumnsOpen(state.mapping.name < 0);
   showToast(`일정 파일을 불러왔어요 · ${state.records.length}행`);
 }
 
@@ -295,6 +295,23 @@ function loadSheet(name) {
   els.fileMeta.textContent = `Excel · ${kb} KB · ${name} 시트 · ${records.length}행`;
   renderMapping();
   updateSummary();
+  previewItinerary();
+}
+
+function previewItinerary() {
+  if (state.running || state.mapping.name < 0) return;
+  state.items = buildItems().items;
+  state.selected = null;
+  state.day = null;
+  state.filter = "all";
+  state.legs = [];
+  state.selectedLeg = null;
+  state.alert = "";
+  assignColors();
+  mapView?.clear();
+  els.planCard.classList.remove("hidden");
+  document.body.classList.add("has-itinerary");
+  render();
 }
 
 // 접힌 열 맞추기 패널에 보여 줄 한 줄 요약 (예: 장소 ← 장소 · 날짜 ← 날짜)
@@ -604,6 +621,7 @@ function select(idx, from) {
     return;
   }
   const it = state.items[idx];
+  if (it.place?.id && mapState === "ready") loadDetails(it.place);
   render();
   if (it.place) mapView?.focus(idx, infoHtml(it), from === 'list');
   else mapView?.closeInfo();
@@ -2296,27 +2314,41 @@ function render() {
   renderMapMeta();
   renderList();
   renderPlacePanel();
+  renderWorkspaceChrome();
 }
 
 function renderPlacePanel() {
   const it = state.selected == null ? null : state.items[state.selected];
   els.placePanel.classList.toggle('hidden', !it);
+  document.body.classList.toggle('place-open', !!it);
   if (!it) return;
   const place = it.place;
-  const status = STATUS[it.status];
-  els.placePanelBody.innerHTML = `
-    <div class="place-panel-kicker">${escapeHtml(it.category || '여행 일정')} · ${placeNumber(it)}번째 장소</div>
-    <h2>${escapeHtml(it.name)}</h2>
-    <p class="place-panel-status">${escapeHtml(status.label)}</p>
-    ${place?.name && place.name !== it.name ? `<p class="place-panel-found">검색된 이름 · ${escapeHtml(place.name)}</p>` : ''}
-    <dl>
-      <div><dt>주소</dt><dd>${escapeHtml(place?.address || '주소 정보 없음')}</dd></div>
-      <div><dt>일정 시간</dt><dd>${escapeHtml(it.timeText || '시간 정보 없음')}</dd></div>
-      <div><dt>엑셀 위치</dt><dd>${it.rowNumber}행</dd></div>
-    </dl>
-    ${it.note ? `<p class="place-panel-note">${escapeHtml(it.note)}</p>` : ''}
-    ${place ? `<a class="place-panel-link" href="${escapeHtml(placeUrl(place))}" target="_blank" rel="noopener">구글 지도에서 보기 ↗</a>` : ''}
-    <p class="place-panel-help">검색어 수정, 후보 선택, 주변 추천은 왼쪽 일정의 선택된 장소에서 할 수 있습니다.</p>`;
+  const detail = recDetails.get(place?.id);
+  const data = detail?.data;
+  const photos = data?.photos || [];
+  const hero = photos[0];
+  const photoHtml = (photo) => `<figure><img src="${escapeHtml(photo.url)}" alt="${escapeHtml(it.name)} 사진"><figcaption>${photo.authors.map(a => escapeHtml(a.name)).join(' · ')}</figcaption></figure>`;
+  const html = `<div class="place-hero">${hero ? photoHtml(hero) : `<div class="place-no-photo"><span>⌖</span><small>${detail?.loading ? '장소 사진을 불러오는 중' : '사진 정보가 없습니다'}</small></div>`}</div>
+    <div class="place-content item" data-idx="${it.idx}">
+    <div class="place-panel-kicker">${escapeHtml(it.category || '전체 일정')} · ${Number(it.idx) + 1}번째 장소</div>
+    <h2>${escapeHtml(place?.name || it.name)}</h2>
+    <p class="place-address">⌖ ${escapeHtml(place?.address || it.query)}</p>
+    <p class="place-hours">◷ ${escapeHtml(it.timeText || '일정 시간 미정')}</p>
+    ${data?.rating != null ? `<p class="place-rating">★ ${data.rating} <small>(${Number(data.ratingCount || 0).toLocaleString()}개 평가)</small></p>` : ''}
+    ${data?.hours?.length ? `<details class="place-hours"><summary>영업시간 보기</summary>${data.hours.map(h => `<div>${escapeHtml(h)}</div>`).join('')}</details>` : ''}
+    <div class="place-link-row"><span class="badge">${escapeHtml(STATUS[it.status].label)}</span>${place ? `<a href="${escapeHtml(placeUrl(place))}" target="_blank" rel="noopener">구글 지도에서 보기 ↗</a>` : ''}</div>
+    <div class="place-section-heading">장소 정보</div>
+    <p class="place-description">${escapeHtml(data?.about || it.memo || '선택한 장소의 검색 결과를 확인하고 일정을 수정하세요.')}</p>
+    ${photos.length > 1 ? `<div class="place-gallery">${photos.slice(1).map(photoHtml).join('')}</div>` : ''}
+    ${detail?.error ? `<p class="note">${escapeHtml(detail.error)}</p>` : ''}
+    ${data?.features?.length ? `<p class="place-features">${data.features.map(escapeHtml).join(' · ')}</p>` : ''}
+    <div class="place-section-heading">장소 수정 · 주변 추천</div>
+    ${renderDetail(it)}
+    </div>`;
+  if (els.placePanelBody.dataset.content !== html) {
+    els.placePanelBody.innerHTML = html;
+    els.placePanelBody.dataset.content = html;
+  }
 }
 
 // 분류 열이 날짜 열과 같으면 '날짜별' 화면(요일 탭, 날짜 구분선)으로 보여 준다
@@ -2362,7 +2394,7 @@ function renderDayTabs() {
   const travel = travelOf(legs);
   const count = state.items.filter((it) => catVisible(it.category) && it.place).length;
   const label = `<div class="day-label"><strong>${count}곳</strong>${travel ? ` · 이동 ${formatDuration(travel)}` : ''}</div>`;
-  const html = tab(null, all, '') + cats.map((c) => tab(c, dayInfo(c), state.colors.get(c))).join('') + label;
+  const html = tab(null, all, '') + cats.map((c, i) => tab(c, { ...dayInfo(c), top: `Day ${i + 1}`, main: dayInfo(c).label, text: false }, state.colors.get(c))).join('') + label;
   els.dayTabs.classList.remove('hidden');
   // 탭을 누르는 도중 다시 그려 클릭이 사라지지 않도록, 바뀐 경우에만 다시 그린다
   if (html !== lastTabsHtml) {
@@ -2430,9 +2462,9 @@ function renderItem(it) {
         <strong class="item-name">${escapeHtml(it.name)}</strong>
         <span class="item-meta"><span class="badge ${st.cls}">${st.label}</span><span class="item-sub">${escapeHtml(itemSubline(it))}</span></span>
       </span>
-      <span class="timeline-arrow" aria-hidden="true">↗</span>
+      <span class="timeline-thumb" aria-hidden="true">${recDetails.get(it.place?.id)?.data?.photos?.[0]?.url ? `<img src="${escapeHtml(recDetails.get(it.place.id).data.photos[0].url)}" alt="">` : '⌖'}</span>
     </div>
-    ${selected ? renderDetail(it) : ''}
+
   </li>`;
 }
 
@@ -2497,7 +2529,7 @@ function renderList() {
   const group = groupOf(state.filter);
   // 선택한 항목은 상태가 바뀌어 필터에서 벗어나도 계속 보여 준다 (예: '확인 필요'에서 후보를 고른 직후)
   const visible = state.items.filter((it) => (
-    (group.match(it) || it.idx === state.selected) && catVisible(it.category)
+    (group.match(it) || it.idx === state.selected) && catVisible(it.category) && (!document.getElementById('workspaceSearch').value.trim() || `${it.name} ${it.query} ${it.place?.address || ''}`.toLowerCase().includes(document.getElementById('workspaceSearch').value.trim().toLowerCase()))
   ));
   if (!visible.length) {
     list.innerHTML = `<li class="empty">${state.items.length ? '해당하는 곳이 없습니다' : '표시할 행이 없습니다'}</li>`;
@@ -2614,6 +2646,9 @@ els.mapMode.addEventListener('click', (e) => {
 
 els.fitMap.addEventListener('click', () => mapView?.fitAll());
 els.placePanelClose.addEventListener('click', () => select(null, 'panel'));
+els.placePanelBody.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter' && event.target.matches('.query') && state.selected != null) research(state.items[state.selected], event.target.value.trim());
+});
 
 els.dayTabs.addEventListener('click', (e) => {
   const tab = e.target.closest('.day-tab');
@@ -2671,6 +2706,7 @@ els.mappingFields.addEventListener('change', (e) => {
   if (!key) return;
   state.mapping[key] = Number(e.target.value);
   updateSummary();
+  previewItinerary();
 });
 
 els.commonRegion.addEventListener('input', updateSummary);
@@ -2685,7 +2721,7 @@ els.statusChips.addEventListener('click', (e) => {
   else render();
 });
 
-els.resultList.addEventListener('click', (e) => {
+function handleItineraryClick(e) {
   const legEl = e.target.closest('.leg');
   if (legEl) {
     const rideFixButton = e.target.closest('[data-ride-fix]');
@@ -2731,7 +2767,9 @@ els.resultList.addEventListener('click', (e) => {
       break;
     default:
   }
-});
+}
+els.resultList.addEventListener('click', handleItineraryClick);
+els.placePanelBody.addEventListener('click', handleItineraryClick);
 
 els.resultList.addEventListener('change', (e) => {
   if (!e.target.matches('[data-action="leg-mode"]')) return;
@@ -2930,7 +2968,7 @@ els.clearCache.addEventListener('click', (e) => {
 if (CFG.googleMapsApiKey) {
   // config.js에 키가 있으면 입력칸 대신 안내만
   els.keyForm.classList.add('hidden');
-  els.keyStatus.textContent = 'config.js에 설정된 키를 쓰고 있어요.';
+  els.keyStatus.textContent = '서버 또는 config.js에 설정된 키를 쓰고 있어요.';
 } else {
   els.apiKeyInput.value = storage.get(KEY_STORAGE) || '';
 }
@@ -2940,3 +2978,34 @@ if (typeof XLSX === 'undefined') {
 updateRunButton();
 setupPlanner();
 initMap();
+
+// 지도 작업 화면: 보조 기능은 도구 창에 모으고 일정 목록에 공간을 준다.
+const toolBody = document.getElementById('workspaceToolBody');
+for (const card of [els.plannerCard, els.recsCard, els.budgetCard]) toolBody.append(card);
+els.planCard.before(els.uploadCard);
+els.columnsPanel.after(els.runBtn);
+const routeSummary = document.getElementById('journeySummary');
+routeSummary.after(els.routeCard);
+document.getElementById('workspaceSearch').addEventListener('input', renderList);
+document.getElementById('mapDays').addEventListener('click', (event) => {
+  const button = event.target.closest('[data-workspace-day]');
+  if (button) setDay(button.dataset.workspaceDay || null);
+});
+els.placePanelBody.addEventListener('click', (event) => {
+  if (event.target.closest('[data-action="recs"]')) document.getElementById('workspaceTools').showModal();
+});
+function renderWorkspaceChrome() {
+  const cats = [...state.colors.keys()];
+  const days = document.getElementById('mapDays');
+  days.classList.toggle('hidden', !state.items.length);
+  days.innerHTML = [['', '전체'], ...cats.map((c, i) => [c, `Day ${i + 1}`])].map(([key, label]) => `<button data-workspace-day="${escapeHtml(key)}" class="${(state.day || '') === key ? 'active' : ''}">${label}</button>`).join('');
+  const summary = document.getElementById('journeySummary');
+  summary.classList.toggle('hidden', !state.items.length);
+  const legs = shownLegs();
+  const distance = legs.reduce((n, leg) => n + (leg.route?.distance || 0), 0);
+  const duration = travelOf(legs);
+  summary.innerHTML = `<strong>${state.day ? escapeHtml(dayInfo(state.day).label) : '전체 일정'} 이동 경로</strong><div class="journey-metrics"><div><small>총 이동 거리</small><b>${distance ? formatDistance(distance) : '경로 검색 전'}</b></div><div><small>이동 시간</small><b>${duration ? formatDuration(duration) : '미정'}</b></div><div><small>방문 장소</small><b>${state.items.filter(it => catVisible(it.category)).length}곳</b></div></div>`;
+  const done = state.items.length && state.items.every(it => it.place);
+  document.querySelectorAll('#importSteps > span').forEach((step, i) => step.classList.toggle('done', i < 2 ? !!state.records.length : i === 2 ? !!state.items.length && !state.running && done : !!done));
+  document.body.classList.toggle('has-itinerary', !!state.items.length);
+}

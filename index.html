@@ -53,8 +53,8 @@
 
   <main class="main-content" id="top">
     <header class="topbar">
-      <div class="breadcrumbs"><span>내 워크스페이스</span><span class="crumb-chevron">/</span><strong id="crumbTitle">새 여행 일정</strong></div>
-      <div class="topbar-actions">
+      <a class="workspace-brand" href="#top"><span class="brand-symbol">↗</span>RouteFlow<small>엑셀로 만든 여행 일정이<br>지도로 살아나요</small></a><label class="workspace-search"><span>⌕</span><input id="workspaceSearch" type="search" placeholder="일정 속 장소, 주소 검색" aria-label="일정 속 장소 검색"></label><div class="breadcrumbs"><span>내 워크스페이스</span><span class="crumb-chevron">/</span><strong id="crumbTitle">새 여행 일정</strong></div>
+      <div class="topbar-actions"><button class="secondary-button" type="button" data-open="workspaceTools">여행 도구</button><button class="icon-button" type="button" data-open="settingsDialog" aria-label="설정">⚙</button>
         <button class="sync-status" type="button" id="syncStatus" data-open="settingsDialog"><span class="sync-dot"></span><span id="syncText">지도 연결 전</span></button>
         <button class="secondary-button" type="button" id="exportXlsx" disabled>엑셀 저장</button>
         <button class="export-button" type="button" id="exportKml" disabled>KML 내보내기 <span>↗</span></button>
@@ -100,7 +100,7 @@
               <span class="drop-arrow">↗</span>
             </label>
 
-            <div class="columns-panel hidden" id="columnsPanel">
+            <div class="import-steps" id="importSteps"><span>1<small>업로드</small></span><span>2<small>열 확인</small></span><span>3<small>장소 검색</small></span><span>4<small>지도 완성</small></span></div><div class="columns-panel hidden" id="columnsPanel">
               <button class="panel-toggle" type="button" id="columnsToggle" aria-expanded="true" aria-controls="columnsBody">
                 <span class="section-kicker">COLUMNS</span>
                 <span class="panel-toggle-text" id="columnsSummary">열 맞추기</span>
@@ -223,7 +223,7 @@
                 <button id="fitMap" type="button">전체 보기 <span>⌖</span></button>
               </div>
             </div>
-            <div class="map-canvas">
+            <div id="mapDays" class="map-days hidden" aria-label="지도 날짜 필터"></div><div id="journeySummary" class="journey-summary hidden"></div><div class="map-canvas">
               <div id="map"></div>
               <div class="map-overlay hidden" id="mapPlaceholder"></div>
               <div class="pick-banner hidden" id="pickBanner"><span></span><button type="button" id="pickCancel">취소</button></div>
@@ -245,6 +245,7 @@
   </main>
 </div>
 
+<dialog class="dialog tools-dialog" id="workspaceTools"><form method="dialog"><button class="dialog-x" aria-label="닫기">×</button></form><h2>여행 도구</h2><p class="muted">일정 추천 · 주변 장소 · 하루 예산</p><div id="workspaceToolBody"></div></dialog>
 <dialog class="dialog" id="settingsDialog" aria-labelledby="settingsTitle">
   <form method="dialog"><button class="dialog-x" aria-label="닫기">×</button></form>
   <div class="section-kicker">SETTINGS</div>

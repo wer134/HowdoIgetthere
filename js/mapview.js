@@ -173,8 +173,8 @@ export class MapView {
     if (!entry || !entry.visible) return;
     this.map.panTo(toLiteral(entry.marker.position));
     if (zoomIn && this.map.getZoom() < 15) this.map.setZoom(15);
-    this.info.setContent(html);
-    this.info.open({ map: this.map, anchor: entry.marker, shouldFocus: false });
+    // 일정 장소 정보는 화면 오른쪽 패널에서 표시한다.
+    this.info.close();
   }
 
   closeInfo() {
@@ -195,7 +195,9 @@ export class MapView {
     }
     const bounds = new this.lib.LatLngBounds();
     points.forEach((p) => bounds.extend(p));
-    this.map.fitBounds(bounds, 48);
+    const wide = window.innerWidth > 950;
+    const left = document.querySelector('.left-column')?.getBoundingClientRect().width || 0;
+    this.map.fitBounds(bounds, wide ? { top: 180, bottom: 180, left: left + 40, right: 420 } : 48);
   }
 
   clear() {

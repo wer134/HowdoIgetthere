@@ -384,6 +384,7 @@ export function scoreOnGoogleScale(source, score) {
 /* ── 눌렀을 때 보여 줄 자세한 정보 ── */
 // Place Details Enterprise + Atmosphere(매달 1,000건 무료, 넘으면 1,000건당 $25). 사진은 한 장마다 Place Photo(1,000장 무료, $7)
 const DETAIL_FIELDS = [
+  'rating', 'userRatingCount', 'regularOpeningHours',
   'photos', 'reviews', 'reviewSummary', 'editorialSummary', 'websiteURI', 'nationalPhoneNumber',
   'isReservable', 'hasTakeout', 'hasDineIn', 'hasDelivery', 'servesBreakfast', 'servesLunch', 'servesDinner',
   'servesVegetarianFood', 'paymentOptions', 'isGoodForChildren', 'isGoodForGroups', 'hasOutdoorSeating', 'hasRestroom',
@@ -440,6 +441,9 @@ export function normalizeDetails(p) {
   ].filter(Boolean);
   const summary = p.reviewSummary;
   return {
+    rating: p.rating ?? null,
+    ratingCount: p.userRatingCount ?? null,
+    hours: p.regularOpeningHours?.weekdayDescriptions || [],
     photos: (p.photos || []).slice(0, PHOTOS).map((ph) => ({
       url: typeof ph.getURI === 'function' ? ph.getURI({ maxWidth: 480, maxHeight: 360 }) : '',
       link: ph.googleMapsURI || ph.googleMapsUri || '',
