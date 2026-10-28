@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { planWithAI, planToWorkbook } from '../js/planner.js';
+import { planWithAI, planToWorkbook, listGeminiModels } from '../js/planner.js';
 import { createRequire } from 'node:module';
 globalThis.XLSX = createRequire(import.meta.url)('../vendor/xlsx.full.min.js');
 const req = { region: '부산', days: 1, start: '', interests: [], pace: 'normal', transport: 'transit' };
@@ -62,4 +62,26 @@ test('빈 키와 미지원 제공업체는 요청 전에 거부', async (t) => {
   await assert.rejects(planWithAI(req, { provider: 'other', apiKey: 'test' }), /지원하지/);
   await assert.rejects(planWithAI(req, { provider: 'openai', apiKey: '' }), /API 키/);
   assert.equal(fetch.mock.callCount(), 0);
+});
+
+test('Gemini 모델 목록에서 generateContent 지원 모델만 고른다', async (t) => {
+  t.mock.method(globalThis, 'fetch', async (url, options) => {
+    assert.equal(options.headers['x-goog-api-key'], 'test-key');
+    assert(!String(url).includes('test-key'));
+    return Response.json({ models: [
+      { name: 'models/gemini-working', supportedGenerationMethods: ['generateContent'] },
+      { name: 'models/gemini-embedding', supportedGenerationMethods: ['embedContent'] },
+    ] });
+  });
+  assert.deepEqual(await listGeminiModels('test-key'), ['gemini-working']);
+});
+
+test('Gemini 404는 키를 가리고 Google 상세 오류를 보여 준다', async (t) => {
+  t.mock.method(globalThis, 'fetch', async () => Response.json({ error: { message: 'models/old is not found for API version v1beta. key=test-key' } }, { status: 404 }));
+  await assert.rejects(planWithAI(req, { provider: 'gemini', apiKey: 'test-key' }), (err) => {
+    assert.match(err.message, /models\/old is not found/);
+    assert.match(err.message, /사용 가능한 모델 확인/);
+    assert(!err.message.includes('test-key'));
+    return true;
+  });
 });

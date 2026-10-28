@@ -15,6 +15,26 @@ export const AI_PROVIDERS = {
   openai: { label: 'OpenAI', model: 'gpt-4.1-mini', keyStorage: 'openaiApiKey' },
   gemini: { label: 'Google Gemini', model: 'gemini-2.5-flash', keyStorage: 'geminiApiKey' },
 };
+
+export async function listGeminiModels(apiKey) {
+  if (!apiKey?.trim()) throw new Error('먼저 Gemini API 키를 입력해 주세요.');
+  const models = [];
+  let pageToken = '';
+  for (let page = 0; page < 3; page++) {
+    const url = new URL('https://generativelanguage.googleapis.com/v1beta/models');
+    url.searchParams.set('pageSize', '1000');
+    if (pageToken) url.searchParams.set('pageToken', pageToken);
+    let response;
+    try { response = await fetch(url, { headers: { 'x-goog-api-key': apiKey } }); }
+    catch { throw new Error('Gemini 모델 목록에 연결하지 못했어요. 네트워크를 확인해 주세요.'); }
+    if (!response.ok) throw new Error(`Gemini 모델 목록 오류 (${response.status}): API 키와 Generative Language API 사용 권한을 확인해 주세요.`);
+    const data = await response.json();
+    models.push(...(data.models || []).filter((model) => model.supportedGenerationMethods?.includes('generateContent') && /^models\/gemini-/.test(model.name)).map((model) => model.name.slice('models/'.length)));
+    pageToken = data.nextPageToken;
+    if (!pageToken) break;
+  }
+  return [...new Set(models)];
+}
 // Claude Opus 5.5 요금 (100만 토큰당 달러, 2026년 10월). 화면에 사용료를 어림해 보여 줄 때만 쓴다
 const PRICE = { input: 4, output: 20 };
 const SDK_URL = '../vendor/anthropic-sdk-0.131.0.min.js'; // ES 모듈 (어느 서버에서나 JavaScript로 받도록 .js)
@@ -203,6 +223,7 @@ export async function planWithAI(req, { provider, apiKey, model, onProgress, pre
   if (!config) throw new Error('지원하지 않는 AI 제공업체입니다.');
   if (!apiKey?.trim()) throw new Error(`${config.label} API 키를 설정에서 입력해 주세요.`);
   model = model?.trim() || config.model;
+  if (provider === 'gemini') model = model.replace(/^models\//, '');
   if (provider === 'claude') return planWithClaude(req, { apiKey, model, onProgress, previous, issues });
   let content = requestText(req);
   if (previous) content += `\n\n앞서 짠 일정(JSON):\n${previous}\n\n아래 문제만 고친 전체 일정을 주세요.\n${issues.map(x => `- ${x}`).join('\n')}`;
@@ -225,10 +246,13 @@ export async function planWithAI(req, { provider, apiKey, model, onProgress, pre
     throw new Error(err.name === 'TimeoutError' ? `${config.label} 응답 시간이 초과됐어요. 기간을 줄여 다시 시도해 주세요.` : `${config.label}에 연결하지 못했어요. 네트워크와 브라우저 접근 허용 여부를 확인해 주세요.`);
   }
   if (!response.ok) {
+    const detail = await response.json().catch(() => null);
+    const serviceMessage = String(detail?.error?.message || '').replaceAll(apiKey, '[API 키]').replace(/\?key=[^\s&]+/gi, '?key=[API 키]').slice(0, 400);
     const reason = response.status === 401 || response.status === 403 ? 'API 키와 모델 사용 권한을 확인해 주세요.'
       : response.status === 429 ? '요청 한도 또는 크레딧을 확인해 주세요.'
-      : response.status === 400 || response.status === 404 ? '모델 이름과 구조화 출력 지원 여부를 확인해 주세요.' : '잠시 후 다시 시도해 주세요.';
-    throw new Error(`${config.label} 오류 (${response.status}): ${reason}`);
+      : response.status === 404 && !openai ? '설정에서 ‘사용 가능한 모델 확인’을 눌러 이 키로 제공되는 모델을 선택해 주세요.'
+        : response.status === 400 || response.status === 404 ? '모델 이름과 구조화 출력 지원 여부를 확인해 주세요.' : '잠시 후 다시 시도해 주세요.';
+    throw new Error(`${config.label} 오류 (${response.status}): ${serviceMessage || reason}${serviceMessage ? ` · ${reason}` : ''}`);
   }
   const result = await response.json();
   let raw;

@@ -22,7 +22,7 @@ import {
   CURRENCIES, COUNTRY_CURRENCY, dayCosts, formatMoney, fareClass, mealOf, mostCommon,
 } from './budget.js';
 import {
-  INTERESTS, AI_PROVIDERS, planWithAI, verifyPlan, planWithGoogle, planIssues, planToWorkbook,
+  INTERESTS, AI_PROVIDERS, listGeminiModels, planWithAI, verifyPlan, planWithGoogle, planIssues, planToWorkbook,
 } from './planner.js';
 
 const CFG = {
@@ -59,7 +59,7 @@ const els = Object.fromEntries([
   // 여행 일정 추천
   'plannerCard', 'plannerToggle', 'plannerForm', 'planRegion', 'planStart', 'planDays', 'planStay', 'planTransport', 'planPace',
   'planBudget', 'planBudgetCurrency', 'planInterests', 'planNotes', 'plannerEngine', 'plannerBtn', 'plannerBtnText', 'plannerStatus',
-  'claudeKeyForm', 'claudeKeyInput', 'claudeKeyStatus', 'aiProvider', 'aiModel',
+  'claudeKeyForm', 'claudeKeyInput', 'claudeKeyStatus', 'aiProvider', 'aiModel', 'geminiModels', 'geminiModelList',
   // 주변 추천 · 하루 예산
   'recsCard', 'recsClose', 'recsForm', 'recsQuery', 'recsBody',
   'budgetCard', 'budgetForm', 'budgetAmount', 'budgetCurrency', 'tripCurrency', 'budgetFx', 'budgetDays',
@@ -1397,6 +1397,8 @@ function fillAISettings() {
   els.aiModel.value = selected.model;
   els.claudeKeyInput.value = selected.key;
   els.aiModel.disabled = els.claudeKeyInput.disabled = selected.provider === 'google';
+  els.geminiModels.classList.toggle('hidden', selected.provider !== 'gemini');
+  els.geminiModelList.classList.add('hidden');
 }
 const PLAN_CURRENCIES = ['KRW', 'JPY', 'USD', 'EUR'];
 
@@ -2896,6 +2898,23 @@ els.plannerStatus.addEventListener('click', (e) => {
   }
 });
 els.aiProvider.addEventListener('change', fillAISettings);
+els.geminiModels.addEventListener('click', async () => {
+  els.geminiModels.disabled = true;
+  els.claudeKeyStatus.textContent = 'Gemini 모델 목록을 확인하는 중…';
+  try {
+    const models = await listGeminiModels(els.claudeKeyInput.value.trim());
+    els.geminiModelList.innerHTML = '<option value="">모델 선택</option>' + models.map((model) => `<option value="${escapeHtml(model)}">${escapeHtml(model)}</option>`).join('');
+    els.geminiModelList.classList.toggle('hidden', !models.length);
+    els.claudeKeyStatus.textContent = models.length ? `${models.length}개 모델을 찾았어요. 목록에서 모델을 고른 뒤 저장하세요.` : '이 키로 generateContent를 지원하는 Gemini 모델이 보이지 않아요. 키와 API 설정을 확인해 주세요.';
+  } catch (err) {
+    els.claudeKeyStatus.textContent = err.message;
+  } finally {
+    els.geminiModels.disabled = false;
+  }
+});
+els.geminiModelList.addEventListener('change', () => {
+  if (els.geminiModelList.value) els.aiModel.value = els.geminiModelList.value;
+});
 els.claudeKeyForm.addEventListener('submit', (e) => {
   e.preventDefault();
   const provider = els.aiProvider.value;
