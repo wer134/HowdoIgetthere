@@ -351,6 +351,18 @@ export function typeLabel(place, kind) {
   return TYPE_LABELS[specific] || TYPE_LABELS[ordered.find((t) => TYPE_LABELS[t])] || KINDS[kind]?.label || '';
 }
 
+/** 추천 목록에 보여 줄 짧은 설명. Google 장소 유형만 사용해 근거 없는 소개를 만들지 않는다. */
+export function placeBrief(place, kind = '') {
+  const types = [place.type, ...(place.types || [])].filter(Boolean);
+  const label = typeLabel(place, kind);
+  if (types.some((type) => ['museum', 'art_museum', 'art_gallery', 'history_museum'].includes(type))) return `${label}에서 전시를 둘러볼 수 있어요.`;
+  if (types.some((type) => ['park', 'city_park', 'garden', 'botanical_garden', 'national_park'].includes(type))) return `${label}으로 등록된 야외 장소예요.`;
+  if (types.some((type) => ['shinto_shrine', 'buddhist_temple', 'castle', 'historical_landmark', 'historical_place'].includes(type))) return `${label}으로 등록된 역사·문화 장소예요.`;
+  if (kind === 'food' || types.some((type) => type === 'restaurant' || type.endsWith('_restaurant'))) return `${label && label !== '맛집' ? `${label} 음식점` : '음식점'}으로 등록된 곳이에요.`;
+  if (kind === 'cafe' || types.some((type) => KINDS.cafe.types.includes(type))) return `${label || '카페'}로 등록된 음료·디저트 장소예요.`;
+  return label ? `Google 지도에서 ${label}로 분류한 장소예요.` : 'Google 지도에서 찾은 장소예요.';
+}
+
 /* ── 평점을 더 볼 곳 (일본은 타베로그, 한국은 카카오맵, 그 밖은 구글) ── */
 
 // 타베로그 주소의 도도부현 이름
