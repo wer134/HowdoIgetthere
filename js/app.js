@@ -1628,9 +1628,7 @@ async function loadRecs() {
   Object.assign(recs, { loading: true, error: '', places: null, list: null, focus: null, open: null, more: false });
   mapView?.clearRecs();
   render();
-  const country = countryAt(anchor);
-  // 일본 가게는 일본어 이름이라야 타베로그에서 찾을 수 있고 간판과도 맞는다
-  const language = country === 'JP' ? 'ja' : country === 'KR' ? 'ko' : CFG.language;
+  const language = CFG.language;
   try {
     const places = await findNearby({ center: latLng(anchor), kind, keyword, language, region: CFG.region });
     if (state.recs !== recs || recs.kind !== kind || recs.keyword !== keyword) return; // 그사이 다른 것을 골랐다
@@ -1715,7 +1713,20 @@ function focusRec(id, from) {
 const recDetails = new Map();
 const photoStates = new Map();
 const photoQueue = [];
+const failedPhotoUrls = new Set();
 let activePhotoRequests = 0;
+
+const hasJapaneseText = (value) => /[\p{Script=Hiragana}\p{Script=Katakana}]/u.test(value || '');
+const hasJapaneseName = (value) => /[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}]/u.test(value || '');
+function placeDisplayName(it) {
+  const id = it.place?.id;
+  const localized = photoStates.get(id)?.photo?.name || recDetails.get(id)?.data?.name;
+  return localized && hasJapaneseName(it.name) ? localized : it.name;
+}
+function placeDisplayAddress(it) {
+  const id = it.place?.id;
+  return photoStates.get(id)?.photo?.address || recDetails.get(id)?.data?.address || it.place?.address || it.query;
+}
 
 function queuePlacePhotos(items) {
   if (mapState !== 'ready') return;
@@ -1723,7 +1734,7 @@ function queuePlacePhotos(items) {
     const id = it.place?.id;
     if (!id || photoStates.has(id) || recDetails.get(id)?.data?.photos?.[0]?.url) continue;
     photoStates.set(id, { loading: true });
-    photoQueue.push({ id, language: it.language });
+    photoQueue.push({ id, language: CFG.language });
   }
   drainPhotoQueue();
 }
@@ -1735,7 +1746,9 @@ function drainPhotoQueue() {
     placePhoto(id, language).then((photo) => {
       photoStates.set(id, { photo });
     }).catch((err) => {
-      photoStates.set(id, { error: err?.message || '사진을 불러오지 못했어요' });
+      const why = classifyError(err);
+      photoStates.set(id, { error: why === 'fatal' ? '사진 요청이 거부됐어요. Places API (New), API 키 제한과 결제 설정을 확인해 주세요.'
+        : why === 'rate' ? '사진 요청 한도를 넘었어요.' : '사진 정보를 불러오지 못했어요.' });
     }).finally(() => {
       activePhotoRequests--;
       scheduleRender();
@@ -1743,6 +1756,21 @@ function drainPhotoQueue() {
     });
   }
 }
+
+function handlePhotoLoadError(event) {
+  const image = event.target;
+  const id = image?.dataset?.photoId;
+  if (!id) return;
+  failedPhotoUrls.add(image.getAttribute('src'));
+  const state = photoStates.get(id) || {};
+  const [next, ...alternates] = state.photo?.alternates || [];
+  photoStates.set(id, next ? { photo: { ...state.photo, ...next, alternates } }
+    : { ...state, error: '사진 이미지를 열 수 없어요. 브라우저 네트워크 또는 Google Places 사진 사용 권한을 확인해 주세요.' });
+  scheduleRender();
+}
+els.resultList.addEventListener('error', handlePhotoLoadError, true);
+els.placePanelBody.addEventListener('error', handlePhotoLoadError, true);
+els.recsBody.addEventListener('error', handlePhotoLoadError, true);
 
 async function loadDetails(p) {
   const known = recDetails.get(p.id);
@@ -1779,11 +1807,11 @@ function recDetailHtml(p, recs) {
   if (loading) more = '<p class="rd-status">사진·리뷰를 불러오는 중…</p>';
   else if (error) more = `<p class="rd-status warn">${escapeHtml(error)}</p>`;
   else if (data) {
-    const photos = data.photos.filter((ph) => ph.url);
+    const photos = data.photos.filter((ph) => ph.url && !failedPhotoUrls.has(ph.url));
     const authors = [...new Map(photos.flatMap((ph) => ph.authors).filter((a) => a.name).map((a) => [a.name, a])).values()];
     const credit = (a) => (a.uri ? `<a href="${escapeHtml(a.uri)}" target="_blank" rel="noopener">${escapeHtml(a.name)}</a>` : escapeHtml(a.name));
     more = [
-      photos.length ? `<div class="rd-photos">${photos.map((ph) => `<a href="${escapeHtml(ph.link || googleUrl(p))}" target="_blank" rel="noopener"><img src="${escapeHtml(ph.url)}" alt="${escapeHtml(p.name)} 사진" loading="lazy"></a>`).join('')}</div>` : '',
+      photos.length ? `<div class="rd-photos">${photos.map((ph) => `<a href="${escapeHtml(ph.link || googleUrl(p))}" target="_blank" rel="noopener"><img src="${escapeHtml(ph.url)}" data-photo-id="${escapeHtml(p.id)}" alt="${escapeHtml(p.name)} 사진" loading="lazy"></a>`).join('')}</div>` : '',
       data.about ? `<p class="rd-about">${escapeHtml(data.about)}</p>` : '',
       data.features.length ? `<div class="rd-features">${data.features.map((f) => `<span>${escapeHtml(f)}</span>`).join('')}</div>` : '',
       data.reviewSummary?.text ? `<div class="rd-block"><div class="rd-label">리뷰 요약 <small>${escapeHtml(data.reviewSummary.disclosure)}</small></div><p class="rd-summary">${escapeHtml(data.reviewSummary.text)}</p></div>` : '',
@@ -2383,21 +2411,24 @@ function renderPlacePanel() {
   const place = it.place;
   const detail = recDetails.get(place?.id);
   const data = detail?.data;
-  const photos = (data?.photos || []).filter((photo) => photo.url);
-  if (!photos.length && photoStates.get(place?.id)?.photo?.url) photos.push(photoStates.get(place.id).photo);
+  const photoState = photoStates.get(place?.id);
+  const photos = (data?.photos || []).filter((photo) => photo.url && !failedPhotoUrls.has(photo.url));
+  if (!photos.length && photoState?.photo?.url && !failedPhotoUrls.has(photoState.photo.url)) photos.push(photoState.photo);
   const hero = photos[0];
-  const photoHtml = (photo) => `<figure><img src="${escapeHtml(photo.url)}" alt="${escapeHtml(it.name)} 사진"><figcaption>${(photo.authors || []).map(a => escapeHtml(a.name)).join(' · ')}</figcaption></figure>`;
-  const html = `<div class="place-hero">${hero ? photoHtml(hero) : `<div class="place-no-photo"><span>⌖</span><small>${detail?.loading ? '장소 사진을 불러오는 중' : '사진 정보가 없습니다'}</small></div>`}</div>
+  const photoHtml = (photo) => `<figure><img src="${escapeHtml(photo.url)}" data-photo-id="${escapeHtml(place?.id || '')}" alt="${escapeHtml(placeDisplayName(it))} 사진"><figcaption>${(photo.authors || []).map(a => escapeHtml(a.name)).join(' · ')}</figcaption></figure>`;
+  const noPhoto = photoState?.error || (photoState?.loading || detail?.loading ? '장소 사진을 불러오는 중' : photoState ? 'Google에 공개된 사진이 없습니다' : '사진 정보를 확인하는 중');
+  const description = data?.about && !hasJapaneseText(data.about) ? data.about : it.memo && !hasJapaneseText(it.memo) ? it.memo : '한국어 장소 설명이 제공되지 않았어요. 구글 지도에서 자세한 정보를 확인해 주세요.';
+  const html = `<div class="place-hero">${hero ? photoHtml(hero) : `<div class="place-no-photo"><span>⌖</span><small>${escapeHtml(noPhoto)}</small>${place ? `<a href="${escapeHtml(placeUrl(place))}" target="_blank" rel="noopener">Google 지도에서 사진 보기 ↗</a>` : ''}</div>`}</div>
     <div class="place-content item" data-idx="${it.idx}">
     <div class="place-panel-kicker">${escapeHtml(it.category || '전체 일정')} · ${Number(it.idx) + 1}번째 장소</div>
-    <h2>${escapeHtml(place?.name || it.name)}</h2>
-    <p class="place-address">⌖ ${escapeHtml(place?.address || it.query)}</p>
+    <h2>${escapeHtml(placeDisplayName(it))}</h2>
+    <p class="place-address">⌖ ${escapeHtml(placeDisplayAddress(it))}</p>
     <p class="place-hours">◷ ${escapeHtml(it.timeText || '일정 시간 미정')}</p>
     ${data?.rating != null ? `<p class="place-rating">★ ${data.rating} <small>(${Number(data.ratingCount || 0).toLocaleString()}개 평가)</small></p>` : ''}
     ${data?.hours?.length ? `<details class="place-hours"><summary>영업시간 보기</summary>${data.hours.map(h => `<div>${escapeHtml(h)}</div>`).join('')}</details>` : ''}
     <div class="place-link-row"><span class="badge">${escapeHtml(STATUS[it.status].label)}</span>${place ? `<a href="${escapeHtml(placeUrl(place))}" target="_blank" rel="noopener">구글 지도에서 보기 ↗</a>` : ''}</div>
     <div class="place-section-heading">장소 정보</div>
-    <p class="place-description">${escapeHtml(data?.about || it.memo || '선택한 장소의 검색 결과를 확인하고 일정을 수정하세요.')}</p>
+    <p class="place-description">${escapeHtml(description)}</p>
     ${photos.length > 1 ? `<div class="place-gallery">${photos.slice(1).map(photoHtml).join('')}</div>` : ''}
     ${detail?.error ? `<p class="note">${escapeHtml(detail.error)}</p>` : ''}
     ${data?.features?.length ? `<p class="place-features">${data.features.map(escapeHtml).join(' · ')}</p>` : ''}
@@ -2511,7 +2542,7 @@ const placeNumber = (it) => String(it.idx + 1).padStart(2, '0');
 function renderItem(it) {
   const st = STATUS[it.status];
   const selected = state.selected === it.idx;
-  const photo = recDetails.get(it.place?.id)?.data?.photos?.find((p) => p.url)
+  const photo = recDetails.get(it.place?.id)?.data?.photos?.find((p) => p.url && !failedPhotoUrls.has(p.url))
     || photoStates.get(it.place?.id)?.photo;
   const start = parseTimeRange(it.timeText).start;
   const time = start != null ? `${pad2(Math.floor(start / 60))}:${pad2(start % 60)}` : '';
@@ -2520,11 +2551,11 @@ function renderItem(it) {
       <span class="timeline-time">${time}</span>
       <span class="timeline-rail"><span class="num timeline-node" style="--c:${colorOf(it)}">${placeNumber(it)}</span></span>
       <span class="timeline-copy">
-        <strong class="item-name">${escapeHtml(it.name)}</strong>
+        <strong class="item-name">${escapeHtml(placeDisplayName(it))}</strong>
         <span class="item-meta"><span class="badge ${st.cls}">${st.label}</span><span class="item-sub">${escapeHtml(itemSubline(it))}</span></span>
         <span class="schedule-actions"><button type="button" data-action="edit" aria-label="${escapeHtml(it.name)} 수정">수정</button><button type="button" data-action="delete" aria-label="${escapeHtml(it.name)} 삭제">삭제</button></span>
       </span>
-      <span class="timeline-thumb" aria-hidden="true">${photo?.url ? `<img src="${escapeHtml(photo.url)}" alt="">` : '⌖'}</span>
+      <span class="timeline-thumb" aria-hidden="true">${photo?.url && !failedPhotoUrls.has(photo.url) ? `<img src="${escapeHtml(photo.url)}" data-photo-id="${escapeHtml(it.place?.id || '')}" alt="">` : '⌖'}</span>
     </div>
 
   </li>`;
@@ -3284,8 +3315,7 @@ async function loadScheduleRecommendations() {
       if (!center) throw new Error(`“${region}” 지역을 찾지 못했어요. 지역을 더 자세히 입력해 주세요.`);
     }
     if (!center) throw new Error('기준 장소가 없어요. 지역 칸에 도시나 동네를 입력해 주세요.');
-    const country = countryAt(center);
-    const language = country === 'JP' ? 'ja' : country === 'KR' ? 'ko' : CFG.language;
+    const language = CFG.language;
     const nearby = await findNearby({ center, kind, language, region: CFG.region });
     if (searchId !== scheduleSearchId || !scheduleDialog.open) return;
     const places = kind === 'sights' ? dropParts(nearby) : nearby;
@@ -3312,7 +3342,7 @@ async function searchSchedulePlace() {
   try {
     const editingItem = editingRecord ? state.items.find((it) => it.cells === editingRecord.cells) : null;
     const center = editingItem?.place ? latLng(editingItem.place) : null;
-    const places = await searchText({ query, center, language: languageFor(query, CFG.language), region: CFG.region, max: 10 });
+    const places = await searchText({ query, center, language: CFG.language, region: CFG.region, max: 10 });
     if (searchId !== scheduleSearchId || !scheduleDialog.open) return;
     showSchedulePlaces(places, `Google 지도 검색: “${query}”`);
   } catch (err) {

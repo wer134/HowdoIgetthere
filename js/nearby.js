@@ -392,7 +392,7 @@ export function scoreOnGoogleScale(source, score) {
 /* ── 눌렀을 때 보여 줄 자세한 정보 ── */
 // Place Details Enterprise + Atmosphere(매달 1,000건 무료, 넘으면 1,000건당 $25). 사진은 한 장마다 Place Photo(1,000장 무료, $7)
 const DETAIL_FIELDS = [
-  'rating', 'userRatingCount', 'regularOpeningHours',
+  'displayName', 'formattedAddress', 'rating', 'userRatingCount', 'regularOpeningHours',
   'photos', 'reviews', 'reviewSummary', 'editorialSummary', 'websiteURI', 'nationalPhoneNumber',
   'isReservable', 'hasTakeout', 'hasDineIn', 'hasDelivery', 'servesBreakfast', 'servesLunch', 'servesDinner',
   'servesVegetarianFood', 'paymentOptions', 'isGoodForChildren', 'isGoodForGroups', 'hasOutdoorSeating', 'hasRestroom',
@@ -405,12 +405,18 @@ const details = new Map(); // 장소 ID|언어 → Promise (이 페이지를 연
 export async function placePhoto(id, language) {
   const { Place } = await google.maps.importLibrary('places');
   const place = new Place({ id, requestedLanguage: language });
-  await withRetry(() => place.fetchFields({ fields: ['photos'] }));
-  const photo = place.photos?.[0];
-  if (!photo || typeof photo.getURI !== 'function') return null;
-  return {
-    url: photo.getURI({ maxWidth: 480, maxHeight: 360 }),
+  await withRetry(() => place.fetchFields({ fields: ['displayName', 'formattedAddress', 'photos'] }));
+  const photos = (place.photos || []).map((photo) => ({
+    url: typeof photo.getURI === 'function' ? photo.getURI({ maxWidth: 480, maxHeight: 360 })
+      : typeof photo.getUrl === 'function' ? photo.getUrl({ maxWidth: 480, maxHeight: 360 }) : photo.url || '',
     authors: (photo.authorAttributions || []).map((author) => ({ name: author.displayName || '', uri: author.uri || '' })),
+  })).filter((photo) => photo.url);
+  return {
+    url: photos[0]?.url || '',
+    authors: photos[0]?.authors || [],
+    alternates: photos.slice(1),
+    name: typeof place.displayName === 'string' ? place.displayName : place.displayName?.text || '',
+    address: place.formattedAddress || '',
   };
 }
 
@@ -433,6 +439,7 @@ async function fetchDetails(id, language) {
 }
 
 const textOf = (v) => (v == null ? '' : typeof v === 'string' ? v : v.text || '');
+const koreanDescription = (value) => /[\p{Script=Hiragana}\p{Script=Katakana}]/u.test(value) ? '' : value;
 const flag = (p, jsName, restName) => p[jsName] ?? p[restName] ?? null;
 
 // [JS 이름, REST 이름, 그렇다, 아니다(보여 줄 때만)]
@@ -462,11 +469,14 @@ export function normalizeDetails(p) {
   ].filter(Boolean);
   const summary = p.reviewSummary;
   return {
+    name: textOf(p.displayName),
+    address: p.formattedAddress || '',
     rating: p.rating ?? null,
     ratingCount: p.userRatingCount ?? null,
     hours: p.regularOpeningHours?.weekdayDescriptions || [],
     photos: (p.photos || []).slice(0, PHOTOS).map((ph) => ({
-      url: typeof ph.getURI === 'function' ? ph.getURI({ maxWidth: 480, maxHeight: 360 }) : '',
+      url: typeof ph.getURI === 'function' ? ph.getURI({ maxWidth: 480, maxHeight: 360 })
+        : typeof ph.getUrl === 'function' ? ph.getUrl({ maxWidth: 480, maxHeight: 360 }) : ph.url || '',
       link: ph.googleMapsURI || ph.googleMapsUri || '',
       authors: (ph.authorAttributions || []).map((a) => ({ name: a.displayName || '', uri: a.uri || '' })),
     })),
@@ -475,12 +485,12 @@ export function normalizeDetails(p) {
       when: r.relativePublishTimeDescription || '',
       author: r.authorAttribution?.displayName || '',
       authorUri: r.authorAttribution?.uri || '',
-      text: textOf(r.text) || textOf(r.originalText),
+      text: koreanDescription(textOf(r.text) || textOf(r.originalText)),
       link: r.googleMapsURI || r.googleMapsUri || '',
     })).filter((r) => r.text),
-    about: textOf(p.editorialSummary),
+    about: koreanDescription(textOf(p.editorialSummary)),
     reviewSummary: summary ? {
-      text: textOf(summary.text),
+      text: koreanDescription(textOf(summary.text)),
       disclosure: textOf(summary.disclosureText) || 'Gemini로 요약됨',
       uri: summary.reviewsURI || summary.reviewsUri || '',
     } : null,
