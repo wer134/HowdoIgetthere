@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#202928">
   <title>RouteFlow · 여행 동선 지도</title>
   <link rel="icon" href="data:,">
@@ -246,6 +246,14 @@
 </div>
 
 <dialog class="dialog tools-dialog" id="workspaceTools"><form method="dialog"><button class="dialog-x" aria-label="닫기">×</button></form><h2>여행 도구</h2><p class="muted">일정 추천 · 주변 장소 · 하루 예산</p><div id="workspaceToolBody"></div></dialog>
+<nav class="mobile-workspace-nav" aria-label="모바일 작업 메뉴">
+  <button type="button" data-mobile-view="itinerary" aria-pressed="true">☷<span>일정</span></button>
+  <button type="button" data-mobile-view="map" aria-pressed="false">⌖<span>지도</span></button>
+  <button type="button" data-open="workspaceTools">✦<span>여행 도구</span></button>
+  <button type="button" id="mobileSave">↓<span>저장</span></button>
+  <button type="button" data-open="settingsDialog">⚙<span>설정</span></button>
+</nav>
+<dialog class="dialog" id="mobileExportDialog"><form method="dialog"><button class="dialog-x" aria-label="닫기">×</button></form><h2>일정 내보내기</h2><p>현재 일정의 장소와 좌표를 파일로 저장합니다.</p><div class="mobile-export-actions"><button type="button" id="mobileExportXlsx" class="primary-button">엑셀 저장</button><button type="button" id="mobileExportKml" class="secondary-button">KML 저장</button></div><p class="muted">엑셀은 일정을 불러온 뒤, KML은 지도에 장소를 표시한 뒤 저장할 수 있습니다.</p></dialog>
 <dialog class="dialog" id="settingsDialog" aria-labelledby="settingsTitle">
   <form method="dialog"><button class="dialog-x" aria-label="닫기">×</button></form>
   <div class="section-kicker">SETTINGS</div>

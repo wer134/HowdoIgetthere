@@ -643,6 +643,7 @@ function placeManually(idx, lat, lng) {
 }
 
 function startPick(it) {
+  if (window.innerWidth <= 950) { els.placePanel.classList.add('hidden'); setMobileView('map'); }
   if (!mapView) return;
   els.pickBanner.querySelector('span').textContent = `「${it.name}」의 위치를 지도에서 클릭하세요`;
   els.pickBanner.classList.remove('hidden');
@@ -3033,4 +3034,24 @@ function renderWorkspaceChrome() {
   const done = state.items.length && state.items.every(it => it.place);
   document.querySelectorAll('#importSteps > span').forEach((step, i) => step.classList.toggle('done', i < 2 ? !!state.records.length : i === 2 ? !!state.items.length && !state.running && done : !!done));
   document.body.classList.toggle('has-itinerary', !!state.items.length);
+}
+
+// 모바일에서는 지도를 유지한 채 일정 패널을 전환한다.
+function setMobileView(view) {
+  document.body.dataset.mobileView = view;
+  document.querySelectorAll('[data-mobile-view]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.mobileView === view)));
+  if (view === 'map') requestAnimationFrame(() => mapView?.fitAll());
+}
+setMobileView('itinerary');
+document.querySelector('.mobile-workspace-nav').addEventListener('click', event => {
+  const button = event.target.closest('[data-mobile-view]');
+  if (button) { select(null, 'mobile'); setMobileView(button.dataset.mobileView); }
+});
+document.getElementById('mobileSave').addEventListener('click', () => {
+  document.getElementById('mobileExportXlsx').disabled = els.exportXlsx.disabled;
+  document.getElementById('mobileExportKml').disabled = els.exportKml.disabled;
+  document.getElementById('mobileExportDialog').showModal();
+});
+for (const [mobile, original] of [['mobileExportXlsx', els.exportXlsx], ['mobileExportKml', els.exportKml]]) {
+  document.getElementById(mobile).addEventListener('click', () => { if (!original.disabled) original.click(); });
 }
