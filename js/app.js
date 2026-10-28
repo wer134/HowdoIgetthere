@@ -287,6 +287,7 @@ function loadSheet(name) {
   state.records = records;
   state.startCol = startCol;
   state.planEdits = [];
+  state.scheduleChanged = false;
   state.openRide = null;
   state.picks = new Map();
   state.budgetOpen = null;
@@ -1298,6 +1299,11 @@ function editedRows() {
 
 // 원래 파일에 고친 칸만 바꿔 쓴 사본을 내려받는다 (.xlsx는 서식 그대로)
 function saveEditedPlan() {
+  if (state.scheduleChanged) {
+    exportXlsx();
+    showToast('추가·삭제·수정한 모든 일정을 새 엑셀로 저장했어요.');
+    return;
+  }
   const rows = editedRows();
   if (!rows.length || !state.fileBuffer) return;
   const out = writeEditedWorkbook({
@@ -2514,6 +2520,7 @@ function renderItem(it) {
       <span class="timeline-copy">
         <strong class="item-name">${escapeHtml(it.name)}</strong>
         <span class="item-meta"><span class="badge ${st.cls}">${st.label}</span><span class="item-sub">${escapeHtml(itemSubline(it))}</span></span>
+        <span class="schedule-actions"><button type="button" data-action="edit" aria-label="${escapeHtml(it.name)} 수정">수정</button><button type="button" data-action="delete" aria-label="${escapeHtml(it.name)} 삭제">삭제</button></span>
       </span>
       <span class="timeline-thumb" aria-hidden="true">${photo?.url ? `<img src="${escapeHtml(photo.url)}" alt="">` : '⌖'}</span>
     </div>
@@ -2554,6 +2561,7 @@ function renderDetail(it) {
       <input class="query" value="${escapeHtml(it.query)}" aria-label="검색어" spellcheck="false">
       <button type="button" class="secondary-button" data-action="research">다시 검색</button>
     </div>
+    <div class="detail-actions"><button type="button" class="secondary-button" data-action="edit">일정 수정</button><button type="button" class="secondary-button" data-action="delete">일정 삭제</button></div>
     <div class="detail-actions">
       ${it.status === 'check' ? '<button type="button" class="secondary-button" data-action="confirm">이 위치가 맞아요</button>' : ''}
       <button type="button" class="secondary-button" data-action="pick">지도에서 직접 찍기</button>
@@ -2800,6 +2808,8 @@ function handleItineraryClick(e) {
     return;
   }
   switch (actionEl.dataset.action) {
+    case 'edit': openScheduleEditor(it); break;
+    case 'delete': deleteScheduleItem(it); break;
     case 'candidate':
       it.place = it.candidates[Number(actionEl.dataset.ci)];
       it.status = 'confirmed';
@@ -3095,3 +3105,99 @@ document.getElementById('mobileSave').addEventListener('click', () => {
 for (const [mobile, original] of [['mobileExportXlsx', els.exportXlsx], ['mobileExportKml', els.exportKml]]) {
   document.getElementById(mobile).addEventListener('click', () => { if (!original.disabled) original.click(); });
 }
+
+/* ───────────── 일정 추가·수정·삭제 ───────────── */
+let editingRecord = null;
+const scheduleDialog = document.getElementById('scheduleDialog');
+const scheduleFields = {
+  name: document.getElementById('scheduleName'),
+  date: document.getElementById('scheduleDate'),
+  time: document.getElementById('scheduleTime'),
+  region: document.getElementById('scheduleRegion'),
+  memo: document.getElementById('scheduleMemo'),
+};
+
+function openScheduleEditor(it = null) {
+  if (!state.workbook || state.mapping.name < 0) {
+    showToast('먼저 일정 파일을 올리고 장소 열을 연결해 주세요.');
+    return;
+  }
+  editingRecord = it ? state.records[it.recordIndex] : null;
+  document.getElementById('scheduleTitle').textContent = it ? '일정 수정' : '일정 추가';
+  scheduleFields.name.value = it?.name || '';
+  scheduleFields.date.value = it?.day || (state.day ?? state.items.at(-1)?.day ?? '');
+  scheduleFields.time.value = it?.timeText || '';
+  scheduleFields.region.value = it && state.mapping.region >= 0 ? cellText(it.cells[state.mapping.region]) : '';
+  scheduleFields.memo.value = it?.memo || '';
+  scheduleDialog.showModal();
+  scheduleFields.name.focus();
+}
+
+function rebuildEditedSchedule(changedRecord = null) {
+  state.scheduleChanged = true;
+  const previous = new Map(state.items.map((it) => [it.cells, it]));
+  state.items = buildItems().items;
+  for (const it of state.items) {
+    const old = previous.get(it.cells);
+    if (old && it.cells !== changedRecord) {
+      it.place = old.place;
+      it.status = old.status;
+      it.candidates = old.candidates;
+      it.note = old.note;
+    } else if (old && it.name === old.name) {
+      it.place = old.place;
+      it.status = old.status;
+      it.candidates = old.candidates;
+      it.note = old.note;
+    }
+  }
+  state.selected = null;
+  state.selectedLeg = null;
+  state.legs = [];
+  state.routesRequested = false;
+  state.legModes.clear();
+  state.planEdits = [];
+  mapView?.clear();
+  assignColors();
+  if (state.day != null && !state.colors.has(state.day)) state.day = null;
+  for (const it of state.items) if (it.place) placeMarker(it);
+  if (mapView) { buildLegs(); drawLegs(); mapView.fitAll(); }
+  rendered.clear();
+  els.resultList.replaceChildren();
+  updateSummary();
+  render();
+  const changed = state.items.find((it) => it.cells === changedRecord);
+  if (changed && !changed.place && mapState === 'ready') research(changed, changed.query);
+}
+
+function deleteScheduleItem(it) {
+  if (!confirm(`“${it.name}” 일정을 삭제할까요? 변경한 일정은 엑셀 저장으로 내려받을 수 있습니다.`)) return;
+  state.records.splice(it.recordIndex, 1);
+  rebuildEditedSchedule();
+  showToast('일정을 삭제했어요. 엑셀 저장으로 변경 내용을 보관하세요.');
+}
+
+document.getElementById('scheduleAdd').addEventListener('click', () => openScheduleEditor());
+document.getElementById('scheduleForm').addEventListener('submit', (event) => {
+  event.preventDefault();
+  const name = scheduleFields.name.value.trim();
+  if (!name) { scheduleFields.name.focus(); return; }
+  const m = state.mapping;
+  const record = editingRecord || { rowNumber: Math.max(1, ...state.records.map((r) => r.rowNumber)) + 1, cells: [] };
+  const oldName = m.name >= 0 ? cellText(record.cells[m.name]) : '';
+  for (const [field, col] of [['name', m.name], ['date', m.date], ['region', m.region], ['time', m.time], ['memo', m.memo]]) {
+    if (col >= 0) record.cells[col] = { t: 's', v: scheduleFields[field].value.trim() };
+  }
+  if (m.category >= 0 && m.category !== m.date) record.cells[m.category] = { t: 's', v: scheduleFields.date.value.trim() };
+  if (editingRecord && oldName !== name) {
+    for (const col of [m.lat, m.lng, ...Object.values(state.resultCols)]) if (col >= 0) record.cells[col] = null;
+  }
+  if (!editingRecord) {
+    const insertAt = state.selected == null ? state.records.length : state.items[state.selected].recordIndex + 1;
+    state.records.splice(insertAt, 0, record);
+  }
+  scheduleDialog.close();
+  editingRecord = null;
+  rebuildEditedSchedule(record.cells);
+  showToast('일정을 반영했어요. 엑셀 저장으로 변경 내용을 보관하세요.');
+});

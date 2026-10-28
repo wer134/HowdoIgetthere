@@ -197,6 +197,7 @@
               <div class="step-heading"><span class="step-number">02</span><div><div class="section-kicker">YOUR PLAN</div><h2>일정 둘러보기</h2></div></div>
               <div class="plan-summary" id="planSummary"></div>
             </div>
+            <button class="schedule-add" id="scheduleAdd" type="button">＋ 일정 추가</button>
             <div class="progress"><div class="progress-bar" id="progressBar"></div></div>
             <p class="progress-text" id="progressText"></p>
             <p class="alert hidden" id="runAlert"></p>
@@ -259,6 +260,19 @@
   <button type="button" data-open="settingsDialog">⚙<span>설정</span></button>
 </nav>
 <dialog class="dialog" id="mobileExportDialog"><form method="dialog"><button class="dialog-x" aria-label="닫기">×</button></form><h2>일정 내보내기</h2><p>현재 일정의 장소와 좌표를 파일로 저장합니다.</p><div class="mobile-export-actions"><button type="button" id="mobileExportXlsx" class="primary-button">엑셀 저장</button><button type="button" id="mobileExportKml" class="secondary-button">KML 저장</button></div><p class="muted">엑셀은 일정을 불러온 뒤, KML은 지도에 장소를 표시한 뒤 저장할 수 있습니다.</p></dialog>
+<dialog class="dialog" id="scheduleDialog" aria-labelledby="scheduleTitle">
+  <form method="dialog"><button class="dialog-x" aria-label="닫기">×</button></form>
+  <h2 id="scheduleTitle">일정 추가</h2>
+  <form id="scheduleForm" class="schedule-form">
+    <label>장소 이름 <input id="scheduleName" required placeholder="예: 해운대해수욕장"></label>
+    <label>날짜 또는 분류 <input id="scheduleDate" placeholder="예: 12/5 (토)"></label>
+    <label>시간 <input id="scheduleTime" placeholder="예: 10:00–11:00"></label>
+    <label>지역 <input id="scheduleRegion" placeholder="예: 부산 해운대구"></label>
+    <label>메모 <textarea id="scheduleMemo" rows="3"></textarea></label>
+    <button type="submit" class="primary-button">일정 저장</button>
+  </form>
+  <p class="muted">변경한 일정은 ‘엑셀 저장’으로 내려받으세요. 장소 검색은 Google Maps 연결 후 진행됩니다.</p>
+</dialog>
 <dialog class="dialog" id="settingsDialog" aria-labelledby="settingsTitle">
   <form method="dialog"><button class="dialog-x" aria-label="닫기">×</button></form>
   <div class="section-kicker">SETTINGS</div>

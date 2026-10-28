@@ -1169,3 +1169,11 @@ html,body {height:100%;overflow:hidden;background:#eef3f7}
 .place-open .map-zoom {right:430px}
 @media (max-width:1250px) { .place-open .map-zoom {right:340px} }
 @media (max-width:950px) { .map-zoom,.place-open .map-zoom {right:12px;bottom:12px}.map-zoom button {width:44px;height:44px;min-height:44px}.map-zoom input {height:102px} }
+.schedule-add {display:block;width:100%;min-height:44px;margin:8px 0 12px;border:1px dashed #0755f5;border-radius:11px;background:#edf4ff;color:#0755f5;font-weight:700}
+.schedule-actions {display:flex;gap:9px;margin-top:5px}
+.schedule-actions button {border:0;background:none;color:#0755f5;padding:4px 0;font-size:11px;min-height:28px}
+.schedule-actions button:last-child {color:#b64b49}
+.schedule-form {display:grid;gap:12px;margin:18px 0}
+.schedule-form label {display:grid;gap:5px;font-size:12px;font-weight:700}
+.schedule-form input,.schedule-form textarea {width:100%;padding:10px;border:1px solid var(--line-strong);border-radius:9px;background:var(--card)}
+@media (max-width:950px) {.schedule-actions button {min-height:42px;padding:5px 9px}.schedule-form input,.schedule-form textarea {font-size:16px}}
