@@ -15,7 +15,7 @@ import {
 } from './plan.js';
 import { writeEditedWorkbook } from './xlsxedit.js';
 import {
-  KINDS, countryAt, findNearby, searchText, placeTypes, rankPlaces, dropParts, withoutBars, nowAt, priceOf, levelSigns, typeLabel, ratingSource, googleUrl, scoreOnGoogleScale,
+  KINDS, countryAt, findNearby, searchText, placeTypes, closestPlaceAt, rankPlaces, dropParts, withoutBars, nowAt, priceOf, levelSigns, typeLabel, ratingSource, googleUrl, scoreOnGoogleScale,
   placeDetails, placePhoto, weekHours, walkUrl,
 } from './nearby.js';
 import {
@@ -119,6 +119,7 @@ const state = {
   // 여행 일정 추천: { running, engine, step, progress, error, result: { plan, req, raw, cost, engine, model, buffer, fileName } }
   planner: { running: false, engine: '', step: '', progress: null, error: '', result: null },
 };
+const resolvedPlaces = new WeakMap(); // 좌표만 있는 엑셀 행에서 찾은 Google 장소 (이 페이지를 연 동안만)
 
 let mapView = null;
 let mapState = 'none'; // none | loading | ready | error
@@ -403,13 +404,14 @@ function buildItems() {
     };
     if (coords) {
       // 이 앱이 저장한 엑셀이면 검색 결과 열에서 이름·주소·링크도 되살린다
+      const resolved = resolvedPlaces.get(cells);
       item.status = 'given';
       item.place = {
         ...coords,
-        id: get(cells, rc.placeId),
-        name: get(cells, rc.name),
-        address: get(cells, rc.address),
-        url: get(cells, rc.url),
+        id: get(cells, rc.placeId) || resolved?.id || '',
+        name: get(cells, rc.name) || resolved?.name || '',
+        address: get(cells, rc.address) || resolved?.address || '',
+        url: get(cells, rc.url) || resolved?.url || '',
       };
     }
     items.push(item);
@@ -1713,6 +1715,7 @@ function focusRec(id, from) {
 const recDetails = new Map();
 const photoStates = new Map();
 const photoQueue = [];
+const unresolvedPhotoStates = new WeakMap();
 const failedPhotoUrls = new Set();
 let activePhotoRequests = 0;
 
@@ -1730,30 +1733,69 @@ function placeDisplayAddress(it) {
 
 function queuePlacePhotos(items) {
   if (mapState !== 'ready') return;
-  for (const it of items) {
+  for (const it of [...items].sort((a, b) => Number(b.idx === state.selected) - Number(a.idx === state.selected))) {
+    if (!it.place) continue;
     const id = it.place?.id;
-    if (!id || photoStates.has(id) || recDetails.get(id)?.data?.photos?.[0]?.url) continue;
-    photoStates.set(id, { loading: true });
-    photoQueue.push({ id, language: CFG.language });
+    if (id) {
+      if (photoStates.has(id) || recDetails.get(id)?.data?.photos?.[0]?.url) continue;
+      photoStates.set(id, { loading: true });
+    } else {
+      if (unresolvedPhotoStates.has(it.cells)) continue;
+      unresolvedPhotoStates.set(it.cells, { loading: true });
+    }
+    photoQueue.push(it);
   }
   drainPhotoQueue();
 }
 
 function drainPhotoQueue() {
   while (activePhotoRequests < 3 && photoQueue.length) {
-    const { id, language } = photoQueue.shift();
+    const it = photoQueue.shift();
     activePhotoRequests++;
-    placePhoto(id, language).then((photo) => {
-      photoStates.set(id, { photo });
-    }).catch((err) => {
-      const why = classifyError(err);
-      photoStates.set(id, { error: why === 'fatal' ? '사진 요청이 거부됐어요. Places API (New), API 키 제한과 결제 설정을 확인해 주세요.'
-        : why === 'rate' ? '사진 요청 한도를 넘었어요.' : '사진 정보를 불러오지 못했어요.' });
-    }).finally(() => {
+    loadQueuedPhoto(it).finally(() => {
       activePhotoRequests--;
       scheduleRender();
       drainPhotoQueue();
     });
+  }
+}
+
+async function loadQueuedPhoto(it) {
+  const originalPlace = it.place;
+  let id = originalPlace?.id;
+  if (!id) {
+    try {
+      const candidates = await searchPlaces(it.query || it.name, { language: CFG.language, region: CFG.region });
+      if (!state.items.includes(it) || it.place !== originalPlace) {
+        unresolvedPhotoStates.delete(it.cells);
+        return;
+      }
+      const matched = closestPlaceAt(candidates, originalPlace);
+      if (!matched) {
+        unresolvedPhotoStates.set(it.cells, { error: '이 좌표와 일치하는 Google 장소를 찾지 못했어요. 일정 수정에서 장소를 검색해 선택해 주세요.' });
+        return;
+      }
+      id = matched.id;
+      Object.assign(originalPlace, { id, name: matched.name, address: matched.address, url: matched.url });
+      resolvedPlaces.set(it.cells, { id, name: matched.name, address: matched.address, url: matched.url });
+      unresolvedPhotoStates.delete(it.cells);
+      if (state.items[state.selected] === it) loadDetails(originalPlace);
+      if (photoStates.has(id)) return;
+      photoStates.set(id, { loading: true });
+    } catch (err) {
+      const why = classifyError(err);
+      unresolvedPhotoStates.set(it.cells, { error: why === 'fatal' ? '사진용 장소 검색이 거부됐어요. Places API (New)와 결제 설정을 확인해 주세요.'
+        : why === 'rate' ? '사진용 장소 검색 요청 한도를 넘었어요.' : '사진용 Google 장소를 찾지 못했어요.' });
+      return;
+    }
+  }
+  try {
+    const photo = await placePhoto(id, CFG.language);
+    photoStates.set(id, { photo });
+  } catch (err) {
+    const why = classifyError(err);
+    photoStates.set(id, { error: why === 'fatal' ? '사진 요청이 거부됐어요. Places API (New), API 키 제한과 결제 설정을 확인해 주세요.'
+      : why === 'rate' ? '사진 요청 한도를 넘었어요.' : '사진 정보를 불러오지 못했어요.' });
   }
 }
 
@@ -2411,7 +2453,7 @@ function renderPlacePanel() {
   const place = it.place;
   const detail = recDetails.get(place?.id);
   const data = detail?.data;
-  const photoState = photoStates.get(place?.id);
+  const photoState = place?.id ? photoStates.get(place.id) : unresolvedPhotoStates.get(it.cells);
   const photos = (data?.photos || []).filter((photo) => photo.url && !failedPhotoUrls.has(photo.url));
   if (!photos.length && photoState?.photo?.url && !failedPhotoUrls.has(photoState.photo.url)) photos.push(photoState.photo);
   const hero = photos[0];

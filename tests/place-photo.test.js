@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { placePhoto, placeTypes, normalizeDetails } from '../js/nearby.js';
+import { placePhoto, placeTypes, normalizeDetails, closestPlaceAt } from '../js/nearby.js';
 
 test('사진만 요청하고 첫 사진과 출처를 반환한다', async (t) => {
   const requested = [];
@@ -62,4 +62,12 @@ test('한국어 요청에도 일본어로 온 장소 설명은 화면에서 제�
   });
   assert.equal(detail.about, '');
   assert.deepEqual(detail.reviews.map((review) => review.text), ['한국어 후기입니다']);
+});
+
+test('좌표만 있는 일정에는 가까운 Google 장소 ID만 붙인다', () => {
+  const center = { lat: 33.5198, lng: 130.5353 };
+  const far = { id: 'far', lat: 33.53, lng: 130.54 };
+  const near = { id: 'near', lat: 33.5199, lng: 130.5354 };
+  assert.equal(closestPlaceAt([far, near], center)?.id, 'near');
+  assert.equal(closestPlaceAt([far], center), null);
 });

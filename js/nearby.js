@@ -135,6 +135,12 @@ export function searchText({ query, center = null, radius = 20000, type = '', la
   return results.get(key);
 }
 
+/** 좌표만 저장된 일정에 Google 장소 ID를 붙일 때 가까운 검색 결과만 사용한다. */
+export function closestPlaceAt(candidates, center, maxMeters = 150) {
+  return candidates.filter((place) => place.id && distanceMeters(center, place) <= maxMeters)
+    .sort((a, b) => distanceMeters(center, a) - distanceMeters(center, b))[0] || null;
+}
+
 /** 저장된 장소의 Google 유형을 읽어 수정 화면의 추천 종류를 정한다. */
 export async function placeTypes(id) {
   const { Place } = await google.maps.importLibrary('places');
