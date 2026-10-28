@@ -135,6 +135,14 @@ export function searchText({ query, center = null, radius = 20000, type = '', la
   return results.get(key);
 }
 
+/** 저장된 장소의 Google 유형을 읽어 수정 화면의 추천 종류를 정한다. */
+export async function placeTypes(id) {
+  const { Place } = await google.maps.importLibrary('places');
+  const place = new Place({ id });
+  await withRetry(() => place.fetchFields({ fields: ['primaryType', 'types'] }));
+  return [place.primaryType, ...(place.types || [])].filter(Boolean);
+}
+
 const num = (v) => (v == null || v === '' ? null : Number(v));
 const money = (m) => (m ? { amount: num(m.units) ?? 0, currency: m.currencyCode || '' } : null);
 

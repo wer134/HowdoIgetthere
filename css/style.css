@@ -1182,14 +1182,19 @@ html,body {height:100%;overflow:hidden;background:#eef3f7}
 .schedule-recommend-controls {display:flex;gap:8px;margin-top:10px}
 .schedule-recommend-controls select {flex:1;min-width:0}
 .schedule-recommend-controls button {flex:2;min-height:42px}
+.schedule-recommend-search {display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.schedule-recommend-search input {min-width:0;flex:1}
+.schedule-recommend-search button {min-width:70px}
 .schedule-recommend-results {font-size:12px;line-height:1.5;color:var(--text-soft)}
 .schedule-recommend-results:not(:empty) {margin-top:12px}
 .schedule-recommend-caption {margin:0 0 7px}
 .schedule-recommend-list {display:grid;gap:5px;max-height:230px;overflow:auto}
-.schedule-recommend-item {display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:9px;text-align:left;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--text);cursor:pointer}
-.schedule-recommend-item:hover:not(:disabled),.schedule-recommend-item.selected {border-color:#0755f5;background:#edf4ff}
-.schedule-recommend-item:disabled {opacity:.55;cursor:default}
-.schedule-recommend-item span:first-child {display:grid;gap:2px;min-width:0}
+.schedule-recommend-item {display:flex;align-items:center;gap:5px;width:100%;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--text)}
+.schedule-recommend-item:hover,.schedule-recommend-item.selected {border-color:#0755f5;background:#edf4ff}
+.schedule-recommend-item button {display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0;flex:1;padding:9px;text-align:left;border:0;background:none;color:inherit;cursor:pointer}
+.schedule-recommend-item button:disabled {opacity:.55;cursor:default}
+.schedule-recommend-item a {flex:none;padding:9px;color:#0755f5;text-decoration:none;font-size:11px;font-weight:700}
+.schedule-recommend-item button span:first-child {display:grid;gap:2px;min-width:0}
 .schedule-recommend-item b,.schedule-recommend-item small {overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .schedule-recommend-item small {color:var(--muted)}
 .schedule-recommend-rating {flex:none;color:#0755f5;font-size:11px}

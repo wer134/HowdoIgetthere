@@ -15,7 +15,7 @@ import {
 } from './plan.js';
 import { writeEditedWorkbook } from './xlsxedit.js';
 import {
-  KINDS, countryAt, findNearby, searchText, rankPlaces, dropParts, withoutBars, nowAt, priceOf, levelSigns, typeLabel, ratingSource, googleUrl, scoreOnGoogleScale,
+  KINDS, countryAt, findNearby, searchText, placeTypes, rankPlaces, dropParts, withoutBars, nowAt, priceOf, levelSigns, typeLabel, ratingSource, googleUrl, scoreOnGoogleScale,
   placeDetails, placePhoto, weekHours, walkUrl,
 } from './nearby.js';
 import {
@@ -3128,10 +3128,11 @@ for (const [mobile, original] of [['mobileExportXlsx', els.exportXlsx], ['mobile
 /* ───────────── 일정 추가·수정·삭제 ───────────── */
 let editingRecord = null;
 const scheduleDialog = document.getElementById('scheduleDialog');
-const scheduleRecommend = document.getElementById('scheduleRecommend');
 const scheduleRecommendKind = document.getElementById('scheduleRecommendKind');
 const scheduleRecommendButton = document.getElementById('scheduleRecommendButton');
 const scheduleRecommendResults = document.getElementById('scheduleRecommendResults');
+const schedulePlaceQuery = document.getElementById('schedulePlaceQuery');
+const schedulePlaceSearch = document.getElementById('schedulePlaceSearch');
 let scheduleRecommendations = [];
 let selectedSchedulePlace = null;
 let scheduleSearchId = 0;
@@ -3143,6 +3144,14 @@ const scheduleFields = {
   memo: document.getElementById('scheduleMemo'),
 };
 
+function scheduleKind(types, name = '') {
+  const names = types.map((type) => String(type).toLowerCase());
+  if (names.some((type) => KINDS.cafe.types.includes(type)) || /카페|커피|coffee|cafe|디저트|베이커리|찻집/i.test(name)) return 'cafe';
+  if (names.some((type) => type === 'restaurant' || type.endsWith('_restaurant') || ['food', 'meal_takeaway', 'meal_delivery'].includes(type))
+    || /식당|맛집|레스토랑|restaurant|라멘|스시|국밥|고깃집|횟집/i.test(name)) return 'food';
+  return 'sights';
+}
+
 function openScheduleEditor(it = null) {
   if (!state.workbook || state.mapping.name < 0) {
     showToast('먼저 일정 파일을 올리고 장소 열을 연결해 주세요.');
@@ -3152,9 +3161,11 @@ function openScheduleEditor(it = null) {
   scheduleSearchId++;
   scheduleRecommendations = [];
   selectedSchedulePlace = null;
-  scheduleRecommend.classList.toggle('hidden', !!it);
   scheduleRecommendResults.replaceChildren();
   scheduleRecommendButton.disabled = false;
+  schedulePlaceSearch.disabled = false;
+  schedulePlaceQuery.value = '';
+  scheduleRecommendKind.value = scheduleKind(it?.place?.types || (it?.place?.type ? [it.place.type] : []), it?.name || '');
   document.getElementById('scheduleTitle').textContent = it ? '일정 수정' : '일정 추가';
   scheduleFields.name.value = it?.name || '';
   scheduleFields.date.value = it?.day || (state.day ?? state.items.at(-1)?.day ?? '');
@@ -3163,6 +3174,22 @@ function openScheduleEditor(it = null) {
   scheduleFields.memo.value = it?.memo || '';
   scheduleDialog.showModal();
   scheduleFields.name.focus();
+  if (it) {
+    const openId = scheduleSearchId;
+    if (mapState !== 'ready') {
+      scheduleRecommendResults.textContent = '추천과 장소 검색을 사용하려면 먼저 Google Maps를 연결해 주세요.';
+    } else if (it.place?.id && !it.place.type && !it.place.types) {
+      scheduleRecommendResults.textContent = '장소 종류를 확인하는 중…';
+      placeTypes(it.place.id).then((types) => {
+        if (openId !== scheduleSearchId || !scheduleDialog.open) return;
+        scheduleRecommendKind.value = scheduleKind(types, it.name);
+      }).catch(() => {}).finally(() => {
+        if (openId === scheduleSearchId && scheduleDialog.open) loadScheduleRecommendations();
+      });
+    } else {
+      loadScheduleRecommendations();
+    }
+  }
 }
 
 function rebuildEditedSchedule(changedRecord = null, pickedPlace = null) {
@@ -3171,7 +3198,7 @@ function rebuildEditedSchedule(changedRecord = null, pickedPlace = null) {
   state.items = buildItems().items;
   for (const it of state.items) {
     if (pickedPlace && it.cells === changedRecord) {
-      it.place = { id: pickedPlace.id, name: pickedPlace.name, address: pickedPlace.address, url: pickedPlace.url, lat: pickedPlace.lat, lng: pickedPlace.lng };
+      it.place = { id: pickedPlace.id, name: pickedPlace.name, address: pickedPlace.address, url: pickedPlace.url, lat: pickedPlace.lat, lng: pickedPlace.lng, type: pickedPlace.type, types: pickedPlace.types };
       it.status = 'confirmed';
       it.candidates = [];
       it.note = '추천 장소에서 선택';
@@ -3217,21 +3244,39 @@ function deleteScheduleItem(it) {
 }
 
 document.getElementById('scheduleAdd').addEventListener('click', () => openScheduleEditor());
-scheduleRecommendButton.addEventListener('click', async () => {
+function showSchedulePlaces(places, caption) {
+  scheduleRecommendations = places;
+  scheduleRecommendResults.innerHTML = places.length
+    ? `<p class="schedule-recommend-caption">${escapeHtml(caption)} · 장소를 고르면 입력칸에 채워져요.</p><div class="schedule-recommend-list">${places.map((place, i) => {
+      const planned = plannedItem(place);
+      const alreadyPlanned = planned && planned.cells !== editingRecord?.cells;
+      return `<div class="schedule-recommend-item${selectedSchedulePlace?.id === place.id ? ' selected' : ''}"><button type="button" data-schedule-pick="${i}"${alreadyPlanned ? ' disabled' : ''}><span><b>${escapeHtml(place.name)}</b><small>${escapeHtml(place.address || (place.walk != null ? `${place.walk}분 거리` : '주소 정보 없음'))}</small></span><span class="schedule-recommend-rating">${alreadyPlanned ? '일정에 있음' : place.rating != null ? `★ ${place.rating.toFixed(1)} · ${place.count.toLocaleString()}` : '선택'}</span></button><a href="${escapeHtml(googleUrl(place))}" target="_blank" rel="noopener" aria-label="${escapeHtml(place.name)} Google 지도에서 보기">지도 ↗</a></div>`;
+    }).join('')}</div>`
+    : '장소를 찾지 못했어요. 지역이나 검색어를 바꿔 보세요.';
+}
+
+function scheduleSearchError(err) {
+  const why = classifyError(err);
+  scheduleRecommendResults.textContent = why === 'fatal' ? '장소 검색이 거부됐어요. 설정에서 Places API (New)와 API 키 제한을 확인해 주세요.'
+    : why === 'rate' ? '검색 요청 한도를 넘었어요. 잠시 후 다시 시도해 주세요.' : err?.message || String(err);
+}
+
+async function loadScheduleRecommendations() {
   if (mapState !== 'ready') {
     scheduleRecommendResults.textContent = '먼저 설정에서 Google Maps API 키를 저장하고 지도를 연결해 주세요.';
     return;
   }
   const searchId = ++scheduleSearchId;
   const kind = scheduleRecommendKind.value;
-  scheduleRecommendButton.disabled = true;
+  scheduleRecommendButton.disabled = schedulePlaceSearch.disabled = true;
   scheduleRecommendResults.textContent = '추천 장소를 찾는 중…';
   try {
     const day = scheduleFields.date.value.trim();
+    const editingItem = editingRecord ? state.items.find((it) => it.cells === editingRecord.cells) : null;
     const sameDay = state.items.filter((it) => it.place && it.day === day);
     const selected = state.items[state.selected];
-    const anchor = selected?.place && selected.day === day ? selected : sameDay.at(-1);
-    const region = scheduleFields.region.value.trim() || (!anchor ? els.commonRegion.value.trim() : '');
+    const anchor = editingItem?.place ? editingItem : selected?.place && selected.day === day ? selected : sameDay.at(-1);
+    const region = editingItem?.place ? '' : scheduleFields.region.value.trim() || (!anchor ? els.commonRegion.value.trim() : '');
     let center = anchor ? latLng(anchor.place) : null;
     if (region) {
       const matches = await searchText({ query: region, language: CFG.language, region: CFG.region, max: 1 });
@@ -3244,21 +3289,42 @@ scheduleRecommendButton.addEventListener('click', async () => {
     const nearby = await findNearby({ center, kind, language, region: CFG.region });
     if (searchId !== scheduleSearchId || !scheduleDialog.open) return;
     const places = kind === 'sights' ? dropParts(nearby) : nearby;
-    scheduleRecommendations = rankPlaces(places, { center, kind }).slice(0, 10);
-    scheduleRecommendResults.innerHTML = scheduleRecommendations.length
-      ? `<p class="schedule-recommend-caption">${escapeHtml(region || anchor?.name || '선택한 날짜')} 주변 추천 · 장소를 누르면 입력칸에 채워져요.</p><div class="schedule-recommend-list">${scheduleRecommendations.map((place, i) => {
-        const planned = plannedItem(place);
-        return `<button type="button" class="schedule-recommend-item" data-schedule-pick="${i}"${planned ? ' disabled' : ''}><span><b>${escapeHtml(place.name)}</b><small>${escapeHtml(place.address || `${place.walk}분 거리`)}</small></span><span class="schedule-recommend-rating">${planned ? '일정에 있음' : place.rating != null ? `★ ${place.rating.toFixed(1)} · ${place.count.toLocaleString()}` : `${place.walk}분 거리`}</span></button>`;
-      }).join('')}</div>`
-      : '이 주변에서 추천할 장소를 찾지 못했어요. 다른 지역이나 종류를 선택해 보세요.';
+    showSchedulePlaces(rankPlaces(places, { center, kind }).slice(0, 10), `${region || anchor?.name || '선택한 날짜'} 주변 ${KINDS[kind].label} 추천`);
   } catch (err) {
     if (searchId !== scheduleSearchId || !scheduleDialog.open) return;
-    const why = classifyError(err);
-    scheduleRecommendResults.textContent = why === 'fatal' ? '장소 검색이 거부됐어요. 설정에서 Places API (New)와 API 키 제한을 확인해 주세요.'
-      : why === 'rate' ? '검색 요청 한도를 넘었어요. 잠시 후 다시 시도해 주세요.' : err?.message || String(err);
+    scheduleSearchError(err);
   } finally {
-    if (searchId === scheduleSearchId) scheduleRecommendButton.disabled = false;
+    if (searchId === scheduleSearchId) scheduleRecommendButton.disabled = schedulePlaceSearch.disabled = false;
   }
+}
+scheduleRecommendButton.addEventListener('click', loadScheduleRecommendations);
+scheduleRecommendKind.addEventListener('change', loadScheduleRecommendations);
+async function searchSchedulePlace() {
+  const query = schedulePlaceQuery.value.trim();
+  if (!query) { schedulePlaceQuery.focus(); return; }
+  if (mapState !== 'ready') {
+    scheduleRecommendResults.textContent = '먼저 설정에서 Google Maps API 키를 저장하고 지도를 연결해 주세요.';
+    return;
+  }
+  const searchId = ++scheduleSearchId;
+  scheduleRecommendButton.disabled = schedulePlaceSearch.disabled = true;
+  scheduleRecommendResults.textContent = 'Google 지도에서 장소를 찾는 중…';
+  try {
+    const editingItem = editingRecord ? state.items.find((it) => it.cells === editingRecord.cells) : null;
+    const center = editingItem?.place ? latLng(editingItem.place) : null;
+    const places = await searchText({ query, center, language: languageFor(query, CFG.language), region: CFG.region, max: 10 });
+    if (searchId !== scheduleSearchId || !scheduleDialog.open) return;
+    showSchedulePlaces(places, `Google 지도 검색: “${query}”`);
+  } catch (err) {
+    if (searchId !== scheduleSearchId || !scheduleDialog.open) return;
+    scheduleSearchError(err);
+  } finally {
+    if (searchId === scheduleSearchId) scheduleRecommendButton.disabled = schedulePlaceSearch.disabled = false;
+  }
+}
+schedulePlaceSearch.addEventListener('click', searchSchedulePlace);
+schedulePlaceQuery.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter') { event.preventDefault(); searchSchedulePlace(); }
 });
 scheduleRecommendResults.addEventListener('click', (event) => {
   const button = event.target.closest('[data-schedule-pick]');
@@ -3268,7 +3334,7 @@ scheduleRecommendResults.addEventListener('click', (event) => {
   selectedSchedulePlace = place;
   scheduleFields.name.value = place.name;
   if (!scheduleFields.region.value.trim()) scheduleFields.region.value = place.address || '';
-  scheduleRecommendResults.querySelectorAll('[data-schedule-pick]').forEach((choice) => choice.classList.toggle('selected', choice === button));
+  scheduleRecommendResults.querySelectorAll('.schedule-recommend-item').forEach((choice) => choice.classList.toggle('selected', choice.contains(button)));
   scheduleFields.time.focus();
 });
 scheduleFields.name.addEventListener('input', () => {
@@ -3288,6 +3354,11 @@ document.getElementById('scheduleForm').addEventListener('submit', (event) => {
   if (m.category >= 0 && m.category !== m.date) record.cells[m.category] = { t: 's', v: scheduleFields.date.value.trim() };
   if (editingRecord && oldName !== name) {
     for (const col of [m.lat, m.lng, ...Object.values(state.resultCols)]) if (col >= 0) record.cells[col] = null;
+  }
+  if (pickedPlace) {
+    if (m.address >= 0) record.cells[m.address] = { t: 's', v: pickedPlace.address || '' };
+    if (m.lat >= 0) record.cells[m.lat] = { t: 'n', v: pickedPlace.lat };
+    if (m.lng >= 0) record.cells[m.lng] = { t: 'n', v: pickedPlace.lng };
   }
   if (!editingRecord) {
     const insertAt = state.selected == null ? state.records.length : state.items[state.selected].recordIndex + 1;
