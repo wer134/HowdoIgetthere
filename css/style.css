@@ -1108,3 +1108,5 @@ html,body {height:100%;overflow:hidden;background:#eef3f7}
 /* 일정 정보의 읽기 크기 */
 .item-name {font-size:14px}.item-sub {font-size:11px}.timeline-time {font-size:12px}.day-tab strong {font-size:11px}.place-address,.place-hours,.place-description,.place-features {font-size:13px}.place-rating {color:#f5a623;font-size:18px;font-weight:700}.place-rating small {color:#778297;font-size:12px;font-weight:400}
 @media (max-width:700px) { .topbar-actions button[data-open="workspaceTools"] {display:block;font-size:10px;padding:7px} .workspace-brand {font-size:19px} }
+
+.ai-settings-form { display:grid; grid-template-columns:1fr; gap:8px; margin:16px 0; }.ai-settings-form label {font-size:12px;font-weight:700}.ai-settings-form input,.ai-settings-form select {width:100%;padding:10px;border:1px solid var(--line-strong);border-radius:9px;background:var(--card)}.ai-settings-form button {justify-self:end;margin-top:4px}

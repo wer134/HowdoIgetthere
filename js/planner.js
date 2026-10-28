@@ -1,6 +1,6 @@
 /* global XLSX */
 // 여행 일정 추천: 나라·지역·날짜·관심사로 일정표를 만들어 앱에 바로 올린다.
-// Claude API 키가 있으면 Claude가 도시 배분·동선·시각을 짜고, 앱이 장소마다 구글 지도에서 찾아 위치와 그날 영업 여부를 확인한다.
+// 선택한 AI가 도시 배분·동선·시각을 짜고, 앱이 장소마다 구글 지도에서 찾아 위치와 그날 영업 여부를 확인한다.
 // 키가 없으면 구글 지도 데이터만으로 지역의 인기 장소를 가까운 곳끼리 날짜별로 묶는다 (도시 하나 며칠에 맞다)
 import { searchPlaces, languageFor, classifyError } from './places.js';
 import { searchText, openState, dropParts, bayes, walkMinutes, typeLabel } from './nearby.js';
@@ -10,6 +10,11 @@ import { normalizeText, similarity } from './util.js';
 import { formatMoney } from './budget.js';
 
 export const CLAUDE_MODEL = 'claude-opus-5-5';
+export const AI_PROVIDERS = {
+  claude: { label: 'Claude', model: CLAUDE_MODEL, keyStorage: 'anthropicApiKey' },
+  openai: { label: 'OpenAI', model: 'gpt-4.1-mini', keyStorage: 'openaiApiKey' },
+  gemini: { label: 'Google Gemini', model: 'gemini-2.5-flash', keyStorage: 'geminiApiKey' },
+};
 // Claude Opus 5.5 요금 (100만 토큰당 달러, 2026년 10월). 화면에 사용료를 어림해 보여 줄 때만 쓴다
 const PRICE = { input: 4, output: 20 };
 const SDK_URL = '../vendor/anthropic-sdk-0.131.0.min.js'; // ES 모듈 (어느 서버에서나 JavaScript로 받도록 .js)
@@ -152,7 +157,7 @@ function claudeError(err, Anthropic) {
  * @param {(p: {chars: number, days: number}) => void} onProgress 받는 동안 글자 수·쓰고 있는 날
  * @returns {Promise<{plan, raw: string, cost: number, model: string}>}
  */
-export async function planWithClaude(req, { apiKey, onProgress, previous = null, issues = [] }) {
+export async function planWithClaude(req, { apiKey, onProgress, previous = null, issues = [], model = CLAUDE_MODEL }) {
   const { Anthropic, client } = await claude(apiKey);
   let content = requestText(req);
   if (previous) {
@@ -161,7 +166,7 @@ export async function planWithClaude(req, { apiKey, onProgress, previous = null,
   let text = '';
   try {
     const stream = client.beta.messages.stream({
-      model: CLAUDE_MODEL,
+      model,
       max_tokens: 64000,
       // 안전 분류기가 거절하면 서버가 알맞은 모델로 다시 돌린다
       betas: ['server-side-fallback-2026-07-01'],
@@ -185,11 +190,65 @@ export async function planWithClaude(req, { apiKey, onProgress, previous = null,
       throw new Error('Claude가 보낸 일정을 읽지 못했어요. 다시 시도해 주세요.');
     }
     const usage = message.usage || {};
-    const cost = ((usage.input_tokens || 0) * PRICE.input + (usage.output_tokens || 0) * PRICE.output) / 1e6;
-    return { plan: tidyPlan(plan, req), raw, cost, model: message.model || CLAUDE_MODEL };
+    const cost = model === CLAUDE_MODEL ? ((usage.input_tokens || 0) * PRICE.input + (usage.output_tokens || 0) * PRICE.output) / 1e6 : null;
+    return { plan: tidyPlan(plan, req), raw, cost, model: message.model || model };
   } catch (err) {
     throw claudeError(err, Anthropic);
   }
+}
+
+// 제공업체 응답을 같은 일정 형식으로 변환한다. 키는 요청 헤더에만 넣는다.
+export async function planWithAI(req, { provider, apiKey, model, onProgress, previous = null, issues = [] }) {
+  const config = AI_PROVIDERS[provider];
+  if (!config) throw new Error('지원하지 않는 AI 제공업체입니다.');
+  if (!apiKey?.trim()) throw new Error(`${config.label} API 키를 설정에서 입력해 주세요.`);
+  model = model?.trim() || config.model;
+  if (provider === 'claude') return planWithClaude(req, { apiKey, model, onProgress, previous, issues });
+  let content = requestText(req);
+  if (previous) content += `\n\n앞서 짠 일정(JSON):\n${previous}\n\n아래 문제만 고친 전체 일정을 주세요.\n${issues.map(x => `- ${x}`).join('\n')}`;
+  const openai = provider === 'openai';
+  const url = openai ? 'https://api.openai.com/v1/responses'
+    : `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+  const headers = { 'Content-Type': 'application/json', ...(openai ? { Authorization: `Bearer ${apiKey}` } : { 'x-goog-api-key': apiKey }) };
+  const body = openai ? {
+    model, instructions: SYSTEM, input: content, max_output_tokens: 16000,
+    text: { format: { type: 'json_schema', name: 'travel_plan', strict: true, schema: PLAN_SCHEMA } },
+  } : {
+    systemInstruction: { parts: [{ text: SYSTEM }] },
+    contents: [{ role: 'user', parts: [{ text: content }] }],
+    generationConfig: { maxOutputTokens: 16000, responseMimeType: 'application/json', responseJsonSchema: PLAN_SCHEMA },
+  };
+  let response;
+  try {
+    response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body), signal: AbortSignal.timeout(180000) });
+  } catch (err) {
+    throw new Error(err.name === 'TimeoutError' ? `${config.label} 응답 시간이 초과됐어요. 기간을 줄여 다시 시도해 주세요.` : `${config.label}에 연결하지 못했어요. 네트워크와 브라우저 접근 허용 여부를 확인해 주세요.`);
+  }
+  if (!response.ok) {
+    const reason = response.status === 401 || response.status === 403 ? 'API 키와 모델 사용 권한을 확인해 주세요.'
+      : response.status === 429 ? '요청 한도 또는 크레딧을 확인해 주세요.'
+      : response.status === 400 || response.status === 404 ? '모델 이름과 구조화 출력 지원 여부를 확인해 주세요.' : '잠시 후 다시 시도해 주세요.';
+    throw new Error(`${config.label} 오류 (${response.status}): ${reason}`);
+  }
+  const result = await response.json();
+  let raw;
+  if (openai) {
+    if (result.status !== 'completed') throw new Error('OpenAI 응답이 완료되지 않았어요. 일정 기간을 줄여 다시 시도해 주세요.');
+    const blocks = (result.output || []).flatMap(x => x.content || []);
+    if (blocks.some(x => x.type === 'refusal')) throw new Error('OpenAI가 요청을 거절했어요. 요청 내용을 바꿔 주세요.');
+    raw = blocks.filter(x => x.type === 'output_text').map(x => x.text).join('');
+  } else {
+    const candidate = result.candidates?.[0];
+    if (candidate?.finishReason !== 'STOP') throw new Error('Gemini 응답이 완료되지 않았어요. 요청 내용이나 일정 기간을 바꿔 주세요.');
+    raw = (candidate.content?.parts || []).filter(x => !x.thought).map(x => x.text || '').join('');
+  }
+  let plan;
+  try { plan = JSON.parse(raw); } catch { throw new Error(`${config.label}가 보낸 일정을 읽지 못했어요. 다시 시도해 주세요.`); }
+  if (!plan || typeof plan.title !== 'string' || typeof plan.summary !== 'string' || !Array.isArray(plan.tips) || plan.tips.some(x => typeof x !== 'string') || !Array.isArray(plan.days) || !plan.days.length || plan.days.some(d => !d || !Array.isArray(d.items) || d.items.some(i => !i || typeof i.title !== 'string'))) {
+    throw new Error(`${config.label}가 보낸 일정 형식이 올바르지 않아요. 다시 시도해 주세요.`);
+  }
+  onProgress?.({ chars: raw.length, days: plan.days.length });
+  return { plan: tidyPlan(plan, req), raw, cost: null, model: result.model || result.modelVersion || model };
 }
 
 // 받은 일정을 앱이 다루기 좋게 다듬는다: 빈 값·잘못된 시각·날짜를 바로잡는다
@@ -288,7 +347,7 @@ export function planIssues(plan) {
   })));
 }
 
-/* ── 구글 지도 데이터만으로 짜기 (Claude 키가 없을 때) ── */
+/* ── AI 없이 구글 지도 데이터만으로 짜기 ── */
 
 // 들르는 곳 종류별 머무는 시간(분)
 const STAY_MIN = {
@@ -355,7 +414,7 @@ export async function planWithGoogle(req, { language: fallbackLang = 'ko', onPro
     title: `${req.region} ${req.days}일 추천 일정`,
     summary: `${req.region} 둘레에서 구글 평점과 리뷰 수가 높은 곳 ${picked.length}곳을 골라, 가까운 곳끼리 ${req.days}일로 묶었어요. 끼니는 빈 자리로 두었으니 하루 예산의 맛집 추천으로 고르세요.`,
     tips: [
-      'Claude API 키를 설정에 넣으면 도시 배분·교통 패스·휴관일까지 고려해 짜요. 지금은 구글 지도 데이터만으로 짰어요.',
+      'AI 제공업체와 API 키를 설정에 넣으면 도시 배분·교통 패스·휴관일까지 고려해 짜요. 지금은 구글 지도 데이터만으로 짰어요.',
       '이동 시간은 거리로 어림했어요. 경로 찾기를 누르면 구글 경로로 다시 확인해요.',
       ...(stay ? [] : ['숙소를 적으면 그곳에서 출발·복귀하도록 짜요.']),
       ...(pool.length < picked.length + 3 ? ['지역이 좁거나 장소가 적어 같은 곳 둘레가 많을 수 있어요.'] : []),
@@ -589,7 +648,7 @@ export function planToRows(plan) {
 
 /** 일정표(첫 시트)와 요약(둘째 시트)이 든 .xlsx */
 export function planToWorkbook(plan, req, engine) {
-  const by = engine === 'claude' ? 'Claude 초안 · 구글 지도로 확인' : '구글 지도 평점으로 추천';
+  const by = AI_PROVIDERS[engine] ? `${AI_PROVIDERS[engine].label} 초안 · 구글 지도로 확인` : '구글 지도 평점으로 추천';
   const sheet = XLSX.utils.aoa_to_sheet([[`${plan.title || `${req.region} 여행`} — ${by}`], HEADERS, ...planToRows(plan)]);
   sheet['!cols'] = [12, 13, 34, 26, 12, 22, 40, 36, 11, 11, 24, 36, 30, 28].map((wch) => ({ wch }));
   const issues = planIssues(plan);

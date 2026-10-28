@@ -5,6 +5,7 @@
   "description": "엑셀의 장소 이름을 구글 지도에서 찾아 지도로 만들어 주는 웹앱",
   "type": "module",
   "scripts": {
+    "test": "node --test tests/*.test.js",
     "start": "node server.js",
     "sample": "node tools/make-sample.js"
   }

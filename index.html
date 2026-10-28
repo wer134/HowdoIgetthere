@@ -266,17 +266,17 @@
   </section>
 
   <section class="dialog-section" id="claudeKeySection">
-    <h3>Claude API 키 <small>일정 추천 · 선택</small></h3>
-    <form class="inline" id="claudeKeyForm">
-      <input type="password" id="claudeKeyInput" placeholder="sk-ant-로 시작하는 키" autocomplete="off" spellcheck="false">
+    <h3>일정 추천 AI <small>선택</small></h3>
+    <form id="claudeKeyForm" class="ai-settings-form">
+      <label for="aiProvider">제공업체</label>
+      <select id="aiProvider"><option value="google">AI 없이 구글 지도 데이터 사용</option><option value="claude">Claude (Anthropic)</option><option value="openai">OpenAI</option><option value="gemini">Google Gemini</option></select>
+      <label for="aiModel">모델</label><input id="aiModel" autocomplete="off" spellcheck="false">
+      <label for="claudeKeyInput">선택한 제공업체의 API 키</label>
+      <input type="password" id="claudeKeyInput" placeholder="API 키 입력" autocomplete="off" spellcheck="false">
       <button type="submit" class="primary-button small">저장</button>
     </form>
-    <p class="status" id="claudeKeyStatus">넣으면 Claude가 도시 배분·동선·교통 패스까지 고려해 일정을 짜요. 없으면 구글 지도 데이터만으로 짜요.</p>
-    <ol class="steps">
-      <li><a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Anthropic 콘솔</a>에서 API 키를 만들고 크레딧을 충전 (Claude 구독과는 따로예요)</li>
-      <li>콘솔의 <b>Limits</b>에서 월 사용 한도를 걸어 두세요. 일정 하나에 약 $0.2~0.3이 들어요</li>
-      <li>키는 이 브라우저에만 저장되고, 이 브라우저에서 Claude로 바로 보내요. 공용 PC에서는 넣지 마세요</li>
-    </ol>
+    <p class="status" id="claudeKeyStatus">제공업체별 키와 모델을 이 브라우저에 저장합니다. 키를 비우고 저장하면 해당 키를 삭제합니다.</p>
+    <p class="muted">각 서비스의 API 키와 API 사용 요금이 필요합니다. ChatGPT·Claude·Gemini 구독과 별개입니다. 키는 선택한 제공업체로 직접 전송됩니다. Google Maps 키는 별도로 필요합니다.</p>
   </section>
 
   <section class="dialog-section">
@@ -318,7 +318,7 @@
   <section class="dialog-section">
     <h3>여행 일정 추천</h3>
     <p>나라·지역, 날짜, 관심사를 넣고 <b>일정 짜기</b>를 누르면 일정표를 만들어 지도에 바로 올려요. 그다음은 엑셀을 올렸을 때와 같아요: 경로 찾기, 일정 점검, 하루 예산, 빈 끼니의 맛집 추천.</p>
-    <p>설정에 <b>Claude API 키</b>가 있으면 Claude가 도시를 나누고 동선·시각·교통편·입장료를 짜고, 앱이 장소마다 구글 지도에서 찾아 위치와 그날 영업 여부를 확인해요. 걸린 곳은 <b>Claude에게 고쳐 달라고 하기</b>로 다시 받을 수 있어요. 키가 없으면 그 지역에서 구글 평점이 높은 곳을 가까운 곳끼리 날짜별로 묶어요(도시 하나에 맞아요).</p>
+    <p>설정에 <b>AI 제공업체와 API 키</b>를 설정하면 선택한 AI가 도시를 나누고 동선·시각·교통편·입장료를 짜고, 앱이 장소마다 구글 지도에서 찾아 위치와 그날 영업 여부를 확인해요. 걸린 곳은 <b>AI에게 고쳐 달라고 하기</b>로 다시 받을 수 있어요. AI 없이 사용을 선택하면 그 지역에서 구글 평점이 높은 곳을 가까운 곳끼리 날짜별로 묶어요(도시 하나에 맞아요).</p>
   </section>
 
   <section class="dialog-section">
@@ -341,7 +341,7 @@
       <tr><th>장소 검색</th><td>5,000건 · 넘으면 1,000건당 $32</td></tr>
       <tr><th>경로 찾기</th><td>10,000건 · 넘으면 1,000건당 $5</td></tr>
       <tr><th>주변 추천</th><td>1,000건 · 넘으면 1,000건당 $35 (평점·가격대·영업시간 포함)</td></tr>
-      <tr><th>일정 추천 (Claude)</th><td>Anthropic 요금 · 일정 하나에 약 $0.2~0.3 (Claude Opus 5.5)</td></tr>
+      <tr><th>일정 추천 (AI)</th><td>선택한 제공업체·모델의 API 요금 적용</td></tr>
       <tr><th>추천 가게 자세히</th><td>1,000건 · 넘으면 1,000건당 $25 · 사진 1,000장 · $7</td></tr>
     </table>
   </section>

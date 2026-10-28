@@ -22,7 +22,7 @@ import {
   CURRENCIES, COUNTRY_CURRENCY, dayCosts, formatMoney, fareClass, mealOf, mostCommon,
 } from './budget.js';
 import {
-  INTERESTS, CLAUDE_MODEL, planWithClaude, verifyPlan, planWithGoogle, planIssues, planToWorkbook,
+  INTERESTS, AI_PROVIDERS, planWithAI, verifyPlan, planWithGoogle, planIssues, planToWorkbook,
 } from './planner.js';
 
 const CFG = {
@@ -59,7 +59,7 @@ const els = Object.fromEntries([
   // 여행 일정 추천
   'plannerCard', 'plannerToggle', 'plannerForm', 'planRegion', 'planStart', 'planDays', 'planStay', 'planTransport', 'planPace',
   'planBudget', 'planBudgetCurrency', 'planInterests', 'planNotes', 'plannerEngine', 'plannerBtn', 'plannerBtnText', 'plannerStatus',
-  'claudeKeyForm', 'claudeKeyInput', 'claudeKeyStatus',
+  'claudeKeyForm', 'claudeKeyInput', 'claudeKeyStatus', 'aiProvider', 'aiModel',
   // 주변 추천 · 하루 예산
   'recsCard', 'recsClose', 'recsForm', 'recsQuery', 'recsBody',
   'budgetCard', 'budgetForm', 'budgetAmount', 'budgetCurrency', 'tripCurrency', 'budgetFx', 'budgetDays',
@@ -115,7 +115,7 @@ const state = {
   editAmount: null, // 금액을 고치는 중인 행 (records 번호)
   overrides: new Map(), // records 번호 → 직접 고친 금액 (그날 통화)
   picks: new Map(), // records 번호 → 추천에서 고른 가게의 1인 가격 (메모 열이 없을 때 셈에 쓴다)
-  // 여행 일정 추천: { running, engine, step, progress, error, result: { plan, req, raw, cost, engine, buffer, fileName } }
+  // 여행 일정 추천: { running, engine, step, progress, error, result: { plan, req, raw, cost, engine, model, buffer, fileName } }
   planner: { running: false, engine: '', step: '', progress: null, error: '', result: null },
 };
 
@@ -1378,7 +1378,16 @@ function goToLeg(key) {
 
 /* ───────────── 여행 일정 추천 ───────────── */
 
-const claudeKey = () => storage.get(CLAUDE_KEY_STORAGE) || '';
+function aiSettings(provider = storage.get('plannerProvider') || (storage.get(CLAUDE_KEY_STORAGE) ? 'claude' : 'google')) {
+  const config = AI_PROVIDERS[provider];
+  return { provider: config ? provider : 'google', key: config ? storage.get(config.keyStorage) || '' : '', model: config ? storage.get(`plannerModel.${provider}`) || config.model : '' };
+}
+function fillAISettings() {
+  const selected = aiSettings(els.aiProvider.value);
+  els.aiModel.value = selected.model;
+  els.claudeKeyInput.value = selected.key;
+  els.aiModel.disabled = els.claudeKeyInput.disabled = selected.provider === 'google';
+}
 const PLAN_CURRENCIES = ['KRW', 'JPY', 'USD', 'EUR'];
 
 function setupPlanner() {
@@ -1397,9 +1406,8 @@ function setupPlanner() {
   els.planNotes.value = saved.notes || '';
   els.planBudget.value = state.budget.amount ?? '';
   els.planBudgetCurrency.value = PLAN_CURRENCIES.includes(state.budget.currency) ? state.budget.currency : 'KRW';
-  const key = claudeKey();
-  els.claudeKeyInput.value = key;
-  els.claudeKeyStatus.textContent = key ? `저장된 키를 쓰고 있어요 (…${key.slice(-4)}). 지우려면 칸을 비우고 저장하세요.` : els.claudeKeyStatus.textContent;
+  els.aiProvider.value = aiSettings().provider;
+  fillAISettings();
 }
 
 function readPlanner() {
@@ -1423,8 +1431,8 @@ function setPlannerOpen(open) {
   els.plannerToggle.textContent = open ? '접기' : '열기';
 }
 
-// 일정 짜기: Claude 키가 있으면 Claude 초안 → 구글 지도로 확인, 없으면 구글 지도 데이터만으로. 다 되면 엑셀을 올린 것처럼 지도에 올린다
-// revise: 지난 결과에서 확인에 걸린 곳만 Claude에게 고쳐 달라고 한다
+// 일정 짜기: 선택한 AI 키가 있으면 AI 초안 → 구글 지도로 확인, 없으면 구글 지도 데이터만으로. 다 되면 엑셀을 올린 것처럼 지도에 올린다
+// revise: 지난 결과에서 확인에 걸린 곳만 AI에게 고쳐 달라고 한다
 async function generateTrip({ revise = false } = {}) {
   if (state.planner.running || mapState !== 'ready') return;
   const previous = state.planner.result;
@@ -1442,25 +1450,31 @@ async function generateTrip({ revise = false } = {}) {
       storage.set(BUDGET_STORAGE, JSON.stringify(state.budget));
     }
   }
-  const key = claudeKey();
-  const engine = key ? 'claude' : 'google';
-  state.planner = { running: true, engine, step: engine === 'claude' ? 'draft' : 'area', progress: null, error: '', result: revise ? previous : null };
+  const selected = aiSettings(revise && previous ? previous.engine : undefined);
+  const { key, provider: engine } = selected;
+  const model = revise && previous?.model ? previous.model : selected.model;
+  if (engine !== 'google' && !key) {
+    showToast(`${AI_PROVIDERS[engine].label} API 키를 설정에서 저장해 주세요.`);
+    if (!els.settingsDialog.open) els.settingsDialog.showModal();
+    return;
+  }
+  state.planner = { running: true, engine, step: engine !== 'google' ? 'draft' : 'area', progress: null, error: '', result: revise ? previous : null };
   renderPlanner();
   const onProgress = (p) => {
     state.planner.progress = p;
     if (p.step) state.planner.step = p.step;
     renderPlanner();
   };
-  let stage = engine === 'claude' ? 'claude' : 'google';
+  let stage = engine !== 'google' ? 'ai' : 'google';
   try {
     let plan;
     let raw = '';
     let cost = null;
-    if (engine === 'claude') {
+    if (engine !== 'google') {
       const issues = revise ? planIssues(previous.plan).map((x) => `${x.label} ${x.item.place_ko || x.item.place}: ${x.text}`) : [];
-      const out = await planWithClaude(req, { apiKey: key, onProgress, previous: revise ? previous.raw : null, issues });
+      const out = await planWithAI(req, { provider: engine, model, apiKey: key, onProgress, previous: revise ? previous.raw : null, issues });
       ({ plan, raw } = out);
-      cost = (revise ? previous.cost || 0 : 0) + out.cost;
+      cost = out.cost == null ? null : (revise ? previous.cost || 0 : 0) + out.cost;
       stage = 'google';
       Object.assign(state.planner, { step: 'verify', progress: null });
       renderPlanner();
@@ -1472,7 +1486,7 @@ async function generateTrip({ revise = false } = {}) {
     Object.assign(state.planner, { step: 'load', progress: null });
     renderPlanner();
     const { buffer, fileName } = planToWorkbook(plan, req, engine);
-    state.planner = { running: false, engine, step: '', progress: null, error: '', result: { plan, req, raw, cost, engine, buffer, fileName } };
+    state.planner = { running: false, engine, step: '', progress: null, error: '', result: { plan, req, raw, cost, engine, model, buffer, fileName } };
     setPlannerOpen(false);
     renderPlanner();
     await handleFile(new File([buffer], fileName, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
@@ -1494,7 +1508,7 @@ const PLANNER_STEPS = {
 };
 
 function plannerProgressHtml(p) {
-  const steps = PLANNER_STEPS[p.engine] || [];
+  const steps = PLANNER_STEPS[p.engine] || [['draft', `${AI_PROVIDERS[p.engine]?.label || 'AI'}가 일정을 짜는 중`], ['verify', '장소를 구글 지도에서 확인하는 중'], ['load', '지도에 올리는 중']];
   const at = steps.findIndex(([key]) => key === p.step);
   const detail = (key) => {
     if (key !== p.step || !p.progress) {
@@ -1523,7 +1537,7 @@ function plannerResultHtml(result) {
     const stops = d.items.filter((it) => it.kind === 'place').length;
     return `<li><b>${escapeHtml(label)}</b><span>${escapeHtml([d.city, d.theme].filter(Boolean).join(' · '))}</span><small>${stops}곳</small></li>`;
   }).join('');
-  const by = engine === 'claude' ? `Claude 초안 · 구글 지도로 확인${cost != null ? ` · 사용료 약 $${cost.toFixed(2)}` : ''}` : '구글 지도 평점으로 추천';
+  const by = engine !== 'google' ? `${AI_PROVIDERS[engine]?.label || 'AI'} 초안 · 구글 지도로 확인${cost != null ? ` · 사용료 약 $${cost.toFixed(2)}` : ''}` : '구글 지도 평점으로 추천';
   return `<div class="planner-result">
     <div class="planner-title"><b>${escapeHtml(plan.title)}</b><small>${escapeHtml(by)}</small></div>
     ${plan.summary ? `<p class="planner-summary">${escapeHtml(plan.summary)}</p>` : ''}
@@ -1534,7 +1548,7 @@ function plannerResultHtml(result) {
     ${plan.tips.length ? `<div class="planner-tips"><div class="rd-label">알아 둘 점</div><ul>${plan.tips.map((t) => `<li>${escapeHtml(t)}</li>`).join('')}</ul></div>` : ''}
     <div class="detail-actions">
       <button type="button" class="secondary-button" data-planner="download">추천 일정 엑셀 내려받기</button>
-      ${engine === 'claude' && issues.length && claudeKey() ? `<button type="button" class="secondary-button" data-planner="revise">Claude에게 고쳐 달라고 하기 (${issues.length}곳)</button>` : ''}
+      ${engine !== 'google' && issues.length && aiSettings(engine).key ? `<button type="button" class="secondary-button" data-planner="revise">AI에게 고쳐 달라고 하기 (${issues.length}곳)</button>` : ''}
     </div>
     <p class="meta">일정 점검·하루 예산·빈 끼니의 맛집 추천은 아래에서 그대로 쓸 수 있어요.</p>
   </div>`;
@@ -1544,9 +1558,11 @@ let lastPlannerHtml = '';
 function renderPlanner() {
   els.plannerCard.classList.toggle('hidden', mapState !== 'ready');
   const p = state.planner;
-  els.plannerEngine.innerHTML = claudeKey()
-    ? `<b>Claude</b>(${escapeHtml(CLAUDE_MODEL)})가 짜고 구글 지도로 확인해요 · 일정 하나에 약 $0.2~0.3`
-    : '구글 지도 평점으로 짜요 · <button type="button" class="link-button" data-open="settingsDialog">Claude 키를 넣으면</button> 도시 배분·교통편까지 짜요';
+  const selected = aiSettings();
+  els.plannerEngine.innerHTML = selected.provider !== 'google'
+    ? `<b>${AI_PROVIDERS[selected.provider].label}</b> (${escapeHtml(selected.model)})로 짜고 구글 지도로 확인해요${selected.key ? '' : ' · 설정에서 API 키를 저장해 주세요'}`
+    : '구글 지도 평점으로 짜요 · <button type="button" class="link-button" data-open="settingsDialog">AI 설정</button>';
+
   els.plannerBtn.disabled = p.running;
   els.plannerBtn.classList.toggle('is-loading', p.running);
   els.plannerBtnText.textContent = p.running ? '짜는 중…' : p.result ? '새로 짜기' : '일정 짜기';
@@ -2828,13 +2844,22 @@ els.plannerStatus.addEventListener('click', (e) => {
     generateTrip({ revise: true });
   }
 });
+els.aiProvider.addEventListener('change', fillAISettings);
 els.claudeKeyForm.addEventListener('submit', (e) => {
   e.preventDefault();
+  const provider = els.aiProvider.value;
+  const config = AI_PROVIDERS[provider];
   const key = els.claudeKeyInput.value.trim();
-  if (key) storage.set(CLAUDE_KEY_STORAGE, key);
-  else storage.remove(CLAUDE_KEY_STORAGE);
-  els.claudeKeyStatus.textContent = key ? `저장했어요 (…${key.slice(-4)}). 일정 추천을 Claude가 짜요.` : '키를 지웠어요. 일정 추천은 구글 지도 데이터만으로 짜요.';
-  els.claudeKeyStatus.className = `status ${key ? 'ok' : ''}`;
+  let saved = storage.set('plannerProvider', provider);
+  if (config) {
+    if (key) saved = storage.set(config.keyStorage, key) && saved;
+    else storage.remove(config.keyStorage);
+    saved = storage.set(`plannerModel.${provider}`, els.aiModel.value.trim() || config.model) && saved;
+  }
+  els.claudeKeyStatus.textContent = !saved ? '브라우저 저장소에 저장하지 못했어요. 저장소 접근 설정을 확인해 주세요.'
+    : !config ? 'AI 없이 구글 지도 데이터로 일정을 추천합니다.'
+    : key ? `${config.label} 설정을 저장했어요.` : `${config.label} 키를 지웠어요. 사용하려면 키를 다시 입력해 주세요.`;
+  els.claudeKeyStatus.className = `status ${saved ? 'ok' : 'error'}`;
   renderPlanner();
 });
 

@@ -17,6 +17,8 @@ jobs:
         run: |
           node --check server.js
           node --check js/app.js
+      - name: Test AI providers
+        run: npm test
       - name: Start app and check served files
         run: |
           npm start -- --no-open > /tmp/routeflow-server.log 2>&1 &
