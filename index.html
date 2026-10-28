@@ -260,11 +260,23 @@
   <button type="button" data-open="settingsDialog">⚙<span>설정</span></button>
 </nav>
 <dialog class="dialog" id="mobileExportDialog"><form method="dialog"><button class="dialog-x" aria-label="닫기">×</button></form><h2>일정 내보내기</h2><p>현재 일정의 장소와 좌표를 파일로 저장합니다.</p><div class="mobile-export-actions"><button type="button" id="mobileExportXlsx" class="primary-button">엑셀 저장</button><button type="button" id="mobileExportKml" class="secondary-button">KML 저장</button></div><p class="muted">엑셀은 일정을 불러온 뒤, KML은 지도에 장소를 표시한 뒤 저장할 수 있습니다.</p></dialog>
-<dialog class="dialog" id="scheduleDialog" aria-labelledby="scheduleTitle">
-  <form method="dialog"><button class="dialog-x" aria-label="닫기">×</button></form>
-  <h2 id="scheduleTitle">일정 추가</h2>
+<dialog class="dialog schedule-editor" id="scheduleDialog" aria-labelledby="scheduleTitle">
+  <div class="schedule-editor-header"><div><span class="section-kicker">ITINERARY EDITOR</span><h2 id="scheduleTitle">일정 추가</h2><p id="scheduleContext" class="muted"></p></div><form method="dialog"><button class="dialog-x" aria-label="닫기">×</button></form></div>
+  <div class="schedule-editor-tabs" role="tablist" aria-label="일정 수정 메뉴">
+    <button type="button" id="scheduleInfoTab" role="tab" aria-controls="scheduleInfoPanel" aria-selected="true">일정 정보</button>
+    <button type="button" id="schedulePlaceTab" role="tab" aria-controls="scheduleRecommend" aria-selected="false">장소 바꾸기</button>
+  </div>
   <form id="scheduleForm" class="schedule-form">
-    <section id="scheduleRecommend" class="schedule-recommend" aria-label="추천 장소">
+    <section id="scheduleInfoPanel" role="tabpanel" aria-labelledby="scheduleInfoTab">
+      <div id="schedulePlacePreview" class="schedule-place-preview hidden" aria-live="polite"></div>
+      <label>장소 이름 <input id="scheduleName" required placeholder="예: 해운대해수욕장"></label>
+      <label>날짜 또는 분류 <input id="scheduleDate" placeholder="예: 12/5 (토)"></label>
+      <label>시간 <input id="scheduleTime" placeholder="예: 10:00–11:00"></label>
+      <label>지역 <input id="scheduleRegion" placeholder="예: 부산 해운대구"></label>
+      <label>메모 <textarea id="scheduleMemo" rows="3"></textarea></label>
+      <button type="submit" class="primary-button">일정 저장</button>
+    </section>
+    <section id="scheduleRecommend" class="schedule-recommend hidden" role="tabpanel" aria-labelledby="schedulePlaceTab">
       <div class="schedule-recommend-head"><strong>주변 장소 추천</strong><span>수정할 장소 또는 선택한 날짜 주변에서 찾아요</span></div>
       <div class="schedule-recommend-controls">
         <select id="scheduleRecommendKind" aria-label="추천 종류"><option value="sights">명소</option><option value="food">맛집</option><option value="cafe">카페</option></select>
@@ -276,14 +288,8 @@
         <button type="button" id="schedulePlaceSearch" class="secondary-button">검색</button>
       </div>
     </section>
-    <label>장소 이름 <input id="scheduleName" required placeholder="예: 해운대해수욕장"></label>
-    <label>날짜 또는 분류 <input id="scheduleDate" placeholder="예: 12/5 (토)"></label>
-    <label>시간 <input id="scheduleTime" placeholder="예: 10:00–11:00"></label>
-    <label>지역 <input id="scheduleRegion" placeholder="예: 부산 해운대구"></label>
-    <label>메모 <textarea id="scheduleMemo" rows="3"></textarea></label>
-    <button type="submit" class="primary-button">일정 저장</button>
   </form>
-  <p class="muted">변경한 일정은 ‘엑셀 저장’으로 내려받으세요. 장소 검색은 Google Maps 연결 후 진행됩니다.</p>
+  <p class="muted schedule-editor-footnote">변경한 일정은 ‘엑셀 저장’으로 내려받으세요.</p>
 </dialog>
 <dialog class="dialog" id="settingsDialog" aria-labelledby="settingsTitle">
   <form method="dialog"><button class="dialog-x" aria-label="닫기">×</button></form>
@@ -388,6 +394,6 @@
   </section>
 </dialog>
 
-<div class="toast" id="toast" role="status"><span>✓</span><strong></strong></div>
+<div class="toast" id="toast" role="status"><span>✓</span><strong></strong><button type="button" id="toastUndo" class="hidden">되돌리기</button></div>
 </body>
 </html>

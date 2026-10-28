@@ -922,6 +922,17 @@ input:focus, select:focus { border-color: var(--coral); outline: 2px solid rgba(
 .dialog-x { position: absolute; top: 14px; right: 14px; width: 32px; height: 32px; border: 0; border-radius: 50%; background: var(--card-soft); color: var(--muted); font-size: 20px; line-height: 1; }
 .dialog-x:hover { color: var(--coral); }
 .dialog h2 { margin-bottom: 4px; font-size: 21px; }
+.schedule-editor[open] {position:fixed;top:78px;right:14px;bottom:14px;left:auto;z-index:60;width:min(420px,calc(100vw - 28px));max-height:none;margin:0;padding:0 20px 18px;overflow-y:auto;overscroll-behavior:contain;border-radius:18px}
+.schedule-editor::backdrop {display:none}
+.schedule-editor-header {position:sticky;top:0;z-index:2;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:0 -20px;padding:18px 20px 14px;background:var(--card);border-bottom:1px solid var(--line)}
+.schedule-editor-header .dialog-x {position:static;flex:none}
+.schedule-editor-header h2 {margin:3px 0 0}
+.schedule-editor-header p {margin:4px 0 0;font-size:12px}
+.schedule-editor-tabs {display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:16px;padding:4px;border-radius:12px;background:var(--card-soft)}
+.schedule-editor-tabs button {min-height:38px;border:0;border-radius:9px;background:none;color:var(--text-soft);font-weight:700;cursor:pointer}
+.schedule-editor-tabs button[aria-selected="true"] {background:var(--card);color:#0755f5;box-shadow:0 2px 8px #23446a14}
+.schedule-editor-footnote {font-size:11px;line-height:1.5}
+body.schedule-editing .place-panel {visibility:hidden;pointer-events:none}
 .dialog-section { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--line); }
 .dialog-section h3 { margin: 0 0 10px; font-size: 14px; letter-spacing: -.02em; }
 .dialog-section p { margin: 0 0 12px; color: var(--text-soft); font-size: 13px; line-height: 1.65; }
@@ -960,7 +971,8 @@ input:focus, select:focus { border-color: var(--coral); outline: 2px solid rgba(
   transition: opacity .25s ease, transform .25s ease;
 }
 .toast span { display: grid; place-items: center; flex: none; width: 18px; height: 18px; border-radius: 50%; background: #ddf5e9; color: #32a274; font-size: 11px; }
-.toast.is-visible { opacity: 1; transform: translateY(0); }
+.toast.is-visible { opacity: 1; transform: translateY(0); pointer-events:auto; }
+.toast button {margin-left:8px;padding:4px 7px;border:0;border-radius:6px;background:#ddf5e9;color:#176b4b;font:inherit;font-weight:700;cursor:pointer}
 @media (prefers-color-scheme: dark) { .toast { border-color: var(--line-strong); background: var(--card); color: var(--text); } }
 
 /* ── 반응형 ── */
@@ -1175,6 +1187,10 @@ html,body {height:100%;overflow:hidden;background:#eef3f7}
 .schedule-actions button {border:0;background:none;color:#0755f5;padding:4px 0;font-size:11px;min-height:28px}
 .schedule-actions button:last-child {color:#b64b49}
 .schedule-form {display:grid;gap:12px;margin:18px 0}
+.schedule-form #scheduleInfoPanel {display:grid;gap:12px}
+.schedule-place-preview {padding:11px 12px;border:1px solid #bfdbff;border-radius:10px;background:#edf4ff;color:#23446a;font-size:12px;line-height:1.55}
+.schedule-place-preview strong,.schedule-place-preview small {display:block}
+.schedule-place-preview small {margin-top:4px;color:#536078}
 .schedule-form label {display:grid;gap:5px;font-size:12px;font-weight:700}
 .schedule-form input,.schedule-form textarea,.schedule-form select {width:100%;padding:10px;border:1px solid var(--line-strong);border-radius:9px;background:var(--card);color:var(--text)}
 .schedule-recommend {padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--card-soft)}
@@ -1201,3 +1217,4 @@ html,body {height:100%;overflow:hidden;background:#eef3f7}
 .schedule-recommend-item small {color:var(--muted)}
 .schedule-recommend-rating {flex:none;color:#0755f5;font-size:11px}
 @media (max-width:950px) {.schedule-actions button {min-height:42px;padding:5px 9px}.schedule-form input,.schedule-form textarea,.schedule-form select {font-size:16px}.schedule-recommend-item {min-height:48px}}
+@media (max-width:700px) {.schedule-editor[open] {top:66px;right:8px;bottom:8px;left:8px;width:auto;max-width:none;padding:0 16px 16px;border-radius:16px}.schedule-editor-header {margin:0 -16px;padding:14px 16px}.schedule-editor-tabs button {min-height:44px}}

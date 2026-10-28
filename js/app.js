@@ -138,12 +138,21 @@ const isNarrow = () => window.matchMedia('(max-width: 860px)').matches;
 const catVisible = (category) => state.day == null || category === state.day;
 
 let toastTimer = null;
-function showToast(message) {
+let undoToastAction = null;
+const toastUndoButton = document.getElementById('toastUndo');
+function showToast(message, undo = null) {
   els.toast.querySelector('strong').textContent = message;
+  undoToastAction = undo;
+  toastUndoButton.classList.toggle('hidden', !undo);
   els.toast.classList.add('is-visible');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => els.toast.classList.remove('is-visible'), 2600);
+  toastTimer = setTimeout(() => { els.toast.classList.remove('is-visible'); undoToastAction = null; }, undo ? 8000 : 2600);
 }
+toastUndoButton.addEventListener('click', () => {
+  const undo = undoToastAction;
+  undoToastAction = null;
+  if (undo) undo();
+});
 
 /* ───────────── 지도 / API 키 ───────────── */
 
@@ -3201,6 +3210,11 @@ for (const [mobile, original] of [['mobileExportXlsx', els.exportXlsx], ['mobile
 /* ───────────── 일정 추가·수정·삭제 ───────────── */
 let editingRecord = null;
 const scheduleDialog = document.getElementById('scheduleDialog');
+const scheduleInfoTab = document.getElementById('scheduleInfoTab');
+const schedulePlaceTab = document.getElementById('schedulePlaceTab');
+const scheduleInfoPanel = document.getElementById('scheduleInfoPanel');
+const scheduleRecommend = document.getElementById('scheduleRecommend');
+const schedulePlacePreview = document.getElementById('schedulePlacePreview');
 const scheduleRecommendKind = document.getElementById('scheduleRecommendKind');
 const scheduleRecommendButton = document.getElementById('scheduleRecommendButton');
 const scheduleRecommendResults = document.getElementById('scheduleRecommendResults');
@@ -3209,6 +3223,7 @@ const schedulePlaceSearch = document.getElementById('schedulePlaceSearch');
 let scheduleRecommendations = [];
 let selectedSchedulePlace = null;
 let scheduleSearchId = 0;
+let schedulePlaceLoaded = false;
 const scheduleFields = {
   name: document.getElementById('scheduleName'),
   date: document.getElementById('scheduleDate'),
@@ -3225,15 +3240,61 @@ function scheduleKind(types, name = '') {
   return 'sights';
 }
 
+function showScheduleTab(tab) {
+  const choosing = tab === 'place';
+  scheduleInfoPanel.classList.toggle('hidden', choosing);
+  scheduleRecommend.classList.toggle('hidden', !choosing);
+  scheduleInfoTab.setAttribute('aria-selected', String(!choosing));
+  schedulePlaceTab.setAttribute('aria-selected', String(choosing));
+  if (!choosing || schedulePlaceLoaded) return;
+  schedulePlaceLoaded = true;
+  const it = editingRecord ? state.items.find((item) => item.cells === editingRecord.cells) : null;
+  if (it?.place?.id && !it.place.type && !it.place.types && mapState === 'ready') {
+    const openId = scheduleSearchId;
+    scheduleRecommendResults.textContent = '장소 종류를 확인하는 중…';
+    placeTypes(it.place.id).then((types) => {
+      if (openId === scheduleSearchId && scheduleDialog.open) scheduleRecommendKind.value = scheduleKind(types, it.name);
+    }).catch(() => {}).finally(() => {
+      if (openId === scheduleSearchId && scheduleDialog.open) loadScheduleRecommendations();
+    });
+  } else loadScheduleRecommendations();
+}
+scheduleInfoTab.addEventListener('click', () => showScheduleTab('info'));
+schedulePlaceTab.addEventListener('click', () => showScheduleTab('place'));
+scheduleDialog.addEventListener('close', () => {
+  document.body.classList.remove('schedule-editing');
+  scheduleSearchId++;
+  editingRecord = null;
+  selectedSchedulePlace = null;
+});
+
+function showSchedulePlacePreview(place) {
+  if (!place) {
+    schedulePlacePreview.classList.add('hidden');
+    schedulePlacePreview.replaceChildren();
+    return;
+  }
+  const current = editingRecord ? state.items.find((it) => it.cells === editingRecord.cells) : null;
+  const sameDay = current ? state.items.filter((it) => it.day === current.day && it.place) : [];
+  const index = sameDay.indexOf(current);
+  const neighbors = [['앞 장소', sameDay[index - 1]], ['다음 장소', sameDay[index + 1]]].filter(([, it]) => it?.place);
+  const changes = current?.place ? neighbors.map(([label, it]) => `${label}와 직선거리 ${formatDistance(distanceMeters(it.place, current.place))} → ${formatDistance(distanceMeters(it.place, place))}`) : [];
+  schedulePlacePreview.innerHTML = `<strong>${current ? `${escapeHtml(current.name)} → ` : '선택한 장소: '}${escapeHtml(place.name)}</strong><small>${changes.length ? changes.map(escapeHtml).join(' · ') : '저장하면 이 장소를 일정에 반영해요.'}${changes.length ? ' · 실제 이동 경로는 저장 후 갱신해요.' : ''}</small>`;
+  schedulePlacePreview.classList.remove('hidden');
+}
+
 function openScheduleEditor(it = null) {
   if (!state.workbook || state.mapping.name < 0) {
     showToast('먼저 일정 파일을 올리고 장소 열을 연결해 주세요.');
     return;
   }
+  if (it && state.selected !== it.idx) select(it.idx, 'list');
   editingRecord = it ? state.records[it.recordIndex] : null;
   scheduleSearchId++;
   scheduleRecommendations = [];
   selectedSchedulePlace = null;
+  schedulePlaceLoaded = false;
+  showSchedulePlacePreview(null);
   scheduleRecommendResults.replaceChildren();
   scheduleRecommendButton.disabled = false;
   schedulePlaceSearch.disabled = false;
@@ -3245,75 +3306,77 @@ function openScheduleEditor(it = null) {
   scheduleFields.time.value = it?.timeText || '';
   scheduleFields.region.value = it && state.mapping.region >= 0 ? cellText(it.cells[state.mapping.region]) : '';
   scheduleFields.memo.value = it?.memo || '';
-  scheduleDialog.showModal();
+  document.getElementById('scheduleContext').textContent = it ? `${it.day || '전체 일정'} · ${it.idx + 1}번째 장소` : `${state.day || '현재 일정'}에 새 장소를 추가해요`;
+  if (!scheduleDialog.open) scheduleDialog.show();
+  document.body.classList.add('schedule-editing');
+  showScheduleTab('info');
   scheduleFields.name.focus();
-  if (it) {
-    const openId = scheduleSearchId;
-    if (mapState !== 'ready') {
-      scheduleRecommendResults.textContent = '추천과 장소 검색을 사용하려면 먼저 Google Maps를 연결해 주세요.';
-    } else if (it.place?.id && !it.place.type && !it.place.types) {
-      scheduleRecommendResults.textContent = '장소 종류를 확인하는 중…';
-      placeTypes(it.place.id).then((types) => {
-        if (openId !== scheduleSearchId || !scheduleDialog.open) return;
-        scheduleRecommendKind.value = scheduleKind(types, it.name);
-      }).catch(() => {}).finally(() => {
-        if (openId === scheduleSearchId && scheduleDialog.open) loadScheduleRecommendations();
-      });
-    } else {
-      loadScheduleRecommendations();
-    }
-  }
 }
 
-function rebuildEditedSchedule(changedRecord = null, pickedPlace = null) {
+function rebuildEditedSchedule(changedRecord = null, pickedPlace = null, restored = null, preferredCells = null) {
   state.scheduleChanged = true;
-  const previous = new Map(state.items.map((it) => [it.cells, it]));
-  state.items = buildItems().items;
-  for (const it of state.items) {
-    if (pickedPlace && it.cells === changedRecord) {
+  const previousItems = state.items;
+  const previous = new Map(previousItems.map((it) => [it.cells, it]));
+  const selected = previousItems[state.selected];
+  let categoryChanged = false;
+  const nextItems = buildItems().items.map((fresh) => {
+    const old = previous.get(fresh.cells);
+    const before = old ? { name: old.name, query: old.query, category: old.category, place: old.place, status: old.status, candidates: old.candidates, note: old.note } : null;
+    const it = old ? Object.assign(old, fresh) : fresh;
+    if (before?.category !== it.category && before) categoryChanged = true;
+    if (it.cells === changedRecord && restored) {
+      Object.assign(it, restored);
+    } else if (it.cells === changedRecord && pickedPlace) {
       it.place = { id: pickedPlace.id, name: pickedPlace.name, address: pickedPlace.address, url: pickedPlace.url, lat: pickedPlace.lat, lng: pickedPlace.lng, type: pickedPlace.type, types: pickedPlace.types };
       it.status = 'confirmed';
       it.candidates = [];
-      it.note = '추천 장소에서 선택';
-      continue;
+      it.note = '선택한 장소';
+    } else if (before && (it.cells !== changedRecord || (it.name === before.name && it.query === before.query))) {
+      Object.assign(it, { place: before.place, status: before.status, candidates: before.candidates, note: before.note });
     }
-    const old = previous.get(it.cells);
-    if (old && it.cells !== changedRecord) {
-      it.place = old.place;
-      it.status = old.status;
-      it.candidates = old.candidates;
-      it.note = old.note;
-    } else if (old && it.name === old.name) {
-      it.place = old.place;
-      it.status = old.status;
-      it.candidates = old.candidates;
-      it.note = old.note;
-    }
-  }
-  state.selected = null;
-  state.selectedLeg = null;
-  state.legs = [];
-  state.routesRequested = false;
-  state.legModes.clear();
-  state.planEdits = [];
-  mapView?.clear();
+    return it;
+  });
+  const structureChanged = categoryChanged || nextItems.length !== previousItems.length || nextItems.some((it, i) => it !== previousItems[i]);
+  state.items = nextItems;
+  state.items.forEach((it, i) => { it.idx = i; });
   assignColors();
   if (state.day != null && !state.colors.has(state.day)) state.day = null;
-  for (const it of state.items) if (it.place) placeMarker(it);
-  if (mapView) { buildLegs(); drawLegs(); mapView.fitAll(); }
-  rendered.clear();
-  els.resultList.replaceChildren();
-  updateSummary();
-  render();
   const changed = state.items.find((it) => it.cells === changedRecord);
+  const target = changed || state.items.find((it) => it.cells === preferredCells) || (selected && state.items.includes(selected) ? selected : null);
+  if (structureChanged) {
+    state.planEdits = [];
+    renumberItems(target);
+  } else {
+    state.selected = target?.idx ?? null;
+    if (changed) placeMarker(changed);
+    refreshLegs();
+  }
+  updateSummary();
+  if (target) select(target.idx, 'list');
+  else render();
   if (changed && !changed.place && mapState === 'ready') research(changed, changed.query);
 }
 
+const copyScheduleCells = (cells) => cells.map((cell) => cell ? { ...cell } : null);
+const copyScheduleItem = (it) => it ? {
+  place: it.place ? { ...it.place } : null, status: it.status, candidates: [...it.candidates], note: it.note,
+} : null;
+
 function deleteScheduleItem(it) {
   if (!confirm(`“${it.name}” 일정을 삭제할까요? 변경한 일정은 엑셀 저장으로 내려받을 수 있습니다.`)) return;
+  const record = state.records[it.recordIndex];
+  const before = copyScheduleItem(it);
+  const wasChanged = state.scheduleChanged;
+  const neighbor = state.items[it.idx + 1] || state.items[it.idx - 1];
   state.records.splice(it.recordIndex, 1);
-  rebuildEditedSchedule();
-  showToast('일정을 삭제했어요. 엑셀 저장으로 변경 내용을 보관하세요.');
+  rebuildEditedSchedule(null, null, null, neighbor?.cells);
+  showToast('일정을 삭제했어요. 엑셀 저장으로 변경 내용을 보관하세요.', () => {
+    state.records.splice(it.recordIndex, 0, record);
+    rebuildEditedSchedule(record.cells, null, before);
+    state.scheduleChanged = wasChanged;
+    render();
+    showToast('삭제를 되돌렸어요.');
+  });
 }
 
 document.getElementById('scheduleAdd').addEventListener('click', () => openScheduleEditor());
@@ -3405,19 +3468,30 @@ scheduleRecommendResults.addEventListener('click', (event) => {
   if (!place) return;
   selectedSchedulePlace = place;
   scheduleFields.name.value = place.name;
-  if (!scheduleFields.region.value.trim()) scheduleFields.region.value = place.address || '';
+  scheduleFields.region.value = place.address || scheduleFields.region.value;
   scheduleRecommendResults.querySelectorAll('.schedule-recommend-item').forEach((choice) => choice.classList.toggle('selected', choice.contains(button)));
+  showSchedulePlacePreview(place);
+  showScheduleTab('info');
   scheduleFields.time.focus();
 });
 scheduleFields.name.addEventListener('input', () => {
-  if (selectedSchedulePlace && scheduleFields.name.value.trim() !== selectedSchedulePlace.name) selectedSchedulePlace = null;
+  if (selectedSchedulePlace && scheduleFields.name.value.trim() !== selectedSchedulePlace.name) {
+    selectedSchedulePlace = null;
+    showSchedulePlacePreview(null);
+  }
 });
 document.getElementById('scheduleForm').addEventListener('submit', (event) => {
   event.preventDefault();
   const name = scheduleFields.name.value.trim();
   if (!name) { scheduleFields.name.focus(); return; }
   const m = state.mapping;
+  const wasEditing = !!editingRecord;
   const record = editingRecord || { rowNumber: Math.max(1, ...state.records.map((r) => r.rowNumber)) + 1, cells: [] };
+  const previousCells = wasEditing ? copyScheduleCells(record.cells) : null;
+  const previousItem = copyScheduleItem(state.items.find((it) => it.cells === record.cells));
+  const previousSelectedCells = state.items[state.selected]?.cells;
+  const previousResolved = resolvedPlaces.get(record.cells);
+  const wasChanged = state.scheduleChanged;
   const pickedPlace = selectedSchedulePlace && selectedSchedulePlace.name === name ? selectedSchedulePlace : null;
   const oldName = m.name >= 0 ? cellText(record.cells[m.name]) : '';
   for (const [field, col] of [['name', m.name], ['date', m.date], ['region', m.region], ['time', m.time], ['memo', m.memo]]) {
@@ -3426,11 +3500,13 @@ document.getElementById('scheduleForm').addEventListener('submit', (event) => {
   if (m.category >= 0 && m.category !== m.date) record.cells[m.category] = { t: 's', v: scheduleFields.date.value.trim() };
   if (editingRecord && oldName !== name) {
     for (const col of [m.lat, m.lng, ...Object.values(state.resultCols)]) if (col >= 0) record.cells[col] = null;
+    resolvedPlaces.delete(record.cells);
   }
   if (pickedPlace) {
     if (m.address >= 0) record.cells[m.address] = { t: 's', v: pickedPlace.address || '' };
     if (m.lat >= 0) record.cells[m.lat] = { t: 'n', v: pickedPlace.lat };
     if (m.lng >= 0) record.cells[m.lng] = { t: 'n', v: pickedPlace.lng };
+    resolvedPlaces.set(record.cells, { id: pickedPlace.id, name: pickedPlace.name, address: pickedPlace.address, url: pickedPlace.url });
   }
   if (!editingRecord) {
     const insertAt = state.selected == null ? state.records.length : state.items[state.selected].recordIndex + 1;
@@ -3441,5 +3517,20 @@ document.getElementById('scheduleForm').addEventListener('submit', (event) => {
   editingRecord = null;
   selectedSchedulePlace = null;
   rebuildEditedSchedule(record.cells, pickedPlace);
-  showToast('일정을 반영했어요. 엑셀 저장으로 변경 내용을 보관하세요.');
+  showToast('일정을 반영했어요. 엑셀 저장으로 변경 내용을 보관하세요.', () => {
+    if (wasEditing) {
+      record.cells.splice(0, record.cells.length, ...previousCells);
+      if (previousResolved) resolvedPlaces.set(record.cells, previousResolved);
+      else resolvedPlaces.delete(record.cells);
+      rebuildEditedSchedule(record.cells, null, previousItem);
+    } else {
+      const index = state.records.indexOf(record);
+      if (index >= 0) state.records.splice(index, 1);
+      resolvedPlaces.delete(record.cells);
+      rebuildEditedSchedule(null, null, null, previousSelectedCells);
+    }
+    state.scheduleChanged = wasChanged;
+    render();
+    showToast('일정 변경을 되돌렸어요.');
+  });
 });
