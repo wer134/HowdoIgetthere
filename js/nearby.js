@@ -393,6 +393,19 @@ const PHOTOS = 3;
 const REVIEWS = 3;
 const details = new Map(); // 장소 ID|언어 → Promise (이 페이지를 연 동안만)
 
+// 일정 목록 사진은 리뷰·영업시간 등 비싼 상세 필드와 분리해서 요청한다.
+export async function placePhoto(id, language) {
+  const { Place } = await google.maps.importLibrary('places');
+  const place = new Place({ id, requestedLanguage: language });
+  await withRetry(() => place.fetchFields({ fields: ['photos'] }));
+  const photo = place.photos?.[0];
+  if (!photo || typeof photo.getURI !== 'function') return null;
+  return {
+    url: photo.getURI({ maxWidth: 480, maxHeight: 360 }),
+    authors: (photo.authorAttributions || []).map((author) => ({ name: author.displayName || '', uri: author.uri || '' })),
+  };
+}
+
 /** 사진·리뷰·특징. 한국어로 요청하면 한국어로 쓴 리뷰가 먼저 온다 */
 export function placeDetails(id, language) {
   const key = `${id}|${language}`;

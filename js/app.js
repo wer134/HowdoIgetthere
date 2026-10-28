@@ -16,7 +16,7 @@ import {
 import { writeEditedWorkbook } from './xlsxedit.js';
 import {
   KINDS, countryAt, findNearby, rankPlaces, dropParts, withoutBars, nowAt, priceOf, levelSigns, typeLabel, ratingSource, googleUrl, scoreOnGoogleScale,
-  placeDetails, weekHours, walkUrl,
+  placeDetails, placePhoto, weekHours, walkUrl,
 } from './nearby.js';
 import {
   CURRENCIES, COUNTRY_CURRENCY, dayCosts, formatMoney, fareClass, mealOf, mostCommon,
@@ -1702,6 +1702,36 @@ function focusRec(id, from) {
 
 // 장소 ID → { loading } | { data } | { error } (구글 약관상 이 페이지를 연 동안만 기억한다)
 const recDetails = new Map();
+const photoStates = new Map();
+const photoQueue = [];
+let activePhotoRequests = 0;
+
+function queuePlacePhotos(items) {
+  if (mapState !== 'ready') return;
+  for (const it of items) {
+    const id = it.place?.id;
+    if (!id || photoStates.has(id) || recDetails.get(id)?.data?.photos?.[0]?.url) continue;
+    photoStates.set(id, { loading: true });
+    photoQueue.push({ id, language: it.language });
+  }
+  drainPhotoQueue();
+}
+
+function drainPhotoQueue() {
+  while (activePhotoRequests < 3 && photoQueue.length) {
+    const { id, language } = photoQueue.shift();
+    activePhotoRequests++;
+    placePhoto(id, language).then((photo) => {
+      photoStates.set(id, { photo });
+    }).catch((err) => {
+      photoStates.set(id, { error: err?.message || '사진을 불러오지 못했어요' });
+    }).finally(() => {
+      activePhotoRequests--;
+      scheduleRender();
+      drainPhotoQueue();
+    });
+  }
+}
 
 async function loadDetails(p) {
   const known = recDetails.get(p.id);
@@ -2342,9 +2372,10 @@ function renderPlacePanel() {
   const place = it.place;
   const detail = recDetails.get(place?.id);
   const data = detail?.data;
-  const photos = data?.photos || [];
+  const photos = (data?.photos || []).filter((photo) => photo.url);
+  if (!photos.length && photoStates.get(place?.id)?.photo?.url) photos.push(photoStates.get(place.id).photo);
   const hero = photos[0];
-  const photoHtml = (photo) => `<figure><img src="${escapeHtml(photo.url)}" alt="${escapeHtml(it.name)} 사진"><figcaption>${photo.authors.map(a => escapeHtml(a.name)).join(' · ')}</figcaption></figure>`;
+  const photoHtml = (photo) => `<figure><img src="${escapeHtml(photo.url)}" alt="${escapeHtml(it.name)} 사진"><figcaption>${(photo.authors || []).map(a => escapeHtml(a.name)).join(' · ')}</figcaption></figure>`;
   const html = `<div class="place-hero">${hero ? photoHtml(hero) : `<div class="place-no-photo"><span>⌖</span><small>${detail?.loading ? '장소 사진을 불러오는 중' : '사진 정보가 없습니다'}</small></div>`}</div>
     <div class="place-content item" data-idx="${it.idx}">
     <div class="place-panel-kicker">${escapeHtml(it.category || '전체 일정')} · ${Number(it.idx) + 1}번째 장소</div>
@@ -2469,6 +2500,8 @@ const placeNumber = (it) => String(it.idx + 1).padStart(2, '0');
 function renderItem(it) {
   const st = STATUS[it.status];
   const selected = state.selected === it.idx;
+  const photo = recDetails.get(it.place?.id)?.data?.photos?.find((p) => p.url)
+    || photoStates.get(it.place?.id)?.photo;
   const start = parseTimeRange(it.timeText).start;
   const time = start != null ? `${pad2(Math.floor(start / 60))}:${pad2(start % 60)}` : '';
   return `<li class="item${selected ? ' selected' : ''}" data-idx="${it.idx}">
@@ -2479,7 +2512,7 @@ function renderItem(it) {
         <strong class="item-name">${escapeHtml(it.name)}</strong>
         <span class="item-meta"><span class="badge ${st.cls}">${st.label}</span><span class="item-sub">${escapeHtml(itemSubline(it))}</span></span>
       </span>
-      <span class="timeline-thumb" aria-hidden="true">${recDetails.get(it.place?.id)?.data?.photos?.[0]?.url ? `<img src="${escapeHtml(recDetails.get(it.place.id).data.photos[0].url)}" alt="">` : '⌖'}</span>
+      <span class="timeline-thumb" aria-hidden="true">${photo?.url ? `<img src="${escapeHtml(photo.url)}" alt="">` : '⌖'}</span>
     </div>
 
   </li>`;
@@ -2548,6 +2581,7 @@ function renderList() {
   const visible = state.items.filter((it) => (
     (group.match(it) || it.idx === state.selected) && catVisible(it.category) && (!document.getElementById('workspaceSearch').value.trim() || `${it.name} ${it.query} ${it.place?.address || ''}`.toLowerCase().includes(document.getElementById('workspaceSearch').value.trim().toLowerCase()))
   ));
+  queuePlacePhotos(visible);
   if (!visible.length) {
     list.innerHTML = `<li class="empty">${state.items.length ? '해당하는 곳이 없습니다' : '표시할 행이 없습니다'}</li>`;
     rendered.clear();

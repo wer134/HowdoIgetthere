@@ -283,3 +283,5 @@ tools/make-sample.js  지도_양식.xlsx 다시 만들기 (npm run sample)
 기본 모델은 Claude `claude-opus-5-5`, OpenAI `gpt-4.1-mini`, Gemini `gemini-2.5-flash`입니다. 계정에서 사용할 수 있는 구조화 JSON 출력 지원 모델로 바꿀 수 있습니다. 각 서비스의 API 결제·사용 권한이 필요하며, 일반 채팅 구독과 별개입니다. OpenAI/Gemini 사용료는 앱에서 추정하지 않습니다.
 
 AI가 만든 일정은 기존과 같이 Google Maps로 장소를 확인한 뒤 지도와 엑셀에 반영합니다. 지도용 Google API 키는 별도로 필요합니다. AI 없이 사용하려면 제공업체에서 **AI 없이 구글 지도 데이터 사용**을 선택하세요. 생성한 일정을 다시 고칠 때는 원래 제공업체와 모델을 사용합니다.
+
+일정 목록에 보이는 장소의 첫 사진도 Google Places에서 개별 요청합니다. 사진이 없는 장소는 기본 아이콘을 표시합니다. 사진 요청은 Google Places 사용량과 요금에 포함될 수 있습니다.
