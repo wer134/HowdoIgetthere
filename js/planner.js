@@ -249,6 +249,7 @@ export async function planWithAI(req, { provider, apiKey, model, onProgress, pre
     const detail = await response.json().catch(() => null);
     const serviceMessage = String(detail?.error?.message || '').replaceAll(apiKey, '[API 키]').replace(/\?key=[^\s&]+/gi, '?key=[API 키]').slice(0, 400);
     const reason = response.status === 401 || response.status === 403 ? 'API 키와 모델 사용 권한을 확인해 주세요.'
+      : response.status === 402 ? '프로젝트의 결제 설정과 선불 크레딧을 확인해 주세요. 크레딧이 소진됐다면 충전 후 다시 요청할 수 있어요.'
       : response.status === 429 ? '요청 한도 또는 크레딧을 확인해 주세요.'
       : response.status === 404 && !openai ? '설정에서 ‘사용 가능한 모델 확인’을 눌러 이 키로 제공되는 모델을 선택해 주세요.'
         : response.status === 400 || response.status === 404 ? '모델 이름과 구조화 출력 지원 여부를 확인해 주세요.' : '잠시 후 다시 시도해 주세요.';

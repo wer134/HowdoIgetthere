@@ -39,7 +39,7 @@ for (const provider of ['openai', 'gemini']) {
     assert(workbook.Sheets['일정표'].A1.v.includes(provider === 'openai' ? 'OpenAI' : 'Google Gemini'));
   });
 }
-for (const status of [401, 403, 429, 400, 500]) {
+for (const status of [401, 402, 403, 429, 400, 500]) {
   test(`API 오류 ${status}는 사용자에게 전달`, async (t) => {
     t.mock.method(globalThis, 'fetch', async () => Response.json({}, { status }));
     await assert.rejects(planWithAI(req, { provider: 'openai', apiKey: 'test' }), new RegExp(String(status)));
@@ -82,6 +82,16 @@ test('Gemini 404는 키를 가리고 Google 상세 오류를 보여 준다', asy
     assert.match(err.message, /models\/old is not found/);
     assert.match(err.message, /사용 가능한 모델 확인/);
     assert(!err.message.includes('test-key'));
+    return true;
+  });
+});
+
+test('Gemini 402는 선불 크레딧 소진을 안내한다', async (t) => {
+  t.mock.method(globalThis, 'fetch', async () => Response.json({ error: { message: 'Your prepayment credits are depleted.' } }, { status: 402 }));
+  await assert.rejects(planWithAI(req, { provider: 'gemini', apiKey: 'test-key' }), (err) => {
+    assert.match(err.message, /prepayment credits are depleted/);
+    assert.match(err.message, /선불 크레딧/);
+    assert.doesNotMatch(err.message, /잠시 후 다시 시도/);
     return true;
   });
 });
