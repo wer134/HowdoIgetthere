@@ -264,6 +264,14 @@
   <form method="dialog"><button class="dialog-x" aria-label="닫기">×</button></form>
   <h2 id="scheduleTitle">일정 추가</h2>
   <form id="scheduleForm" class="schedule-form">
+    <section id="scheduleRecommend" class="schedule-recommend" aria-label="추천 장소">
+      <div class="schedule-recommend-head"><strong>장소 추천받기</strong><span>선택한 날짜 주변 또는 아래 지역을 기준으로 찾아요</span></div>
+      <div class="schedule-recommend-controls">
+        <select id="scheduleRecommendKind" aria-label="추천 종류"><option value="sights">명소</option><option value="food">맛집</option><option value="cafe">카페</option></select>
+        <button type="button" id="scheduleRecommendButton" class="secondary-button">추천 장소 찾기</button>
+      </div>
+      <div id="scheduleRecommendResults" class="schedule-recommend-results" aria-live="polite"></div>
+    </section>
     <label>장소 이름 <input id="scheduleName" required placeholder="예: 해운대해수욕장"></label>
     <label>날짜 또는 분류 <input id="scheduleDate" placeholder="예: 12/5 (토)"></label>
     <label>시간 <input id="scheduleTime" placeholder="예: 10:00–11:00"></label>

@@ -1175,5 +1175,22 @@ html,body {height:100%;overflow:hidden;background:#eef3f7}
 .schedule-actions button:last-child {color:#b64b49}
 .schedule-form {display:grid;gap:12px;margin:18px 0}
 .schedule-form label {display:grid;gap:5px;font-size:12px;font-weight:700}
-.schedule-form input,.schedule-form textarea {width:100%;padding:10px;border:1px solid var(--line-strong);border-radius:9px;background:var(--card)}
-@media (max-width:950px) {.schedule-actions button {min-height:42px;padding:5px 9px}.schedule-form input,.schedule-form textarea {font-size:16px}}
+.schedule-form input,.schedule-form textarea,.schedule-form select {width:100%;padding:10px;border:1px solid var(--line-strong);border-radius:9px;background:var(--card);color:var(--text)}
+.schedule-recommend {padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--card-soft)}
+.schedule-recommend-head {display:grid;gap:3px;font-size:13px}
+.schedule-recommend-head span,.schedule-recommend-caption {font-size:11px;color:var(--muted)}
+.schedule-recommend-controls {display:flex;gap:8px;margin-top:10px}
+.schedule-recommend-controls select {flex:1;min-width:0}
+.schedule-recommend-controls button {flex:2;min-height:42px}
+.schedule-recommend-results {font-size:12px;line-height:1.5;color:var(--text-soft)}
+.schedule-recommend-results:not(:empty) {margin-top:12px}
+.schedule-recommend-caption {margin:0 0 7px}
+.schedule-recommend-list {display:grid;gap:5px;max-height:230px;overflow:auto}
+.schedule-recommend-item {display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:9px;text-align:left;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--text);cursor:pointer}
+.schedule-recommend-item:hover:not(:disabled),.schedule-recommend-item.selected {border-color:#0755f5;background:#edf4ff}
+.schedule-recommend-item:disabled {opacity:.55;cursor:default}
+.schedule-recommend-item span:first-child {display:grid;gap:2px;min-width:0}
+.schedule-recommend-item b,.schedule-recommend-item small {overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.schedule-recommend-item small {color:var(--muted)}
+.schedule-recommend-rating {flex:none;color:#0755f5;font-size:11px}
+@media (max-width:950px) {.schedule-actions button {min-height:42px;padding:5px 9px}.schedule-form input,.schedule-form textarea,.schedule-form select {font-size:16px}.schedule-recommend-item {min-height:48px}}
