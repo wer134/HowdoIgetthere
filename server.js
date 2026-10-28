@@ -31,6 +31,15 @@ const server = http.createServer((req, res) => {
     return;
   }
   if (pathname.endsWith('/')) pathname += 'index.html';
+  if (pathname === '/runtime-config.js') {
+    const key = process.env.googleAPI;
+    const script = key ? `window.APP_CONFIG.googleMapsApiKey = ${JSON.stringify(key)};` : '';
+    res.writeHead(200, {
+      'Content-Type': 'text/javascript; charset=utf-8',
+      'Cache-Control': 'no-store',
+    }).end(script);
+    return;
+  }
   const file = path.join(ROOT, pathname);
   // 앱 폴더 바깥이나 숨김 파일은 내주지 않는다
   if (!file.startsWith(ROOT + path.sep) || path.basename(file).startsWith('.')) {

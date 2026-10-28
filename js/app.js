@@ -68,6 +68,7 @@ const els = Object.fromEntries([
   // 03 지도
   'mapPanel', 'mapMode', 'mapScope', 'routeToggle', 'fitMap', 'map', 'mapPlaceholder', 'mapNote', 'pickBanner', 'pickCancel',
   'exportXlsx', 'exportKml',
+  'placePanel', 'placePanelBody', 'placePanelClose',
 ].map((id) => [id, document.getElementById(id)]));
 
 const state = {
@@ -2294,6 +2295,28 @@ function render() {
   renderRouteCard();
   renderMapMeta();
   renderList();
+  renderPlacePanel();
+}
+
+function renderPlacePanel() {
+  const it = state.selected == null ? null : state.items[state.selected];
+  els.placePanel.classList.toggle('hidden', !it);
+  if (!it) return;
+  const place = it.place;
+  const status = STATUS[it.status];
+  els.placePanelBody.innerHTML = `
+    <div class="place-panel-kicker">${escapeHtml(it.category || '여행 일정')} · ${placeNumber(it)}번째 장소</div>
+    <h2>${escapeHtml(it.name)}</h2>
+    <p class="place-panel-status">${escapeHtml(status.label)}</p>
+    ${place?.name && place.name !== it.name ? `<p class="place-panel-found">검색된 이름 · ${escapeHtml(place.name)}</p>` : ''}
+    <dl>
+      <div><dt>주소</dt><dd>${escapeHtml(place?.address || '주소 정보 없음')}</dd></div>
+      <div><dt>일정 시간</dt><dd>${escapeHtml(it.timeText || '시간 정보 없음')}</dd></div>
+      <div><dt>엑셀 위치</dt><dd>${it.rowNumber}행</dd></div>
+    </dl>
+    ${it.note ? `<p class="place-panel-note">${escapeHtml(it.note)}</p>` : ''}
+    ${place ? `<a class="place-panel-link" href="${escapeHtml(placeUrl(place))}" target="_blank" rel="noopener">구글 지도에서 보기 ↗</a>` : ''}
+    <p class="place-panel-help">검색어 수정, 후보 선택, 주변 추천은 왼쪽 일정의 선택된 장소에서 할 수 있습니다.</p>`;
 }
 
 // 분류 열이 날짜 열과 같으면 '날짜별' 화면(요일 탭, 날짜 구분선)으로 보여 준다
@@ -2590,6 +2613,7 @@ els.mapMode.addEventListener('click', (e) => {
 });
 
 els.fitMap.addEventListener('click', () => mapView?.fitAll());
+els.placePanelClose.addEventListener('click', () => select(null, 'panel'));
 
 els.dayTabs.addEventListener('click', (e) => {
   const tab = e.target.closest('.day-tab');
