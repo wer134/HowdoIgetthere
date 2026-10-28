@@ -2,7 +2,7 @@ name: Smoke test
 
 on:
   push:
-    branches: [feat/map-first-ui]
+    branches: [main]
   pull_request:
 
 jobs:
