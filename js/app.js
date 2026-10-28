@@ -67,6 +67,7 @@ const els = Object.fromEntries([
   'planCard', 'planSummary', 'progressBar', 'progressText', 'runAlert', 'planCheck', 'dayTabs', 'statusChips', 'resultList',
   // 03 지도
   'mapPanel', 'mapMode', 'mapScope', 'routeToggle', 'fitMap', 'map', 'mapPlaceholder', 'mapNote', 'pickBanner', 'pickCancel',
+  'zoomIn', 'zoomOut', 'zoomSlider',
   'exportXlsx', 'exportKml',
   'placePanel', 'placePanelBody', 'placePanelClose',
 ].map((id) => [id, document.getElementById(id)]));
@@ -190,6 +191,7 @@ function setConnection() {
   els.syncText.textContent = view[1];
   els.apiCard.classList.toggle('ok', mapState === 'ready');
   els.apiCardTitle.innerHTML = view[2];
+  for (const control of [els.zoomIn, els.zoomOut, els.zoomSlider]) control.disabled = mapState !== 'ready';
 }
 
 function apiKey() {
@@ -223,6 +225,7 @@ async function initMap() {
       onMove: (idx, lat, lng) => placeManually(idx, lat, lng),
       onSelectLeg: (key) => selectLeg(key, 'map'),
       onSelectRec: (id) => focusRec(id, 'map'),
+      onZoomChange: (level) => { els.zoomSlider.value = String(Math.round(level)); },
     });
     await mapView.init();
     if (mapState === 'error') return; // 그사이 gm_authFailure가 불린 경우
@@ -2696,6 +2699,9 @@ els.mapMode.addEventListener('click', (e) => {
 });
 
 els.fitMap.addEventListener('click', () => mapView?.fitAll());
+els.zoomIn.addEventListener('click', () => mapView?.zoomBy(1));
+els.zoomOut.addEventListener('click', () => mapView?.zoomBy(-1));
+els.zoomSlider.addEventListener('input', (event) => mapView?.zoomTo(event.target.value));
 els.placePanelClose.addEventListener('click', () => select(null, 'panel'));
 els.placePanelBody.addEventListener('keydown', (event) => {
   if (event.key === 'Enter' && event.target.matches('.query') && state.selected != null) research(state.items[state.selected], event.target.value.trim());

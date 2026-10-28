@@ -228,6 +228,11 @@
               <div class="map-overlay hidden" id="mapPlaceholder"></div>
               <div class="pick-banner hidden" id="pickBanner"><span></span><button type="button" id="pickCancel">취소</button></div>
             </div>
+            <div class="map-zoom" aria-label="지도 확대·축소">
+              <button id="zoomIn" type="button" aria-label="지도 확대" disabled>+</button>
+              <input id="zoomSlider" type="range" min="3" max="20" step="1" value="7" aria-label="지도 확대 수준" disabled>
+              <button id="zoomOut" type="button" aria-label="지도 축소" disabled>−</button>
+            </div>
             <div class="map-footer">
               <span><i class="legend-route"></i> 대중교통·차</span>
               <span><i class="legend-walk"></i> 도보</span>

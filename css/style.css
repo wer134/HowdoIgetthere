@@ -1158,3 +1158,14 @@ html,body {height:100%;overflow:hidden;background:#eef3f7}
 }
 @media (max-width:380px) { .tl-row {grid-template-columns:35px 28px minmax(0,1fr);gap:6px}.timeline-thumb {display:none}.timeline::before {left:49px}.map-scope {display:none} }
 @media (max-width:950px) { .place-panel {top:124px} }
+
+/* 손가락이나 포인터로 잡아 끌 수 있는 지도 확대 슬라이더 */
+.map-zoom {position:absolute;z-index:7;right:18px;bottom:22px;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px;border:1px solid var(--line);border-radius:18px;background:var(--card);box-shadow:var(--shadow)}
+.map-zoom button {width:38px;height:38px;min-height:38px;border:0;border-radius:12px;background:transparent;color:#0755f5;font-size:25px;line-height:1;touch-action:manipulation}
+.map-zoom button:hover:not(:disabled) {background:#edf4ff}
+.map-zoom input {width:28px;height:126px;writing-mode:vertical-lr;direction:rtl;accent-color:#0755f5;cursor:grab;touch-action:none}
+.map-zoom input:active {cursor:grabbing}
+.map-zoom :disabled {opacity:.45;cursor:not-allowed}
+.place-open .map-zoom {right:430px}
+@media (max-width:1250px) { .place-open .map-zoom {right:340px} }
+@media (max-width:950px) { .map-zoom,.place-open .map-zoom {right:12px;bottom:12px}.map-zoom button {width:44px;height:44px;min-height:44px}.map-zoom input {height:102px} }

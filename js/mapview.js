@@ -65,13 +65,14 @@ function darken(hex, amount = 0.28) {
 }
 
 export class MapView {
-  constructor(el, { mapId, onSelect, onMove, onSelectLeg, onSelectRec }) {
+  constructor(el, { mapId, onSelect, onMove, onSelectLeg, onSelectRec, onZoomChange }) {
     this.el = el;
     this.mapId = mapId;
     this.onSelect = onSelect;
     this.onMove = onMove;
     this.onSelectLeg = onSelectLeg;
     this.onSelectRec = onSelectRec;
+    this.onZoomChange = onZoomChange;
     this.recs = new Map(); // 추천 장소 키 → { marker, el }
     this.anchor = null;
     this.markers = new Map(); // 행 번호 → { marker, pin, visible }
@@ -99,7 +100,10 @@ export class MapView {
       streetViewControl: false,
       clickableIcons: false,
       gestureHandling: 'greedy',
+      zoomControl: false,
     });
+    this.map.addListener('zoom_changed', () => this.onZoomChange?.(this.map.getZoom()));
+    this.onZoomChange?.(this.map.getZoom());
     this.info = new maps.InfoWindow({ maxWidth: 320 });
     this.map.addListener('click', (e) => {
       if (!this.pick || !e.latLng) return;
@@ -183,6 +187,16 @@ export class MapView {
 
   setMapType(type) {
     this.map.setMapTypeId(type === 'hybrid' ? 'hybrid' : 'roadmap');
+  }
+
+  zoomTo(level) {
+    const value = Number(level);
+    if (!Number.isFinite(value)) return;
+    this.map.setZoom(Math.min(20, Math.max(3, value)));
+  }
+
+  zoomBy(step) {
+    this.zoomTo((this.map.getZoom() || 7) + step);
   }
 
   fitAll() {
