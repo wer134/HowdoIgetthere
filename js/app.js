@@ -240,6 +240,10 @@ async function initMap() {
     await mapView.init();
     if (mapState === 'error') return; // 그사이 gm_authFailure가 불린 경우
     mapState = 'ready';
+    state.items.forEach(it => { if(it.place) placeMarker(it); });
+    buildLegs(); drawLegs();
+    if(travelReady) renderTravelLibraryPins();
+    if(state.items.some(it=>it.place)) mapView.fitAll();
     els.mapPlaceholder.classList.add('hidden');
     setKeyStatus('지도 연결됨', 'ok');
     renderRecs();
@@ -259,7 +263,10 @@ async function handleFile(file) {
   if (!file) return;
   try {
     const buffer = await file.arrayBuffer();
-    state.workbook = readWorkbook(buffer, file.name);
+    const workbook = readWorkbook(buffer, file.name);
+    saveTravelNow(); travelReady = true; travelId = crypto.randomUUID(); travelLibrary = []; travelDates = []; travelSearchVersion++; travelEl('travelSearchResults').replaceChildren();
+    document.body.classList.remove('travel-native');
+    state.workbook = workbook;
     state.fileBuffer = buffer;
   } catch (err) {
     els.dropTitle.textContent = '파일을 읽지 못했습니다';
@@ -624,6 +631,7 @@ function placeMarker(it) {
 }
 
 function select(idx, from) {
+  if (idx < 0) { const p = travelLibrary[-idx-1]; if (p) openTravelAssign({place:p}); return; }
   state.selected = idx;
   mapView?.highlight(idx);
   if (state.selectedLeg) {
@@ -648,6 +656,7 @@ function select(idx, from) {
 
 // 핀을 끌어 옮기거나 지도에서 직접 찍었을 때
 function placeManually(idx, lat, lng) {
+  if (idx < 0) return;
   const it = state.items[idx];
   it.place = { id: '', name: '', address: '직접 지정한 위치', url: '', lat, lng };
   it.status = 'manual';
@@ -2428,6 +2437,7 @@ function scheduleRender() {
 }
 
 function render() {
+  if (travelReady) scheduleTravelSave();
   rideRisks = state.items.length ? boardingRisks(state.records, timeCols(), PACES[state.pace]) : [];
   const { done, total } = state.progress;
   els.progressBar.style.width = total ? `${(done / total) * 100}%` : '100%';
@@ -2452,6 +2462,10 @@ function render() {
   renderList();
   renderPlacePanel();
   renderWorkspaceChrome();
+  if (travelReady) {
+    els.resultList.querySelectorAll('li.item').forEach(el => { el.draggable = true; });
+    renderTravelLibraryPins();
+  }
 }
 
 function renderPlacePanel() {
@@ -2483,7 +2497,7 @@ function renderPlacePanel() {
     ${photos.length > 1 ? `<div class="place-gallery">${photos.slice(1).map(photoHtml).join('')}</div>` : ''}
     ${detail?.error ? `<p class="note">${escapeHtml(detail.error)}</p>` : ''}
     ${data?.features?.length ? `<p class="place-features">${data.features.map(escapeHtml).join(' · ')}</p>` : ''}
-    <div class="place-section-heading">장소 수정 · 주변 추천</div>
+    <div class="place-section-heading">장소 수정 · 주변 추천</div><button type="button" class="secondary-button" data-action="travel-save">가고 싶은 곳에 보관</button>
     ${renderDetail(it)}
     </div>`;
   if (els.placePanelBody.dataset.content !== html) {
@@ -2604,7 +2618,7 @@ function renderItem(it) {
       <span class="timeline-copy">
         <strong class="item-name">${escapeHtml(placeDisplayName(it))}</strong>
         <span class="item-meta"><span class="badge ${st.cls}">${st.label}</span><span class="item-sub">${escapeHtml(itemSubline(it))}</span></span>
-        <span class="schedule-actions"><button type="button" data-action="edit" aria-label="${escapeHtml(it.name)} 수정">수정</button><button type="button" data-action="delete" aria-label="${escapeHtml(it.name)} 삭제">삭제</button></span>
+        <span class="schedule-actions"><button type="button" data-action="edit" aria-label="${escapeHtml(it.name)} 수정">수정</button><button type="button" data-action="travel-move">이동</button><button type="button" data-action="travel-keep">보관함으로</button><button type="button" data-action="delete" aria-label="${escapeHtml(it.name)} 삭제">삭제</button></span>
       </span>
       <span class="timeline-thumb" aria-hidden="true">${photo?.url && !failedPhotoUrls.has(photo.url) ? `<img src="${escapeHtml(photo.url)}" data-photo-id="${escapeHtml(it.place?.id || '')}" alt="">` : '⌖'}</span>
     </div>
@@ -2893,6 +2907,9 @@ function handleItineraryClick(e) {
   }
   switch (actionEl.dataset.action) {
     case 'edit': openScheduleEditor(it); break;
+    case 'travel-move': openTravelAssign({ item: it }); break;
+    case 'travel-keep': keepTravelItem(it); break;
+    case 'travel-save': storeTravelPlace({...(it.place || {}),name:it.name,memo:it.memo}); showToast('보관함에 저장했어요.'); break;
     case 'delete': deleteScheduleItem(it); break;
     case 'candidate':
       it.place = it.candidates[Number(actionEl.dataset.ci)];
@@ -3302,7 +3319,8 @@ function openScheduleEditor(it = null) {
   scheduleRecommendKind.value = scheduleKind(it?.place?.types || (it?.place?.type ? [it.place.type] : []), it?.name || '');
   document.getElementById('scheduleTitle').textContent = it ? '일정 수정' : '일정 추가';
   scheduleFields.name.value = it?.name || '';
-  scheduleFields.date.value = it?.day || (state.day ?? state.items.at(-1)?.day ?? '');
+  scheduleFields.date.value = it?.day || (state.day ?? state.items.at(-1)?.day ?? travelDates?.[0] ?? '');
+  travelEl('travelDateOptions').innerHTML = [...new Set([...(travelDates || []),...state.items.map(item=>item.day).filter(Boolean)])].map(day=>`<option value="${escapeHtml(day)}"></option>`).join('');
   scheduleFields.time.value = it?.timeText || '';
   scheduleFields.region.value = it && state.mapping.region >= 0 ? cellText(it.cells[state.mapping.region]) : '';
   scheduleFields.memo.value = it?.memo || '';
@@ -3533,4 +3551,276 @@ document.getElementById('scheduleForm').addEventListener('submit', (event) => {
     render();
     showToast('일정 변경을 되돌렸어요.');
   });
+});
+
+/* 여행 보관함: 사용자 일정은 기기에 저장하고 사진·리뷰는 저장하지 않는다. */
+var travelReady = true;
+var travelId = crypto.randomUUID();
+var travelLibrary = [];
+var travelDates = [];
+var travelSaveTimer;
+var travelAssign = null;
+var travelSearchResults = [];
+var travelSearchVersion = 0;
+var travelPinCount = 0;
+const TRAVEL_STORE = 'routeflow.travels.v1';
+const travelEl = (id) => document.getElementById(id);
+function travelSnapshot() {
+  return { id: travelId, name: state.fileBase || '내 여행', updated: Date.now(), headers: state.headers,
+    records: state.records, mapping: state.mapping, library: travelLibrary, dates: travelDates,
+    places: state.items.filter(it => it.place).map(it => ({ recordIndex: it.recordIndex, place: it.place, status: it.status, cachedAt: it.place.cachedAt ||= Date.now() })),
+    region: els.commonRegion.value, sheetName: state.sheetName };
+}
+function saveTravelNow() {
+  clearTimeout(travelSaveTimer);
+  if (!travelReady || !state.workbook) return;
+  const all = loadJson(TRAVEL_STORE, {});
+  const snapshot = travelSnapshot();
+  const comparable = {...snapshot, updated:0};
+  if(all[travelId] && JSON.stringify({...all[travelId],updated:0}) === JSON.stringify(comparable)) return;
+  all[travelId] = snapshot;
+  const ok = storage.set(TRAVEL_STORE, JSON.stringify(all));
+  travelEl('travelSaveStatus').textContent = ok ? '이 기기에 저장됨 · 사진·리뷰 제외' : '저장 공간이 부족해요. 엑셀로 저장해 주세요.';
+}
+function scheduleTravelSave() {
+  clearTimeout(travelSaveTimer);
+  travelSaveTimer = setTimeout(saveTravelNow, 400);
+}
+window.addEventListener('pagehide', saveTravelNow);
+function restoreTravel(snapshot) {
+  travelReady = false;
+  closeRecs();
+  rendered.clear();
+  els.resultList.replaceChildren();
+  travelSearchVersion++;
+  travelId = snapshot.id;
+  travelDates = snapshot.dates || [];
+  travelLibrary = snapshot.library || [];
+  travelLibrary = travelLibrary.map(p => !p.id || Date.now() - (p.cachedAt || snapshot.updated) < 30 * 86400000 ? p : {id:p.id,name:p.name});
+  travelEl('travelSearchResults').replaceChildren();
+  travelEl('travelSearchStatus').textContent = '';
+  selectedSchedulePlace = null;
+  state.fileBase = snapshot.name;
+  state.fileName = `${snapshot.name}.xlsx`;
+  state.fileBuffer = null;
+  state.fileSize = 0;
+  const sheet = XLSX.utils.aoa_to_sheet([snapshot.headers, ...snapshot.records.map(r => r.cells.map(c => c?.v ?? ''))]);
+  state.workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(state.workbook, sheet, snapshot.sheetName || '일정');
+  loadSheet(snapshot.sheetName || '일정');
+  state.records = structuredClone(snapshot.records);
+  for (const record of state.records) for (const cell of record.cells) if (cell?.t === 'd') cell.v = new Date(cell.v);
+  state.mapping = snapshot.mapping;
+  for (const entry of snapshot.places || []) if(entry.place.id && Date.now()-(entry.cachedAt || snapshot.updated)>=30*86400000) {
+    const record=state.records[entry.recordIndex];
+    if(record) for(const key of ['lat','lng']) if(state.mapping[key]>=0) record.cells[state.mapping[key]]=null;
+  }
+  state.items = buildItems().items;
+  for (const entry of snapshot.places || []) {
+    if(entry.place.id && Date.now()-(entry.cachedAt || snapshot.updated)>=30*86400000) continue;
+    const it = state.items.find(i => i.recordIndex === entry.recordIndex);
+    if (it) { it.place = entry.place; it.status = entry.status; }
+  }
+  state.routesRequested = false;
+  state.showRoutes = true;
+  state.selected = null;
+  state.legs = [];
+  document.body.classList.add('travel-native');
+  els.fileName.textContent = snapshot.name;
+  els.fileMeta.textContent = `내 여행 · ${travelDates.length || new Set(state.items.map(it=>it.day)).size}일 · ${state.items.length}곳`;
+  els.uploadedFile.classList.remove('hidden');
+  els.commonRegion.value = snapshot.region || '';
+  assignColors();
+  mapView?.clear();
+  state.items.forEach(placeMarker);
+  buildLegs(); drawLegs();
+  if(state.items.some(it=>it.place)) mapView?.fitAll();
+  renderMapping(); updateSummary();
+  els.planCard.classList.remove('hidden');
+  document.body.classList.add('has-itinerary');
+  travelReady = true;
+  render(); renderTravelLibrary();
+}
+function travelUndoSnapshot() { return structuredClone(travelSnapshot()); }
+function travelChanged(message, before) {
+  state.routesRequested = false;
+  rebuildEditedSchedule();
+  renderTravelLibrary(); saveTravelNow();
+  showToast(message, () => { restoreTravel(before); saveTravelNow(); showToast('변경을 되돌렸어요.'); });
+}
+function travelBusy() { if(state.running || state.routeRunning || state.planner.running) {showToast('진행 중인 작업이 끝나면 다시 시도해 주세요.');return true;} return false; }
+travelEl('travelImport').onclick = () => {if(!travelBusy()) els.fileInput.click();};
+travelEl('newTravel').onclick = () => {if(!travelBusy()) travelEl('travelDialog').showModal();};
+travelEl('newTravelForm').onsubmit = (event) => {
+  event.preventDefault(); saveTravelNow();
+  const start = travelEl('travelStart').value;
+  const dates = Array.from({length: Number(travelEl('travelDays').value)}, (_, i) => {
+    const d = new Date(`${start}T12:00:00`); d.setDate(d.getDate() + i);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  });
+  const headers = ['장소','날짜','시간','지역','메모','주소','위도','경도'];
+  restoreTravel({id: crypto.randomUUID(), name: travelEl('travelName').value.trim(), updated: Date.now(), headers,
+    records: [], mapping: autoMap(headers), dates, library: [], places: [], sheetName: '일정'});
+  travelEl('travelDialog').close(); setTravelTab(true); saveTravelNow();
+  showToast('여행을 만들었어요. 가고 싶은 장소를 모아 보세요.');
+};
+function setTravelTab(library) {
+  document.body.classList.toggle('travel-library-open', library);
+  travelEl('travelLibrary').classList.toggle('hidden', !library);
+  travelEl('travelPlanTab').setAttribute('aria-pressed', String(!library));
+  travelEl('travelLibraryTab').setAttribute('aria-pressed', String(library));
+  renderTravelLibrary();
+}
+travelEl('travelPlanTab').onclick = () => setTravelTab(false);
+travelEl('travelLibraryTab').onclick = () => setTravelTab(true);
+function renderTravelLibrary() {
+  travelEl('travelLibraryList').innerHTML = travelLibrary.length ? travelLibrary.map((p, i) => `<article class="travel-place" draggable="true" data-library="${i}"><strong>${escapeHtml(p.name)}</strong><p>${escapeHtml(p.address || '')}</p><label class="travel-note">메모<input data-travel-note="${i}" aria-label="${escapeHtml(p.name)} 메모" value="${escapeHtml(p.memo || '')}" placeholder="가고 싶은 이유, 먹고 싶은 메뉴"></label><button type="button" data-travel-add="${i}">일정에 넣기</button><button type="button" data-travel-remove="${i}">보관함에서 삭제</button></article>`).join('') : '<p>가고 싶은 장소를 검색해서 보관하세요. 날짜는 나중에 정해도 됩니다.</p>';
+  const days = [...new Set([...travelDates, ...state.items.map(it => it.day).filter(Boolean)])];
+  travelEl('travelLibraryDays').innerHTML = days.map(day => `<button type="button" data-travel-day="${escapeHtml(day)}">${escapeHtml(day)}</button>`).join('');
+  renderTravelLibraryPins();
+}
+function renderTravelLibraryPins() {
+  const visible = document.body.classList.contains('travel-library-open');
+  for (let i=0;i<Math.max(travelPinCount,travelLibrary.length);i++) {
+    const p=travelLibrary[i];
+    mapView?.setMarker(-i-1,{position:p && Number.isFinite(p.lat) && Number.isFinite(p.lng) ? {lat:p.lat,lng:p.lng}:null,color:'#8b5cf6',label:'☆',title:p?.name || '',visible:visible && !!p});
+  }
+  travelPinCount = travelLibrary.length;
+}
+travelEl('travelSearchForm').onsubmit = async (event) => {
+  event.preventDefault();
+  if (mapState !== 'ready') { travelEl('travelSearchStatus').textContent = '설정에서 Google Maps를 먼저 연결해 주세요.'; return; }
+  const version = ++travelSearchVersion;
+  const button = event.currentTarget.querySelector('button'); button.disabled = true;
+  travelEl('travelSearchStatus').textContent = '장소를 찾는 중…';
+  try {
+    const results = await searchPlaces(travelEl('travelSearch').value.trim(), searchOptions(CFG.language));
+    if (version !== travelSearchVersion) return;
+    travelSearchResults = results;
+    travelEl('travelSearchResults').innerHTML = results.map((p,i) => `<article class="travel-place"><strong>${escapeHtml(p.name)}</strong><p>${escapeHtml(p.address)}</p><button type="button" data-travel-save="${i}">보관하기</button><button type="button" data-travel-direct="${i}">일정에 넣기</button></article>`).join('');
+    travelEl('travelSearchStatus').textContent = results.length ? `${results.length}곳을 찾았어요.` : '검색어에 지역 이름을 더해 보세요.';
+  } catch (err) { if (version === travelSearchVersion) travelEl('travelSearchStatus').textContent = `검색하지 못했어요: ${err.message}`; }
+  finally { button.disabled = false; }
+};
+function storeTravelPlace(place) {
+  const index = travelLibrary.findIndex(p => p.id ? p.id === place.id : p.name === place.name);
+  const entry = {...place,cachedAt:place.cachedAt || Date.now()};
+  if(index < 0) travelLibrary.push(entry);
+  else travelLibrary[index] = {...travelLibrary[index],...entry};
+  renderTravelLibrary(); saveTravelNow();
+  mapView?.fitAll();
+}
+travelEl('travelLibrary').onclick = event => {
+  const b = event.target.closest('button'); if (!b) return;
+  if (b.dataset.travelSave != null) { storeTravelPlace(travelSearchResults[Number(b.dataset.travelSave)]); showToast('가고 싶은 곳에 보관했어요.'); }
+  if (b.dataset.travelDirect != null) openTravelAssign({place:travelSearchResults[Number(b.dataset.travelDirect)]});
+  if (b.dataset.travelAdd != null) openTravelAssign({place:travelLibrary[Number(b.dataset.travelAdd)]});
+  if (b.dataset.travelRemove != null) {
+    const before=travelUndoSnapshot(); travelLibrary.splice(Number(b.dataset.travelRemove),1);
+    renderTravelLibrary(); saveTravelNow();
+    showToast('보관함에서 삭제했어요.',()=>{restoreTravel(before);saveTravelNow();});
+  }
+};
+function openTravelAssign(value) {
+  travelAssign=value;
+  const days=[...new Set([...travelDates,...state.items.map(it=>it.day).filter(Boolean)])];
+  travelEl('travelDateOptions').innerHTML=days.map(d=>`<option value="${escapeHtml(d)}"></option>`).join('');
+  travelEl('travelAssignDay').value=value.item?.day || state.day || days[0] || '';
+  travelEl('travelAssignForm').querySelector('button').disabled = false;
+  travelEl('travelAssignTitle').textContent=`${value.item?.name || value.place.name} · ${value.item?'이동':'일정에 넣기'}`;
+  travelAssignOptions(); travelEl('travelAssignDialog').showModal();
+}
+function travelAssignOptions() {
+  const day=travelEl('travelAssignDay').value;
+  travelEl('travelAssignPosition').innerHTML='<option value="end">이 날짜의 마지막</option>'+state.items.filter(it=>it.day===day && it!==travelAssign?.item).map(it=>`<option value="${it.recordIndex}">${escapeHtml(it.name)} 앞</option>`).join('');
+}
+travelEl('travelAssignDay').oninput=travelAssignOptions;
+travelEl('travelAssignForm').onsubmit=event=>{
+  event.preventDefault();
+  if (state.running || state.routeRunning) { showToast('진행 중인 검색이 끝나면 이동해 주세요.'); return; }
+  if (!travelEl('travelAssignDay').value.trim()) return;
+  const before=travelUndoSnapshot(), m=state.mapping, day=travelEl('travelAssignDay').value.trim();
+  for (const it of state.items) if (m.date >= 0 && !cellText(it.cells[m.date])) it.cells[m.date] = {v:it.day,t:'s'};
+  const targetIndex=travelEl('travelAssignPosition').value;
+  const target=targetIndex==='end'?null:state.records[Number(targetIndex)];
+  let record;
+  if(travelAssign.item) {record=state.records[travelAssign.item.recordIndex];state.records.splice(travelAssign.item.recordIndex,1);}
+  else {
+    const p=travelAssign.place;
+    for (const [key,title] of [['address','주소'],['lat','위도'],['lng','경도']]) if(m[key]<0) { m[key]=state.headers.length; state.headers.push(title); }
+    record={rowNumber:Math.max(1,...state.records.map(r=>r.rowNumber))+1,cells:[]};
+    for(const [key,val] of Object.entries({name:p.name,address:p.address,lat:p.lat,lng:p.lng,memo:p.memo})) if(m[key]>=0 && val!=null) record.cells[m[key]]={v:val,t:typeof val==='number'?'n':'s'};
+    resolvedPlaces.set(record.cells,{id:p.id,name:p.name,address:p.address,url:p.url});
+  }
+  if(m.date<0) {m.date=state.headers.length;state.headers.push('날짜');}
+  record.cells[m.date]={v:day,t:'s'};
+  if(m.category>=0) record.cells[m.category]={v:day,t:'s'};
+  let index=target?state.records.indexOf(target):-1;
+  if(index<0) {
+    const last=state.items.filter(it=>it.day===day && it!==travelAssign.item).at(-1);
+    index=last?state.records.findIndex(r=>r.cells===last.cells)+1:state.records.length;
+  }
+  state.records.splice(index,0,record);
+  if(!travelDates.includes(day)) travelDates.push(day);
+  state.day=day;
+  travelEl('travelAssignDialog').close();
+  travelChanged('일정에 반영했어요.',before);
+  setTravelTab(false);
+  const added=state.items.find(it=>it.cells===record.cells);
+  if(added?.place && !travelAssign.item) mapView?.fitAll();
+  if(added && !added.place && mapState==='ready') research(added,added.query);
+};
+function keepTravelItem(it) {
+  if(state.running || state.routeRunning) {showToast('검색이 끝나면 다시 시도해 주세요.');return;}
+  const before=travelUndoSnapshot();
+  storeTravelPlace({...(it.place || {}),name:it.name,memo:it.memo});
+  state.records.splice(it.recordIndex,1);
+  travelChanged('일정에서 빼고 보관함에 남겼어요.',before);
+}
+travelEl('savedTravels').onclick=()=>{
+  if(travelBusy()) return;
+  saveTravelNow();
+  const all=Object.values(loadJson(TRAVEL_STORE,{})).sort((a,b)=>b.updated-a.updated);
+  travelEl('travelHistoryList').innerHTML=all.length?all.map(t=>`<article class="travel-place"><strong>${escapeHtml(t.name)}</strong><p>${t.records.length}행 · ${new Date(t.updated).toLocaleString('ko-KR')}</p><button type="button" data-travel-open="${escapeHtml(t.id)}">열기</button><button type="button" data-travel-delete="${escapeHtml(t.id)}">삭제</button></article>`).join(''):'<p>아직 저장한 여행이 없습니다.</p>';
+  travelEl('travelHistoryDialog').showModal();
+};
+travelEl('travelHistoryList').onclick=event=>{
+  const b=event.target.closest('button');if(!b)return;
+  const all=loadJson(TRAVEL_STORE,{});
+  if(b.dataset.travelOpen) {saveTravelNow();restoreTravel(all[b.dataset.travelOpen]);setTravelTab(false);travelEl('travelHistoryDialog').close();}
+  if(b.dataset.travelDelete && confirm('이 기기에 저장한 여행을 삭제할까요?')) {
+    const id=b.dataset.travelDelete;delete all[id];storage.set(TRAVEL_STORE,JSON.stringify(all));
+    if(id===travelId) {travelReady=false;clearTimeout(travelSaveTimer);}
+    b.closest('article').remove();
+  }
+};
+
+let travelDragged = null;
+document.addEventListener('dragstart', event => {
+  const library = event.target.closest('[data-library]');
+  const item = event.target.closest('#resultList > li.item');
+  travelDragged = library ? {place:travelLibrary[Number(library.dataset.library)]} : item ? {item:state.items[Number(item.dataset.idx)]} : null;
+  if (travelDragged) { event.dataTransfer.effectAllowed='move'; event.dataTransfer.setData('text/plain','RouteFlow 장소'); }
+});
+document.addEventListener('dragover', event => {
+  if (travelDragged && event.target.closest('[data-travel-day], #resultList > li.item')) event.preventDefault();
+});
+document.addEventListener('drop', event => {
+  const day = event.target.closest('[data-travel-day]');
+  const row = event.target.closest('#resultList > li.item');
+  if (!travelDragged || (!day && !row)) return;
+  event.preventDefault();
+  const target = row ? state.items[Number(row.dataset.idx)] : null;
+  if (target === travelDragged.item) return;
+  openTravelAssign(travelDragged);
+  travelEl('travelAssignDay').value = day?.dataset.travelDay || target.day;
+  travelAssignOptions();
+  if (target) travelEl('travelAssignPosition').value = String(target.recordIndex);
+  travelDragged = null;
+});
+document.addEventListener('dragend',()=>{travelDragged=null;});
+
+travelEl('travelLibraryList').addEventListener('change', event => {
+  const index = event.target.dataset.travelNote;
+  if(index != null && travelLibrary[Number(index)]) { travelLibrary[Number(index)].memo=event.target.value;saveTravelNow(); }
 });

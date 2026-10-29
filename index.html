@@ -87,6 +87,7 @@
               </div>
             </div>
 
+            <div class="travel-start"><button type="button" id="newTravel" class="primary-button">＋ 새 여행 시작</button><button type="button" id="savedTravels" class="secondary-button">저장한 여행</button><button type="button" id="travelImport" class="secondary-button">엑셀 가져오기</button><small id="travelSaveStatus" role="status">이 기기에 여행을 자동 저장합니다.</small></div>
             <div class="uploaded-file hidden" id="uploadedFile">
               <div class="file-symbol">XLS<span>X</span></div>
               <div class="file-details"><strong id="fileName"></strong><span id="fileMeta"></span></div>
@@ -197,6 +198,8 @@
               <div class="step-heading"><span class="step-number">02</span><div><div class="section-kicker">YOUR PLAN</div><h2>일정 둘러보기</h2></div></div>
               <div class="plan-summary" id="planSummary"></div>
             </div>
+            <div class="travel-tabs"><button type="button" id="travelPlanTab" aria-pressed="true">일정</button><button type="button" id="travelLibraryTab" aria-pressed="false">가고 싶은 곳</button></div>
+            <section id="travelLibrary" class="hidden"><form id="travelSearchForm" class="research"><input id="travelSearch" placeholder="지역과 장소 검색 (예: 후쿠오카 카페)" aria-label="보관할 장소 검색" required><button class="secondary-button">검색</button></form><p id="travelSearchStatus" role="status"></p><div id="travelSearchResults"></div><p>날짜 버튼으로 장소를 끌어 놓거나 ‘일정에 넣기’를 누르세요.</p><div id="travelLibraryDays" class="travel-days"></div><h3>보관한 장소</h3><div id="travelLibraryList"></div></section>
             <button class="schedule-add" id="scheduleAdd" type="button">＋ 일정 추가</button>
             <div class="progress"><div class="progress-bar" id="progressBar"></div></div>
             <p class="progress-text" id="progressText"></p>
@@ -270,7 +273,7 @@
     <section id="scheduleInfoPanel" role="tabpanel" aria-labelledby="scheduleInfoTab">
       <div id="schedulePlacePreview" class="schedule-place-preview hidden" aria-live="polite"></div>
       <label>장소 이름 <input id="scheduleName" required placeholder="예: 해운대해수욕장"></label>
-      <label>날짜 또는 분류 <input id="scheduleDate" placeholder="예: 12/5 (토)"></label>
+      <label>날짜 또는 분류 <input id="scheduleDate" list="travelDateOptions" placeholder="예: 12/5 (토)"></label>
       <label>시간 <input id="scheduleTime" placeholder="예: 10:00–11:00"></label>
       <label>지역 <input id="scheduleRegion" placeholder="예: 부산 해운대구"></label>
       <label>메모 <textarea id="scheduleMemo" rows="3"></textarea></label>
@@ -291,6 +294,9 @@
   </form>
   <p class="muted schedule-editor-footnote">변경한 일정은 ‘엑셀 저장’으로 내려받으세요.</p>
 </dialog>
+<dialog class="dialog" id="travelDialog"><form method="dialog"><button class="dialog-x" aria-label="닫기">×</button></form><h2>새 여행 시작</h2><form id="newTravelForm" class="schedule-form"><label>여행 이름<input id="travelName" required maxlength="100" placeholder="후쿠오카 여행"></label><label>출발일<input id="travelStart" type="date" required></label><label>여행 일수<input id="travelDays" type="number" min="1" max="60" value="3" required></label><button class="primary-button">여행 만들기</button></form><p>엑셀 없이 시작할 수 있어요. 현재 여행도 이 기기에 저장됩니다.</p></dialog>
+<dialog class="dialog" id="travelHistoryDialog"><form method="dialog"><button class="dialog-x" aria-label="닫기">×</button></form><h2>저장한 여행</h2><p>이 브라우저에서만 보입니다. 중요한 일정은 엑셀로도 저장하세요.</p><div id="travelHistoryList"></div></dialog>
+<dialog class="dialog" id="travelAssignDialog"><form method="dialog"><button class="dialog-x" aria-label="닫기">×</button></form><h2 id="travelAssignTitle">일정에 넣기</h2><form id="travelAssignForm" class="schedule-form"><label>날짜<input id="travelAssignDay" list="travelDateOptions" required></label><datalist id="travelDateOptions"></datalist><label>배치 위치<select id="travelAssignPosition"></select></label><button class="primary-button">적용</button></form></dialog>
 <dialog class="dialog" id="settingsDialog" aria-labelledby="settingsTitle">
   <form method="dialog"><button class="dialog-x" aria-label="닫기">×</button></form>
   <div class="section-kicker">SETTINGS</div>

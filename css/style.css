@@ -1218,3 +1218,22 @@ html,body {height:100%;overflow:hidden;background:#eef3f7}
 .schedule-recommend-rating {flex:none;color:#0755f5;font-size:11px}
 @media (max-width:950px) {.schedule-actions button {min-height:42px;padding:5px 9px}.schedule-form input,.schedule-form textarea,.schedule-form select {font-size:16px}.schedule-recommend-item {min-height:48px}}
 @media (max-width:700px) {.schedule-editor[open] {top:66px;right:8px;bottom:8px;left:8px;width:auto;max-width:none;padding:0 16px 16px;border-radius:16px}.schedule-editor-header {margin:0 -16px;padding:14px 16px}.schedule-editor-tabs button {min-height:44px}}
+
+/* 여행 시작과 장소 보관함 */
+.travel-start {display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.travel-start small {flex-basis:100%;color:var(--muted);font-size:11px}
+.travel-tabs {display:flex;gap:6px;margin:12px 0}
+.travel-tabs button {flex:1;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+.travel-tabs button[aria-pressed="true"] {background:#0755f5;color:white}
+.travel-place {padding:12px;margin:8px 0;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+.travel-place p {font-size:12px;color:var(--muted);margin:4px 0}
+.travel-place button {margin:8px 8px 0 0;min-height:36px;border:1px solid var(--line);border-radius:8px;background:var(--card-soft);padding:6px 10px}
+#travelLibrary .research {display:flex;gap:6px} #travelLibrary input {min-width:0;width:100%}
+#travelLibrary h3 {font-size:14px;margin-top:20px}
+body.travel-library-open #resultList,body.travel-library-open #scheduleAdd,body.travel-library-open #planCheck,body.travel-library-open #statusChips {display:none}
+.schedule-actions {flex-wrap:wrap}
+.travel-days {display:flex;gap:6px;flex-wrap:wrap}.travel-days button {padding:9px;border:1px dashed #0755f5;border-radius:10px;background:#edf4ff;color:#0755f5}
+[draggable="true"] {cursor:grab}
+.toast.is-visible {pointer-events:none}.toast.is-visible button {pointer-events:auto}
+body.travel-native #dropzone,body.travel-native #importSteps {display:none}
+.travel-note {display:grid;gap:4px;margin-top:8px;font-size:12px;color:var(--muted)}.travel-note input {padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--text)}

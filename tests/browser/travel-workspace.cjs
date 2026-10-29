@@ -1,0 +1,10 @@
+const {chromium}=require('playwright');
+(async()=>{const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH || '/usr/bin/chromium',headless:true,args:['--no-sandbox']});
+for(const width of [1440,390]) {const page=await browser.newPage({viewport:{width,height:900}});const errors=[];page.on('pageerror',e=>errors.push(e.message));
+await page.goto(process.env.APP_URL || 'http://127.0.0.1:8080');await page.click('#newTravel');await page.fill('#travelName','검증 여행');await page.fill('#travelStart','2026-11-01');await page.click('#newTravelForm button');
+await page.click('#travelPlanTab');await page.click('#scheduleAdd');await page.fill('#scheduleName','첫 장소');await page.fill('#scheduleDate','2026-11-01');await page.click('#scheduleForm button[type=submit]');
+await page.click('#placePanelClose');await page.locator('#resultList [data-action=travel-keep]').click();await page.click('#travelLibraryTab');await page.locator('[data-travel-add]').click();await page.fill('#travelAssignDay','2026-11-02');await page.click('#travelAssignForm button');
+if(await page.locator('#resultList > li.item').count()!==1)throw Error('placement');
+await page.click('#toastUndo');await page.click('#travelLibraryTab');if(await page.locator('[data-travel-add]').count()!==1)throw Error('undo');
+await page.click('#savedTravels');await page.locator('[data-travel-open]').first().click();await page.reload();await page.click('#savedTravels');await page.locator('[data-travel-open]').first().click();await page.click('#travelLibraryTab');if(await page.locator('[data-travel-add]').count()!==1)throw Error('restore');
+if(errors.length)throw Error(errors.join('\n'));console.log(width,'PASS');await page.close();}await browser.close();})().catch(e=>{console.error(e);process.exit(1)});
