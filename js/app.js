@@ -2635,7 +2635,7 @@ function renderItem(it) {
     || photoStates.get(it.place?.id)?.photo;
   const start = parseTimeRange(it.timeText).start;
   const time = start != null ? `${pad2(Math.floor(start / 60))}:${pad2(start % 60)}` : '';
-  return `<li class="item${selected ? ' selected' : ''}" data-idx="${it.idx}">
+  return `<li class="item${selected ? ' selected' : ''}" draggable="true" data-idx="${it.idx}">
     <div class="tl-row">
       <span class="timeline-time">${time}</span>
       <span class="timeline-rail"><span class="num timeline-node" style="--c:${colorOf(it)}">${placeNumber(it)}</span></span>
