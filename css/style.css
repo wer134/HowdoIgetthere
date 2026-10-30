@@ -1237,3 +1237,51 @@ body.travel-library-open #resultList,body.travel-library-open #scheduleAdd,body.
 .toast.is-visible {pointer-events:none}.toast.is-visible button {pointer-events:auto}
 body.travel-native #dropzone,body.travel-native #importSteps {display:none}
 .travel-note {display:grid;gap:4px;margin-top:8px;font-size:12px;color:var(--muted)}.travel-note input {padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--text)}
+
+/* 시작부터 이동 중 열람까지: 지도 연결 없이도 완성하는 여행. */
+.travel-welcome {padding:8px 0 18px}
+.travel-welcome h2 {font-size:25px;line-height:1.35;margin:8px 0 12px;letter-spacing:-.7px}
+.travel-welcome p,.library-start p {font-size:13px;line-height:1.65;color:var(--muted)}
+.travel-native #runBtn {display:none}
+.library-start {padding:2px 0 12px}
+.library-start button {width:100%;min-height:44px}
+.place-freshness-note {font-size:11px;line-height:1.6;color:var(--muted);padding:8px 0 16px;list-style:none}
+.empty strong {display:block;font-size:17px;color:var(--text)}
+.empty p {font-size:13px;line-height:1.8}
+.empty button {margin-top:12px;min-height:44px;padding:8px 16px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--primary)}
+.travel-portability {padding:16px 0;border-bottom:1px solid var(--line)}
+.travel-portability h3 {margin:0 0 8px}.travel-portability p {font-size:13px;line-height:1.6}
+.travel-portability-actions {display:flex;flex-wrap:wrap;gap:10px;margin:14px 0}
+.travel-portability button {min-height:44px}
+.itinerary-dialog {max-width:820px;width:calc(100% - 24px);max-height:calc(100dvh - 32px);overflow:auto}
+.itinerary-controls {padding-bottom:24px;border-bottom:1px solid var(--line);margin-bottom:24px}
+.itinerary-controls p {font-size:13px;color:var(--muted)}
+.itinerary-controls button {margin:6px 8px 0 0;min-height:44px}
+#itineraryPreview {font-size:15px;line-height:1.65;color:#182c4c}
+#itineraryPreview h1 {font-size:28px;overflow-wrap:anywhere}
+#itineraryPreview .eyebrow {color:#215fe5;font-weight:700}
+#itineraryPreview h2 {font-size:20px;border-bottom:2px solid #215fe5;padding-bottom:8px}
+#itineraryPreview h2 span {font-size:14px;font-weight:400;margin-left:12px;color:#526079}
+#itineraryPreview ol,#itineraryPreview ul {padding:0;list-style:none}
+#itineraryPreview li {display:flex;gap:20px;padding:16px 0;border-bottom:1px solid #e5eaf2;break-inside:avoid;overflow-wrap:anywhere}
+#itineraryPreview li div {min-width:0;flex:1}
+#itineraryPreview .itinerary-time {flex:none;width:116px;font-size:14px;color:#215fe5}
+#itineraryPreview h3,#itineraryPreview p {margin:0 0 6px}
+#itineraryPreview h3 {font-size:17px}
+#itineraryPreview .itinerary-memo {white-space:pre-wrap}
+#itineraryPreview .itinerary-day {margin:28px 0}
+#itineraryPreview footer {border-top:1px solid #e5eaf2;padding-top:20px;font-size:12px;color:#526079}
+@media(max-width:500px) {#itineraryPreview li {flex-direction:column;gap:6px}#itineraryPreview .itinerary-time {width:auto}.file-details {min-width:0}.file-details strong {overflow-wrap:anywhere}}
+@media print {
+  html,body {height:auto!important;overflow:visible!important;background:white!important}
+  body > * {display:none!important}
+  body > #travelItineraryDialog[open] {display:block!important;position:static!important;inset:auto!important;width:auto!important;max-width:none!important;height:auto!important;max-height:none!important;overflow:visible!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important}
+  #travelItineraryDialog::backdrop {display:none}
+  #travelItineraryDialog > form,#travelItineraryDialog .itinerary-controls {display:none!important}
+  #itineraryPreview h2 {break-after:avoid}
+  @page {size:A4;margin:16mm}
+}
+
+body:not(.has-itinerary) #runBtn {display:none}
+#renameTravel {flex:none;border:1px solid var(--line);border-radius:8px;background:white;padding:8px 10px;color:#215fe5;font-size:11px;cursor:pointer}
+#continueTravel {width:100%;min-height:44px;margin-top:8px;text-align:left;overflow-wrap:anywhere}
