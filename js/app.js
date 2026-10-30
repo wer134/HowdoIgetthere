@@ -1,6 +1,6 @@
 import { createTravelStore, validTravel } from './travel-store.js';
 // 화면 흐름: API 키 → 엑셀 올리기 → 열 맞추기 → 장소 검색·지도 표시 → 동선 → 결과 확인·내보내기
-import { escapeHtml, downloadBlob, storage, PALETTE, STATUS, normalizeText, similarity } from './util.js';
+import { escapeHtml, safeUrl, downloadBlob, storage, PALETTE, STATUS, normalizeText, similarity } from './util.js';
 import {
   FIELDS, RESULT_COLUMNS, readWorkbook, parseSheet, pickDefaultSheet, autoMap,
   cellText, cellNumber, downloadTemplate, buildResultWorkbook, placeUrl,
@@ -698,7 +698,7 @@ function extraFields(it, { includeMapped }) {
 
 function linkify(text) {
   return /^https?:\/\/\S+$/i.test(text)
-    ? `<a href="${escapeHtml(text)}" target="_blank" rel="noopener">${escapeHtml(text)}</a>`
+    ? `<a href="${escapeHtml(safeUrl(text))}" target="_blank" rel="noopener">${escapeHtml(text)}</a>`
     : escapeHtml(text);
 }
 
@@ -712,7 +712,7 @@ function infoHtml(it) {
     ${it.memo ? `<p class="info-memo">${escapeHtml(it.memo)}</p>` : ''}
     ${rows.length ? `<table>${rows.map(([h, v]) => `<tr><th>${escapeHtml(h)}</th><td>${linkify(v)}</td></tr>`).join('')}</table>` : ''}
     ${p ? `<p class="info-place">${escapeHtml(placeLine)}</p>
-    <a class="info-link" href="${escapeHtml(placeUrl(p))}" target="_blank" rel="noopener">구글 지도에서 열기 ↗</a>` : ''}
+    <a class="info-link" href="${escapeHtml(safeUrl(placeUrl(p)))}" target="_blank" rel="noopener">구글 지도에서 열기 ↗</a>` : ''}
   </div>`;
 }
 
@@ -1038,7 +1038,7 @@ function renderLegDetail(leg) {
     ${steps}
     <div class="detail-actions">
       <label class="leg-select">이동 방법 <select data-action="leg-mode">${options}</select></label>
-      <a class="secondary-button" href="${escapeHtml(directionsUrl(leg))}" target="_blank" rel="noopener">구글 지도 길찾기 ↗</a>
+      <a class="secondary-button" href="${escapeHtml(safeUrl(directionsUrl(leg)))}" target="_blank" rel="noopener">구글 지도 길찾기 ↗</a>
     </div>
     ${timingLine(leg)}
   </div>`;
@@ -1323,7 +1323,7 @@ function editedRows() {
 function saveEditedPlan() {
   if (state.scheduleChanged) {
     exportXlsx();
-    showToast('추가·삭제·수정한 모든 일정을 새 엑셀로 저장했어요.');
+    showToast('수정한 일정의 엑셀 다운로드를 요청했어요. 저장 결과를 확인해 주세요.');
     return;
   }
   const rows = editedRows();
@@ -1341,7 +1341,7 @@ function saveEditedPlan() {
     })),
   });
   downloadBlob(new Blob([out.data], { type: out.type }), out.fileName);
-  showToast(out.keptFormat ? `고친 일정을 저장했어요 · ${out.fileName}` : '고친 일정을 저장했어요 · 이 형식은 서식이 남지 않아요');
+  showToast(out.keptFormat ? `수정 파일 다운로드를 요청했어요 · ${out.fileName}` : '수정 파일 다운로드를 요청했어요 · 이 형식은 서식이 남지 않아요');
 }
 
 let lastPlanCheckHtml = '';
@@ -1861,9 +1861,9 @@ function recDetailHtml(p, recs) {
   const hoursHtml = hours.length ? `<div class="rd-block"><div class="rd-label">영업시간${recs.at ? ` <small>${recs.at.now ? '오늘' : `${WEEKDAYS[today]}요일`} 굵게</small>` : ''}</div>
     <ul class="rd-hours">${hours.map((h) => `<li${h.day === today ? ' class="today"' : ''}><b>${h.label}</b>${escapeHtml(h.text)}</li>`).join('')}</ul></div>` : '';
   const links = [
-    `<a href="${escapeHtml(walkUrl(recs.anchor, p))}" target="_blank" rel="noopener">${escapeHtml(recs.anchor.name)}에서 걸어가기 ↗</a>`,
+    `<a href="${escapeHtml(safeUrl(walkUrl(recs.anchor, p)))}" target="_blank" rel="noopener">${escapeHtml(recs.anchor.name)}에서 걸어가기 ↗</a>`,
     data?.phone ? `<a href="tel:${escapeHtml(data.phone.replace(/[^\d+]/g, ''))}">${escapeHtml(data.phone)}</a>` : '',
-    data?.website ? `<a href="${escapeHtml(data.website)}" target="_blank" rel="noopener">웹사이트 ↗</a>` : '',
+    data?.website ? `<a href="${escapeHtml(safeUrl(data.website))}" target="_blank" rel="noopener">웹사이트 ↗</a>` : '',
   ].filter(Boolean).join('');
   let more = '';
   if (loading) more = '<p class="rd-status">사진·리뷰를 불러오는 중…</p>';
@@ -1871,16 +1871,16 @@ function recDetailHtml(p, recs) {
   else if (data) {
     const photos = data.photos.filter((ph) => ph.url && !failedPhotoUrls.has(ph.url));
     const authors = [...new Map(photos.flatMap((ph) => ph.authors).filter((a) => a.name).map((a) => [a.name, a])).values()];
-    const credit = (a) => (a.uri ? `<a href="${escapeHtml(a.uri)}" target="_blank" rel="noopener">${escapeHtml(a.name)}</a>` : escapeHtml(a.name));
+    const credit = (a) => (a.uri ? `<a href="${escapeHtml(safeUrl(a.uri))}" target="_blank" rel="noopener">${escapeHtml(a.name)}</a>` : escapeHtml(a.name));
     more = [
-      photos.length ? `<div class="rd-photos">${photos.map((ph) => `<a href="${escapeHtml(ph.link || googleUrl(p))}" target="_blank" rel="noopener"><img src="${escapeHtml(ph.url)}" data-photo-id="${escapeHtml(p.id)}" alt="${escapeHtml(p.name)} 사진" loading="lazy"></a>`).join('')}</div>` : '',
+      photos.length ? `<div class="rd-photos">${photos.map((ph) => `<a href="${escapeHtml(safeUrl(ph.link || googleUrl(p)))}" target="_blank" rel="noopener"><img src="${escapeHtml(ph.url)}" data-photo-id="${escapeHtml(p.id)}" alt="${escapeHtml(p.name)} 사진" loading="lazy"></a>`).join('')}</div>` : '',
       data.about ? `<p class="rd-about">${escapeHtml(data.about)}</p>` : '',
       data.features.length ? `<div class="rd-features">${data.features.map((f) => `<span>${escapeHtml(f)}</span>`).join('')}</div>` : '',
       data.reviewSummary?.text ? `<div class="rd-block"><div class="rd-label">리뷰 요약 <small>${escapeHtml(data.reviewSummary.disclosure)}</small></div><p class="rd-summary">${escapeHtml(data.reviewSummary.text)}</p></div>` : '',
       data.reviews.length ? `<div class="rd-block"><div class="rd-label">리뷰</div><ul class="rd-reviews">${data.reviews.map((r) => `<li>
           <div class="rd-review-head"><span class="rd-stars" aria-label="별 ${r.rating}개">${stars(r.rating || 0)}</span>${r.authorUri ? credit({ name: r.author, uri: r.authorUri }) : escapeHtml(r.author)}<small>${escapeHtml(r.when)}</small></div>
           <p class="rd-review" data-review title="눌러서 펼치기">${escapeHtml(r.text)}</p>
-        </li>`).join('')}</ul><a class="rd-more" href="${escapeHtml(data.reviewSummary?.uri || googleUrl(p))}" target="_blank" rel="noopener">구글 지도에서 리뷰 더 보기 ↗</a></div>` : '',
+        </li>`).join('')}</ul><a class="rd-more" href="${escapeHtml(safeUrl(data.reviewSummary?.uri || googleUrl(p)))}" target="_blank" rel="noopener">구글 지도에서 리뷰 더 보기 ↗</a></div>` : '',
       `<p class="rd-credit">${authors.length ? `사진: ${authors.slice(0, 3).map(credit).join(', ')} · ` : ''}정보: Google 지도</p>`,
     ].join('');
   }
@@ -1922,8 +1922,8 @@ function recInfoHtml(p, recs) {
     <p class="info-memo">${escapeHtml(recMeta(p, recs.kind))}</p>
     ${openText(p)}
     <div class="info-links">
-      <a class="info-link" href="${escapeHtml(googleUrl(p))}" target="_blank" rel="noopener">구글 지도에서 열기 ↗</a>
-      ${src ? `<a class="info-link" href="${escapeHtml(src.url)}" target="_blank" rel="noopener">${src.label}에서 보기 ↗</a>` : ''}
+      <a class="info-link" href="${escapeHtml(safeUrl(googleUrl(p)))}" target="_blank" rel="noopener">구글 지도에서 열기 ↗</a>
+      ${src ? `<a class="info-link" href="${escapeHtml(safeUrl(src.url))}" target="_blank" rel="noopener">${src.label}에서 보기 ↗</a>` : ''}
     </div>
   </div>`;
 }
@@ -1942,9 +1942,9 @@ function recCardHtml(p, i, recs) {
       <div class="rec-meta">${escapeHtml(recMeta(p, kind))}${src && score != null ? ` · <b>${src.label} ${escapeHtml(String(score))}</b>` : ''}</div>
       ${openText(p)}
       <div class="rec-actions">
-        ${src ? `<a class="rec-link" href="${escapeHtml(src.url)}" target="_blank" rel="noopener">${src.label} ↗</a>
+        ${src ? `<a class="rec-link" href="${escapeHtml(safeUrl(src.url))}" target="_blank" rel="noopener">${src.label} ↗</a>
         <input class="rec-score" inputmode="decimal" data-rec-score="${escapeHtml(p.id)}" value="${score ?? ''}" placeholder="점수 적기" aria-label="${src.label} 점수" title="${src.label}에서 본 점수를 적으면 순위에 반영해요 (${escapeHtml(src.hint)})">` : ''}
-        <a class="rec-link" href="${escapeHtml(googleUrl(p))}" target="_blank" rel="noopener">구글 지도 ↗</a>
+        <a class="rec-link" href="${escapeHtml(safeUrl(googleUrl(p)))}" target="_blank" rel="noopener">구글 지도 ↗</a>
         ${canPick ? `<button type="button" class="secondary-button rec-pick" data-rec-pick="${i}">이 가게로 정하기</button>` : ''}
       </div>
       ${open ? recDetailHtml(p, recs) : ''}
@@ -2485,7 +2485,7 @@ function renderPlacePanel() {
   const photoHtml = (photo) => `<figure><img src="${escapeHtml(photo.url)}" data-photo-id="${escapeHtml(place?.id || '')}" alt="${escapeHtml(placeDisplayName(it))} 사진"><figcaption>${(photo.authors || []).map(a => escapeHtml(a.name)).join(' · ')}</figcaption></figure>`;
   const noPhoto = photoState?.error || (photoState?.loading || detail?.loading ? '장소 사진을 불러오는 중' : photoState ? 'Google에 공개된 사진이 없습니다' : '사진 정보를 확인하는 중');
   const description = data?.about && !hasJapaneseText(data.about) ? data.about : it.memo && !hasJapaneseText(it.memo) ? it.memo : '한국어 장소 설명이 제공되지 않았어요. 구글 지도에서 자세한 정보를 확인해 주세요.';
-  const html = `<div class="place-hero">${hero ? photoHtml(hero) : `<div class="place-no-photo"><span>⌖</span><small>${escapeHtml(noPhoto)}</small>${place ? `<a href="${escapeHtml(placeUrl(place))}" target="_blank" rel="noopener">Google 지도에서 사진 보기 ↗</a>` : ''}</div>`}</div>
+  const html = `<div class="place-hero">${hero ? photoHtml(hero) : `<div class="place-no-photo"><span>⌖</span><small>${escapeHtml(noPhoto)}</small>${place ? `<a href="${escapeHtml(safeUrl(placeUrl(place)))}" target="_blank" rel="noopener">Google 지도에서 사진 보기 ↗</a>` : ''}</div>`}</div>
     <div class="place-content item" data-idx="${it.idx}">
     <div class="place-panel-kicker">${escapeHtml(it.category || '전체 일정')} · ${Number(it.idx) + 1}번째 장소</div>
     <h2>${escapeHtml(placeDisplayName(it))}</h2>
@@ -2493,7 +2493,7 @@ function renderPlacePanel() {
     <p class="place-hours">◷ ${escapeHtml(it.timeText || '일정 시간 미정')}</p>
     ${data?.rating != null ? `<p class="place-rating">★ ${data.rating} <small>(${Number(data.ratingCount || 0).toLocaleString()}개 평가)</small></p>` : ''}
     ${data?.hours?.length ? `<details class="place-hours"><summary>영업시간 보기</summary>${data.hours.map(h => `<div>${escapeHtml(h)}</div>`).join('')}</details>` : ''}
-    <div class="place-link-row"><span class="badge">${escapeHtml(STATUS[it.status].label)}</span>${place ? `<a href="${escapeHtml(placeUrl(place))}" target="_blank" rel="noopener">구글 지도에서 보기 ↗</a>` : ''}</div>
+    <div class="place-link-row"><span class="badge">${escapeHtml(STATUS[it.status].label)}</span>${place ? `<a href="${escapeHtml(safeUrl(placeUrl(place)))}" target="_blank" rel="noopener">구글 지도에서 보기 ↗</a>` : ''}</div>
     <div class="place-section-heading">장소 정보</div>
     <p class="place-description">${escapeHtml(description)}</p>
     ${photos.length > 1 ? `<div class="place-gallery">${photos.slice(1).map(photoHtml).join('')}</div>` : ''}
@@ -2665,7 +2665,7 @@ function renderDetail(it) {
     <div class="detail-actions">
       ${it.status === 'check' ? '<button type="button" class="secondary-button" data-action="confirm">이 위치가 맞아요</button>' : ''}
       <button type="button" class="secondary-button" data-action="pick">지도에서 직접 찍기</button>
-      ${it.place ? `<a class="secondary-button" href="${escapeHtml(placeUrl(it.place))}" target="_blank" rel="noopener">구글 지도 ↗</a>` : ''}
+      ${it.place ? `<a class="secondary-button" href="${escapeHtml(safeUrl(placeUrl(it.place)))}" target="_blank" rel="noopener">구글 지도 ↗</a>` : ''}
     </div>
     ${it.place && mapState === 'ready' ? `<div class="detail-actions recs-actions">
       <button type="button" class="secondary-button" data-action="recs" data-kind="food">주변 맛집</button>
@@ -2743,7 +2743,7 @@ function exportXlsx() {
     },
   });
   XLSX.writeFile(wb, `${state.fileBase || '지도'}_좌표.xlsx`);
-  showToast('좌표가 담긴 엑셀을 저장했어요');
+  showToast('엑셀 다운로드를 요청했어요. 브라우저에서 저장 결과를 확인해 주세요.');
 }
 
 function exportKml() {
@@ -2769,7 +2769,7 @@ function exportKml() {
     })) : [],
   });
   downloadBlob(new Blob([kml], { type: 'application/vnd.google-earth.kml+xml' }), `${state.fileBase || '지도'}.kml`);
-  showToast('KML을 저장했어요 · 구글 내 지도에서 가져오기 하세요');
+  showToast('KML 다운로드를 요청했어요. 브라우저에서 저장 결과를 확인해 주세요.');
 }
 
 /* ───────────── 이벤트 연결 ───────────── */
@@ -3406,7 +3406,7 @@ function showSchedulePlaces(places, caption, kind = '') {
     ? `<p class="schedule-recommend-caption">${escapeHtml(caption)} · 장소를 고르면 입력칸에 채워져요.</p><div class="schedule-recommend-list">${places.map((place, i) => {
       const planned = plannedItem(place);
       const alreadyPlanned = planned && planned.cells !== editingRecord?.cells;
-      return `<div class="schedule-recommend-item${selectedSchedulePlace?.id === place.id ? ' selected' : ''}"><button type="button" data-schedule-pick="${i}"${alreadyPlanned ? ' disabled' : ''}><span><b>${escapeHtml(place.name)}</b><span class="schedule-recommend-description">${escapeHtml(placeBrief(place, kind))}${place.walk != null ? ` · 도보 약 ${place.walk}분` : ''}</span><small>${escapeHtml(place.address || '주소 정보 없음')}</small></span><span class="schedule-recommend-rating">${alreadyPlanned ? '일정에 있음' : place.rating != null ? `★ ${place.rating.toFixed(1)} · ${place.count.toLocaleString()}` : '선택'}</span></button><a href="${escapeHtml(googleUrl(place))}" target="_blank" rel="noopener" aria-label="${escapeHtml(place.name)} Google 지도에서 보기">지도 ↗</a></div>`;
+      return `<div class="schedule-recommend-item${selectedSchedulePlace?.id === place.id ? ' selected' : ''}"><button type="button" data-schedule-pick="${i}"${alreadyPlanned ? ' disabled' : ''}><span><b>${escapeHtml(place.name)}</b><span class="schedule-recommend-description">${escapeHtml(placeBrief(place, kind))}${place.walk != null ? ` · 도보 약 ${place.walk}분` : ''}</span><small>${escapeHtml(place.address || '주소 정보 없음')}</small></span><span class="schedule-recommend-rating">${alreadyPlanned ? '일정에 있음' : place.rating != null ? `★ ${place.rating.toFixed(1)} · ${place.count.toLocaleString()}` : '선택'}</span></button><a href="${escapeHtml(safeUrl(googleUrl(place)))}" target="_blank" rel="noopener" aria-label="${escapeHtml(place.name)} Google 지도에서 보기">지도 ↗</a></div>`;
     }).join('')}</div>`
     : '장소를 찾지 못했어요. 지역이나 검색어를 바꿔 보세요.';
 }

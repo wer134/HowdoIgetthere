@@ -1,3 +1,4 @@
+import { safeUrl } from './util.js';
 // 대표 장소 주변의 명소·맛집 추천 (Places API (New) — Nearby Search / Text Search)
 // 평점·리뷰 수·가격대·영업시간은 Enterprise 등급 필드라 매달 1,000건까지 무료, 넘으면 1,000건당 $35.
 // 평점 같은 장소 정보는 오래 저장하지 않고, 이 페이지를 연 동안만 기억한다
@@ -386,7 +387,7 @@ export function tabelogUrl(place) {
 export const kakaoUrl = (place) => `https://map.kakao.com/link/search/${encodeURIComponent(place.name)}`;
 
 export function googleUrl(place) {
-  if (place.url) return place.url;
+  if (safeUrl(place.url)) return safeUrl(place.url);
   const params = new URLSearchParams({ api: '1', query: place.name || `${place.lat},${place.lng}` });
   if (place.id) params.set('query_place_id', place.id);
   return `https://www.google.com/maps/search/?${params}`;
