@@ -169,7 +169,7 @@ cases.get(3).fn=async(p,c,check)=>{
  check('뒤로가기 왕복 초안 보호',await p.inputValue('#scheduleMemo')==='뒤로가기 초안',{memo:await p.inputValue('#scheduleMemo')});await close(p);
  const q=await c.newPage();await q.goto(BASE);await openTrip(q);await edit(q);await q.fill('#scheduleMemo','탭 종료 초안');await q.close({runBeforeUnload:true});await wait(p,100);await p.reload();await openTrip(p);await edit(p);
  check('탭 종료 후 초안 복원',await p.inputValue('#scheduleMemo')==='탭 종료 초안',{memo:await p.inputValue('#scheduleMemo')});await close(p);
- await p.locator('#resultList > li.item').first().dragTo(p.locator('#resultList > li.item').nth(1),{sourcePosition:{x:20,y:25},targetPosition:{x:20,y:25}});await p.click('#travelAssignForm button');const before=names(await snap(p));await p.reload();await openTrip(p);check('실제 브라우저 dragTo 확정 후 새로고침 복원',names(await snap(p)).join()===before.join(),names(await snap(p)));
+ await p.locator('#resultList > li.item').nth(1).scrollIntoViewIfNeeded();await p.locator('#resultList > li.item').first().dragTo(p.locator('#resultList > li.item').nth(1),{sourcePosition:{x:20,y:25},targetPosition:{x:20,y:25}});await p.click('#travelAssignForm button');const before=names(await snap(p));await p.reload();await openTrip(p);check('실제 브라우저 dragTo 확정 후 새로고침 복원',names(await snap(p)).join()===before.join(),names(await snap(p)));
 };
 
 const initial49=cases.get(49).fn;

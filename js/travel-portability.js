@@ -40,9 +40,15 @@ export function itineraryContent(snapshot) {
   if (!validTravel(snapshot)) throw new Error('일정표를 만들 수 없는 여행 데이터입니다.');
   const m = snapshot.mapping;
   const dayOf = r => cell(r,m.date) || cell(r,m.category) || '날짜 미정';
-  const days = [...new Set([...(snapshot.dates || []),...snapshot.records.map(dayOf)])];
+  const groups = new Map((snapshot.dates || []).map(day => [day,[]]));
+  for (const row of snapshot.records) {
+    const day = dayOf(row);
+    if (!groups.has(day)) groups.set(day,[]);
+    groups.get(day).push(row);
+  }
+  const days = [...groups.keys()];
   return `<header><p class="eyebrow">RouteFlow · 나의 여행 일정</p><h1>${escapeHtml(snapshot.name)}</h1><p>${days.length}일 · ${snapshot.records.length}곳</p></header>${days.map((day,i) => {
-    const rows = snapshot.records.filter(r => dayOf(r) === day);
+    const rows = groups.get(day);
     return `<section class="itinerary-day"><h2>Day ${i+1} <span>${escapeHtml(day)}</span></h2>${rows.length ? `<ol>${rows.map(r => `<li><span class="itinerary-time">${escapeHtml(cell(r,m.time) || '시간 미정')}</span><div><h3>${escapeHtml(cell(r,m.name))}</h3>${cell(r,m.address) || cell(r,m.region) ? `<p>${escapeHtml(cell(r,m.address) || cell(r,m.region))}</p>` : ''}${cell(r,m.memo) ? `<p class="itinerary-memo">${escapeHtml(cell(r,m.memo))}</p>` : ''}</div></li>`).join('')}</ol>` : '<p class="itinerary-free">아직 정한 일정이 없는 날이에요.</p>'}</section>`;
   }).join('')}${snapshot.library?.length ? `<section class="itinerary-day"><h2>가고 싶은 곳 <span>${snapshot.library.length}곳</span></h2><ul>${snapshot.library.map(p => `<li><div><h3>${escapeHtml(p.name)}</h3><p>${escapeHtml(p.address || '')}</p>${p.memo ? `<p class="itinerary-memo">${escapeHtml(p.memo)}</p>` : ''}</div></li>`).join('')}</ul></section>` : ''}<footer>영업시간·예약·실제 이동 시간은 방문 전에 확인하세요.</footer>`;
 }
