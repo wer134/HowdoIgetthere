@@ -7,7 +7,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const ROOT = path.resolve(__dirname, '../../..');
-const OUT = path.join(ROOT, 'docs/testing/evidence/negative-78');
+const OUT = process.env.NEGATIVE_OUT || path.join(ROOT, 'docs/testing/evidence/negative-78');
 const BASE = process.env.APP_URL || 'http://127.0.0.1:8093';
 const KEY = 'routeflow.travels.v1';
 const D = '2026-11-01', E = '2026-11-02';

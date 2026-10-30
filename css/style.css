@@ -922,7 +922,7 @@ input:focus, select:focus { border-color: var(--coral); outline: 2px solid rgba(
 .dialog-x { position: absolute; top: 14px; right: 14px; width: 32px; height: 32px; border: 0; border-radius: 50%; background: var(--card-soft); color: var(--muted); font-size: 20px; line-height: 1; }
 .dialog-x:hover { color: var(--coral); }
 .dialog h2 { margin-bottom: 4px; font-size: 21px; }
-.schedule-editor[open] {position:fixed;top:78px;right:14px;bottom:14px;left:auto;z-index:60;width:min(420px,calc(100vw - 28px));max-height:none;margin:0;padding:0 20px 18px;overflow-y:auto;overscroll-behavior:contain;border-radius:18px}
+.schedule-editor[open] {position:fixed;top:78px;right:14px;bottom:14px;left:auto;z-index:60;width:min(420px,calc(100vw - 28px));max-height:calc(100dvh - 92px);margin:0;padding:0 20px 18px;overflow-y:auto;overscroll-behavior:contain;border-radius:18px}
 .schedule-editor::backdrop {display:none}
 .schedule-editor-header {position:sticky;top:0;z-index:2;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:0 -20px;padding:18px 20px 14px;background:var(--card);border-bottom:1px solid var(--line)}
 .schedule-editor-header .dialog-x {position:static;flex:none}
