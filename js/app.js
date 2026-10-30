@@ -141,14 +141,19 @@ const catVisible = (category) => state.day == null || category === state.day;
 let toastTimer = null;
 let undoToastAction = null;
 const toastUndoButton = document.getElementById('toastUndo');
+let deleteUndoAction = null;
+const deleteUndoButton = document.createElement('button');
+deleteUndoButton.id = 'deleteUndo'; deleteUndoButton.textContent = '삭제 되돌리기'; deleteUndoButton.type = 'button'; deleteUndoButton.classList.add('hidden');
+toastUndoButton.after(deleteUndoButton);
+deleteUndoButton.onclick = () => { const undo=deleteUndoAction; deleteUndoAction=null;deleteUndoButton.classList.add('hidden');if(undo)undo(); };
 function showToast(message, undo = null) {
   els.toast.querySelector('strong').textContent = message;
   const undoTravel = travelId;
-  undoToastAction = undo ? () => { if (travelId === undoTravel) undo(); } : null;
-  toastUndoButton.classList.toggle('hidden', !undo);
+  if (undo) undoToastAction = () => { if (travelId === undoTravel) undo(); };
+  toastUndoButton.classList.toggle('hidden', !undoToastAction);
   els.toast.classList.add('is-visible');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { els.toast.classList.remove('is-visible'); undoToastAction = null; }, undo ? 8000 : 2600);
+  if (!undoToastAction && !deleteUndoAction) toastTimer = setTimeout(() => els.toast.classList.remove('is-visible'), 2600);
 }
 toastUndoButton.addEventListener('click', () => {
   const undo = undoToastAction;
@@ -266,7 +271,7 @@ async function handleFile(file) {
   try {
     const buffer = await file.arrayBuffer();
     const workbook = readWorkbook(buffer, file.name);
-    await saveTravelNow(); undoToastAction = null; toastUndoButton.classList.add('hidden'); travelReady = true; travelId = crypto.randomUUID(); travelLibrary = []; travelDates = []; travelSearchVersion++; travelEl('travelSearchResults').replaceChildren();
+    await saveTravelNow(); deleteUndoAction = null; deleteUndoButton.classList.add('hidden'); undoToastAction = null; toastUndoButton.classList.add('hidden'); travelReady = true; travelId = crypto.randomUUID(); travelLibrary = []; travelDates = []; travelSearchVersion++; travelEl('travelSearchResults').replaceChildren();
     document.body.classList.remove('travel-native');
     state.workbook = workbook;
     state.fileBuffer = buffer;
@@ -3302,7 +3307,28 @@ function showSchedulePlacePreview(place) {
   schedulePlacePreview.classList.remove('hidden');
 }
 
+const EDITOR_DRAFTS = 'routeflow.editorDrafts.v1';
+let activeDraftKey = null;
+let activeDraftBaseline = '';
+function loadEditorDrafts() {
+  const drafts = loadJson(EDITOR_DRAFTS, {});
+  return drafts && typeof drafts === 'object' && !Array.isArray(drafts) ? drafts : {};
+}
+function draftFields() { return Object.fromEntries(Object.entries(scheduleFields).map(([key,input]) => [key,input.value])); }
+function persistEditorDraft() {
+  if (!scheduleDialog.open || !activeDraftKey) return;
+  const drafts = loadEditorDrafts();
+  drafts[activeDraftKey] = { fields:draftFields(), baseline:activeDraftBaseline };
+  if (!storage.set(EDITOR_DRAFTS, JSON.stringify(drafts))) showToast('미저장 초안을 보관할 수 없어요. 입력을 복사해 보관해 주세요.');
+}
+function removeEditorDraft() {
+  const drafts = loadEditorDrafts(); delete drafts[activeDraftKey];
+  storage.set(EDITOR_DRAFTS, JSON.stringify(drafts));
+}
+for (const field of Object.values(scheduleFields)) field.addEventListener('input', persistEditorDraft);
 function openScheduleEditor(it = null) {
+  const switchingDraft = scheduleDialog.open && activeDraftKey;
+  if (switchingDraft) persistEditorDraft();
   if (!state.workbook || state.mapping.name < 0) {
     showToast('먼저 일정 파일을 올리고 장소 열을 연결해 주세요.');
     return;
@@ -3330,6 +3356,13 @@ function openScheduleEditor(it = null) {
   if (!scheduleDialog.open) scheduleDialog.show();
   document.body.classList.add('schedule-editing');
   showScheduleTab('info');
+  activeDraftKey = `${travelId}:${editingRecord?.rowNumber ?? 'new'}`;
+  activeDraftBaseline = JSON.stringify(editingRecord?.cells || []);
+  const draft = loadEditorDrafts()[activeDraftKey];
+  if (draft?.baseline === activeDraftBaseline && draft.fields) {
+    for (const [key,input] of Object.entries(scheduleFields)) if (typeof draft.fields[key] === 'string') input.value = draft.fields[key];
+    showToast('미저장 초안을 복원했어요. 내용을 확인하고 저장하세요.');
+  } else if (switchingDraft) showToast('미저장 초안을 보관했어요. 원래 일정을 다시 열면 복원됩니다.');
   scheduleFields.name.focus();
 }
 
@@ -3386,17 +3419,20 @@ function deleteScheduleItem(it) {
   if (!confirm(`“${it.name}” 일정을 삭제할까요? 변경한 일정은 엑셀 저장으로 내려받을 수 있습니다.`)) return;
   const record = state.records[it.recordIndex];
   const before = copyScheduleItem(it);
-  const wasChanged = state.scheduleChanged;
   const neighbor = state.items[it.idx + 1] || state.items[it.idx - 1];
   state.records.splice(it.recordIndex, 1);
   rebuildEditedSchedule(null, null, null, neighbor?.cells);
-  showToast('일정을 삭제했어요. 엑셀 저장으로 변경 내용을 보관하세요.', () => {
-    state.records.splice(it.recordIndex, 0, record);
+  const sourceTravel = travelId, removedIndex = it.recordIndex;
+  const restoreDeleted = () => {
+    if (travelId !== sourceTravel || state.records.includes(record)) return;
+    deleteUndoAction=null;deleteUndoButton.classList.add('hidden');
+    state.records.splice(Math.min(removedIndex,state.records.length), 0, record);
     rebuildEditedSchedule(record.cells, null, before);
-    state.scheduleChanged = wasChanged;
     render();
     showToast('삭제를 되돌렸어요.');
-  });
+  };
+  deleteUndoAction=restoreDeleted;deleteUndoButton.classList.remove('hidden');
+  showToast('일정을 삭제했어요. 삭제 되돌리기로 복원할 수 있습니다.',restoreDeleted);
 }
 
 document.getElementById('scheduleAdd').addEventListener('click', () => openScheduleEditor());
@@ -3502,6 +3538,7 @@ scheduleFields.name.addEventListener('input', () => {
 });
 document.getElementById('scheduleForm').addEventListener('submit', (event) => {
   event.preventDefault();
+  if (!scheduleDialog.open) return;
   const name = scheduleFields.name.value.trim();
   if (!name) { scheduleFields.name.focus(); return; }
   const m = state.mapping;
@@ -3532,6 +3569,8 @@ document.getElementById('scheduleForm').addEventListener('submit', (event) => {
     const insertAt = state.selected == null ? state.records.length : state.items[state.selected].recordIndex + 1;
     state.records.splice(insertAt, 0, record);
   }
+  removeEditorDraft();
+  activeDraftKey = null;
   scheduleDialog.close();
   scheduleSearchId++;
   editingRecord = null;
@@ -3590,7 +3629,17 @@ async function saveTravelNow() {
   clearTimeout(travelSaveTimer);
   if (!travelReady || !state.workbook) return;
   const id = travelId;
-  const result = await travelStore.save(travelSnapshot());
+  const snapshot = structuredClone(travelSnapshot());
+  const result = await travelStore.save(snapshot);
+  if (result.ok) {
+    const notes = loadLibraryNotes();
+    for (const place of snapshot.library) {
+      const key = `${id}:${place.id || place.name}`;
+      if (notes[key]?.memo === place.memo) delete notes[key];
+      else if (notes[key]) notes[key].base = place.memo || '';
+    }
+    storeLibraryNotes(notes);
+  }
   if (id === travelId) travelEl('travelSaveStatus').textContent = travelSaveMessage(result);
   return result;
 }
@@ -3603,6 +3652,7 @@ function restoreTravel(snapshot, fromStorage = false) {
   if (!validTravel(snapshot)) { showToast('저장한 여행 데이터가 손상되어 열 수 없어요. 현재 여행은 유지됩니다.'); return false; }
   if (fromStorage) travelStore.observe(snapshot.id, snapshot);
   undoToastAction = null;
+  deleteUndoAction = null;deleteUndoButton.classList.add('hidden');
   toastUndoButton.classList.add('hidden');
   scheduleDialog.close();
   clearTimeout(travelSaveTimer);
@@ -3613,7 +3663,9 @@ function restoreTravel(snapshot, fromStorage = false) {
   travelSearchVersion++;
   travelId = snapshot.id;
   travelDates = snapshot.dates || [];
-  travelLibrary = snapshot.library || [];
+  travelLibrary = structuredClone(snapshot.library || []);
+  const notes=loadLibraryNotes();
+  for(const p of travelLibrary) {const note=notes[`${travelId}:${p.id || p.name}`];if(note && typeof note.memo==='string' && (p.memo || '')===note.base)p.memo=note.memo;}
   travelLibrary = travelLibrary.map(p => !p.id || Date.now() - (p.cachedAt || snapshot.updated) < 30 * 86400000 ? p : {id:p.id,name:p.name});
   travelEl('travelSearchResults').replaceChildren();
   travelEl('travelSearchStatus').textContent = '';
@@ -3671,8 +3723,15 @@ function travelBusy() { if(state.running || state.routeRunning || state.planner.
 travelEl('travelImport').onclick = () => {if(!travelBusy()) els.fileInput.click();};
 travelEl('newTravel').onclick = () => {if(!travelBusy()) travelEl('travelDialog').showModal();};
 travelEl('newTravelForm').onsubmit = (event) => {
-  event.preventDefault(); saveTravelNow();
+  event.preventDefault();
+  if (!travelEl('travelDialog').open) return;
+  const name = travelEl('travelName').value.trim();
+  const days = Number(travelEl('travelDays').value);
   const start = travelEl('travelStart').value;
+  if (!name || !Number.isInteger(days) || days < 1 || days > 60 || !/^\d{4}-\d{2}-\d{2}$/.test(start) || !Number.isFinite(+new Date(`${start}T12:00:00`))) {
+    showToast('여행 이름과 출발일, 1~60 사이의 정수 여행 일수를 확인해 주세요.'); return;
+  }
+  saveTravelNow();
   const dates = Array.from({length: Number(travelEl('travelDays').value)}, (_, i) => {
     const d = new Date(`${start}T12:00:00`); d.setDate(d.getDate() + i);
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -3756,6 +3815,7 @@ function travelAssignOptions() {
 travelEl('travelAssignDay').oninput=travelAssignOptions;
 travelEl('travelAssignForm').onsubmit=event=>{
   event.preventDefault();
+  if (!travelEl('travelAssignDialog').open) return;
   if (state.running || state.routeRunning) { showToast('진행 중인 검색이 끝나면 이동해 주세요.'); return; }
   if (!travelEl('travelAssignDay').value.trim()) return;
   const before=travelUndoSnapshot(), m=state.mapping, day=travelEl('travelAssignDay').value.trim();
@@ -3819,7 +3879,7 @@ travelEl('travelHistoryList').onclick=async event=>{
       const id=b.dataset.travelDelete;
       const result=await travelStore.remove(id,travelHistoryEntries.get(id));
       if(!result.ok) {showToast(travelSaveMessage(result));return;}
-      if(id===travelId) {travelReady=false;clearTimeout(travelSaveTimer);undoToastAction=null;toastUndoButton.classList.add('hidden');}
+      if(id===travelId) {travelReady=false;clearTimeout(travelSaveTimer);deleteUndoAction=null;deleteUndoButton.classList.add('hidden');undoToastAction=null;toastUndoButton.classList.add('hidden');}
       b.closest('article').remove();
     }
   } finally {b.disabled=false;}
@@ -3850,7 +3910,19 @@ document.addEventListener('drop', event => {
 });
 document.addEventListener('dragend',()=>{travelDragged=null;});
 
-travelEl('travelLibraryList').addEventListener('change', event => {
+// This recovery journal belongs to this tab, so it cannot replay another tab's stale edit.
+function loadLibraryNotes() {
+  try { const notes = JSON.parse(sessionStorage.getItem('routeflow.libraryNotes.v1') || '{}'); return notes && typeof notes === 'object' && !Array.isArray(notes) ? notes : {}; } catch { return {}; }
+}
+function storeLibraryNotes(notes) {
+  try { sessionStorage.setItem('routeflow.libraryNotes.v1', JSON.stringify(notes)); return true; } catch { return false; }
+}
+travelEl('travelLibraryList').addEventListener('input', event => {
   const index = event.target.dataset.travelNote;
-  if(index != null && travelLibrary[Number(index)]) { travelLibrary[Number(index)].memo=event.target.value;saveTravelNow(); }
+  if(index != null && travelLibrary[Number(index)]) {
+    const p=travelLibrary[Number(index)], notes=loadLibraryNotes(), key=`${travelId}:${p.id || p.name}`;
+    notes[key]={base:notes[key]?.base ?? (p.memo || ''),memo:event.target.value};
+    if(!storeLibraryNotes(notes)) showToast('메모를 저장할 수 없어요. 내용을 복사해 보관해 주세요.');
+    p.memo=event.target.value;saveTravelNow();
+  }
 });

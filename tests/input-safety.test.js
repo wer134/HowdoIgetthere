@@ -38,4 +38,3 @@ test('CSV neutralizes formula-shaped strings without changing numbers or the in-
   values.forEach((v,i)=>assert.equal(parsed[`A${i+1}`].v, typeof v==='string' && /^[\s]*[=+@-]/.test(v) ? "'"+v : String(v)));
   assert.equal(JSON.stringify(wb),before);
 });
-
