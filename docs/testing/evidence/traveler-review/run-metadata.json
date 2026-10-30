@@ -1,0 +1,7 @@
+{
+  "source_commit": "a6d7bcd8c799db4aeb36379cc29176068891a9ed",
+  "actual_google_calls": 0,
+  "google_mode": "신규 사용자 시나리오는 SDK 없이 실행; 78개는 모의 SDK/MapView",
+  "browser": "Chromium 154.0.8037.57",
+  "playwright": "1.62.1"
+}

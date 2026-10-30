@@ -1,0 +1,63 @@
+
+> excel-map-maker@0.1.0 test
+> node --test tests/*.test.js
+
+✔ untrusted URL protocols are rejected while encoded HTTPS remains usable (1.686305ms)
+✔ XLSX content validation accepts real workbooks and rejects renamed text and ZIPs without a workbook (33.361044ms)
+✔ CSV neutralizes formula-shaped strings without changing numbers or the in-memory workbook (2.404675ms)
+✔ 드래그 슬라이더와 버튼이 지도 줌을 바꾸고 지도 변경을 알린다 (2.05195ms)
+✔ 추천 장소 유형에 맞는 한국어 설명을 만든다 (1.958729ms)
+✔ 유형 정보가 없으면 장소에 대한 주장을 덧붙이지 않는다 (0.636009ms)
+✔ 사진만 요청하고 첫 사진과 출처를 반환한다 (2.470546ms)
+✔ 사진이 없는 장소는 빈 결과로 처리한다 (0.42244ms)
+✔ 사진 객체가 getUrl을 제공하는 경우에도 주소를 읽는다 (0.806952ms)
+✔ 일정 수정용 장소 유형을 Google Places ID로 확인한다 (0.725329ms)
+✔ 한국어 요청에도 일본어로 온 장소 설명은 화면에서 제외한다 (0.874156ms)
+✔ 좌표만 있는 일정에는 가까운 Google 장소 ID만 붙인다 (0.403832ms)
+✔ openai: 요청·수정 지시·일정 변환·엑셀 내보내기 (46.976175ms)
+✔ gemini: 요청·수정 지시·일정 변환·엑셀 내보내기 (7.377774ms)
+✔ API 오류 401는 사용자에게 전달 (1.401064ms)
+✔ API 오류 402는 사용자에게 전달 (0.60269ms)
+✔ API 오류 403는 사용자에게 전달 (0.54441ms)
+✔ API 오류 429는 사용자에게 전달 (0.486338ms)
+✔ API 오류 400는 사용자에게 전달 (0.377805ms)
+✔ API 오류 500는 사용자에게 전달 (0.371816ms)
+✔ openai: 불완전하거나 잘못된 일정은 사용하지 않음 {"status":"incomplete"} (0.877617ms)
+✔ openai: 불완전하거나 잘못된 일정은 사용하지 않음 {"status":"completed","output":[{"content":[{"type":"refusal"}]}] (1.178371ms)
+✔ gemini: 불완전하거나 잘못된 일정은 사용하지 않음 {"candidates":[{"finishReason":"MAX_TOKENS"}]} (0.908614ms)
+✔ gemini: 불완전하거나 잘못된 일정은 사용하지 않음 {"candidates":[{"finishReason":"STOP","content":{"parts":[{"text" (0.369401ms)
+✔ gemini: 불완전하거나 잘못된 일정은 사용하지 않음 {"candidates":[{"finishReason":"STOP","content":{"parts":[{"text" (0.326244ms)
+✔ 빈 키와 미지원 제공업체는 요청 전에 거부 (0.29455ms)
+✔ Gemini 모델 목록에서 generateContent 지원 모델만 고른다 (1.173275ms)
+✔ Gemini 404는 키를 가리고 Google 상세 오류를 보여 준다 (0.867324ms)
+✔ Gemini 402는 선불 크레딧 소진을 안내한다 (0.720933ms)
+✔ Korean midnight and minute syntax retain original match offsets for schedule edits (2.164327ms)
+✔ backup round trip preserves itinerary, empty days and personal notes with a new identity (3.203178ms)
+✔ backup import rejects malformed, unsupported and structurally damaged documents (1.976385ms)
+✔ standalone itinerary escapes hostile content and carries no scripts or external assets (0.86643ms)
+✔ 동일 여행 동시 쓰기: 하나만 저장되고 다른 탭은 충돌 (4.062584ms)
+✔ 다른 여행 동시 쓰기는 둘 다 보존 (0.529263ms)
+✔ 삭제한 여행은 오래된 탭에서 부활하지 않음 (0.644925ms)
+✔ 목록을 연 뒤 다른 탭이 변경한 여행은 삭제하지 않음 (0.417011ms)
+✔ 목록 읽기와 열기 사이에 변경돼도 오래된 snapshot이 덮어쓰지 않음 (0.64595ms)
+✔ 쓰기 실패 후 원본 보존 (0.409984ms)
+✔ 손상 항목과 ID 불일치를 제외하고 정상 저장본 보존 (1.926183ms)
+✔ records 타입 손상 검증 (0.171616ms)
+✔ library 타입 손상 검증 (0.165506ms)
+✔ dates 타입 손상 검증 (0.322225ms)
+✔ mapping 타입 손상 검증 (0.148429ms)
+✔ updated 타입 손상 검증 (0.087536ms)
+✔ places 타입 손상 검증 (0.154518ms)
+ℹ tests 46
+ℹ suites 0
+ℹ pass 46
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 432.8808
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice

@@ -1,0 +1,193 @@
+{
+  "id": 66,
+  "started": "2026-10-30T14:46:58.234Z",
+  "steps": "=,+,@,- 외부 문자열을 실제 엑셀/CSV 생성 함수에 전달 → 셀 타입·수식/CSV 구조 검사(수식 실행 없음)",
+  "checks": [
+    {
+      "name": "XLSX는 문자열, 수식 없음",
+      "status": "통과",
+      "actual": [
+        {
+          "t": "s",
+          "v": "=1+1",
+          "h": "=1+1",
+          "w": "=1+1"
+        },
+        {
+          "t": "s",
+          "v": "+SUM(1,1)",
+          "h": "+SUM(1,1)",
+          "w": "+SUM(1,1)"
+        },
+        {
+          "t": "s",
+          "v": "@SUM(1,1)",
+          "h": "@SUM(1,1)",
+          "w": "@SUM(1,1)"
+        },
+        {
+          "t": "s",
+          "v": "-1+2",
+          "h": "-1+2",
+          "w": "-1+2"
+        }
+      ]
+    },
+    {
+      "name": "CSV 외부 수식 문자열 중화",
+      "status": "통과",
+      "actual": {
+        "csv": "﻿장소,메모,위도,경도,검색된 이름,검색된 주소,구글지도 링크,구글 장소 ID,검색 상태,다음 장소까지\n'=1+1,'=1+1,,,,,,,대기,\n\"'+SUM(1,1)\",\"'+SUM(1,1)\",,,,,,,대기,\n\"'@SUM(1,1)\",\"'@SUM(1,1)\",,,,,,,대기,\n'-1+2,'-1+2,,,,,,,대기,"
+      }
+    }
+  ],
+  "errors": [],
+  "consoleErrors": [
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+  ],
+  "mode": "브라우저 UI + 모의 Google SDK/지도 호출 기록",
+  "screenshots": [
+    "66.png"
+  ],
+  "finalDOM": {
+    "toast": "✓되돌리기삭제 되돌리기",
+    "save": "이 기기에 여행을 자동 저장합니다.",
+    "rows": [
+      "첫 장소",
+      "둘째 장소",
+      "셋째 장소"
+    ]
+  },
+  "mock": {
+    "searches": [
+      {
+        "textQuery": "첫 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793371618926
+      },
+      {
+        "textQuery": "둘째 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793371618926
+      },
+      {
+        "textQuery": "셋째 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793371618926
+      }
+    ],
+    "fields": [
+      {
+        "id": "p0",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793371618930
+      },
+      {
+        "id": "p1",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793371618930
+      },
+      {
+        "id": "p2",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793371618930
+      }
+    ],
+    "routes": [],
+    "markers": {
+      "0": {
+        "position": {
+          "lat": 35,
+          "lng": 139
+        },
+        "color": "#d93025",
+        "label": "01",
+        "title": "첫 장소",
+        "visible": true
+      },
+      "1": {
+        "position": {
+          "lat": 35.02,
+          "lng": 139.02
+        },
+        "color": "#d93025",
+        "label": "02",
+        "title": "둘째 장소",
+        "visible": true
+      },
+      "2": {
+        "position": {
+          "lat": 35.04,
+          "lng": 139.04
+        },
+        "color": "#1a73e8",
+        "label": "03",
+        "title": "셋째 장소",
+        "visible": true
+      }
+    },
+    "legs": {
+      "0>1": {
+        "segments": [
+          {
+            "kind": "straight",
+            "path": [
+              [
+                35,
+                139
+              ],
+              [
+                35.02,
+                139.02
+              ]
+            ]
+          }
+        ],
+        "color": "#d93025",
+        "visible": true
+      }
+    }
+  },
+  "status": "통과",
+  "finished": "2026-10-30T14:46:59.220Z"
+}

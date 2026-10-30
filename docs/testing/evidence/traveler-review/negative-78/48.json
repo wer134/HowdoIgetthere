@@ -1,0 +1,61 @@
+{
+  "id": 48,
+  "started": "2026-10-30T14:46:23.131Z",
+  "steps": "초기 지도 로딩 600ms 지연 → A 열기 → B 전환 → 지도 준비",
+  "checks": [
+    {
+      "name": "이전 여행 핀 지연 오염 없음",
+      "status": "통과",
+      "actual": {
+        "0": {
+          "position": {
+            "lat": 35,
+            "lng": 139
+          },
+          "color": "#d93025",
+          "label": "01",
+          "title": "다른 여행 장소",
+          "visible": true
+        }
+      }
+    }
+  ],
+  "errors": [],
+  "consoleErrors": [
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+  ],
+  "mode": "브라우저 UI + 모의 Google SDK/지도 호출 기록",
+  "screenshots": [
+    "48.png"
+  ],
+  "finalDOM": {
+    "toast": "✓되돌리기삭제 되돌리기",
+    "save": "이 기기에 저장됨 · 사진·리뷰 제외",
+    "rows": [
+      "다른 여행 장소"
+    ]
+  },
+  "mock": {
+    "searches": [],
+    "fields": [],
+    "routes": [],
+    "markers": {
+      "0": {
+        "position": {
+          "lat": 35,
+          "lng": 139
+        },
+        "color": "#d93025",
+        "label": "01",
+        "title": "다른 여행 장소",
+        "visible": true
+      }
+    },
+    "legs": {}
+  },
+  "status": "통과",
+  "finished": "2026-10-30T14:46:25.039Z"
+}

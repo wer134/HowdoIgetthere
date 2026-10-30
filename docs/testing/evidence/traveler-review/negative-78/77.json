@@ -1,0 +1,256 @@
+{
+  "id": 77,
+  "started": "2026-10-30T14:47:14.918Z",
+  "steps": "장소 URL에 javascript:/data:/인용부호 조작 URL → 실제 렌더링 링크 프로토콜 검사",
+  "checks": [
+    {
+      "name": "javascript 프로토콜/속성 필터",
+      "status": "통과",
+      "actual": [
+        {
+          "href": "https://www.google.com/maps/search/?api=1&query=35,139",
+          "onClick": null
+        },
+        {
+          "href": "https://www.google.com/maps/search/?api=1&query=35,139",
+          "onClick": null
+        },
+        {
+          "href": "https://www.google.com/maps/search/?api=1&query=35,139",
+          "onClick": null
+        }
+      ]
+    },
+    {
+      "name": "속성 주입 미실행",
+      "status": "통과",
+      "actual": "마커 변수 미설정"
+    },
+    {
+      "name": "data 프로토콜/속성 필터",
+      "status": "통과",
+      "actual": [
+        {
+          "href": "https://www.google.com/maps/search/?api=1&query=35,139",
+          "onClick": null
+        },
+        {
+          "href": "https://www.google.com/maps/search/?api=1&query=35,139",
+          "onClick": null
+        },
+        {
+          "href": "https://www.google.com/maps/search/?api=1&query=35,139",
+          "onClick": null
+        }
+      ]
+    },
+    {
+      "name": "속성 주입 미실행",
+      "status": "통과",
+      "actual": "마커 변수 미설정"
+    },
+    {
+      "name": "https 프로토콜/속성 필터",
+      "status": "통과",
+      "actual": [
+        {
+          "href": "https://example.test/%22%20onclick=%22window.__negativeURL=1",
+          "onClick": null
+        },
+        {
+          "href": "https://example.test/%22%20onclick=%22window.__negativeURL=1",
+          "onClick": null
+        },
+        {
+          "href": "https://example.test/%22%20onclick=%22window.__negativeURL=1",
+          "onClick": null
+        }
+      ]
+    },
+    {
+      "name": "속성 주입 미실행",
+      "status": "통과",
+      "actual": "마커 변수 미설정"
+    },
+    {
+      "name": "javascript 링크 클릭 후 현재 Chromium 마커 실행 관찰",
+      "status": "통과",
+      "actual": {
+        "windows": [
+          {
+            "url": "http://127.0.0.1:8093/",
+            "marker": 0
+          },
+          {
+            "url": "chrome-error://chromewebdata/",
+            "marker": 0
+          }
+        ],
+        "note": "허용 프로토콜 필터 누락과 이 브라우저에서의 실제 실행 관찰을 별도로 기록. 마커만 사용."
+      }
+    },
+    {
+      "name": "data 링크 클릭 후 현재 Chromium 마커 실행 관찰",
+      "status": "통과",
+      "actual": {
+        "windows": [
+          {
+            "url": "http://127.0.0.1:8093/",
+            "marker": 0
+          },
+          {
+            "url": "chrome-error://chromewebdata/",
+            "marker": 0
+          }
+        ],
+        "note": "허용 프로토콜 필터 누락과 이 브라우저에서의 실제 실행 관찰을 별도로 기록. 마커만 사용."
+      }
+    }
+  ],
+  "errors": [],
+  "consoleErrors": [
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+  ],
+  "mode": "브라우저 UI + 모의 Google SDK/지도 호출 기록",
+  "screenshots": [
+    "77.png"
+  ],
+  "finalDOM": {
+    "toast": "✓되돌리기삭제 되돌리기",
+    "save": "이 기기에 저장됨 · 사진·리뷰 제외",
+    "rows": [
+      "첫 장소",
+      "둘째 장소",
+      "셋째 장소"
+    ]
+  },
+  "mock": {
+    "searches": [],
+    "fields": [
+      {
+        "id": "p0",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793371638301
+      },
+      {
+        "id": "p1",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793371638301
+      },
+      {
+        "id": "p2",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793371638301
+      },
+      {
+        "id": "p0",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "rating",
+          "userRatingCount",
+          "regularOpeningHours",
+          "photos",
+          "reviews",
+          "reviewSummary",
+          "editorialSummary",
+          "websiteURI",
+          "nationalPhoneNumber",
+          "isReservable",
+          "hasTakeout",
+          "hasDineIn",
+          "hasDelivery",
+          "servesBreakfast",
+          "servesLunch",
+          "servesDinner",
+          "servesVegetarianFood",
+          "paymentOptions",
+          "isGoodForChildren",
+          "isGoodForGroups",
+          "hasOutdoorSeating",
+          "hasRestroom"
+        ],
+        "at": 1793371638397
+      }
+    ],
+    "routes": [],
+    "markers": {
+      "0": {
+        "position": {
+          "lat": 35,
+          "lng": 139
+        },
+        "color": "#d93025",
+        "label": "01",
+        "title": "첫 장소",
+        "visible": true
+      },
+      "1": {
+        "position": {
+          "lat": 35.02,
+          "lng": 139.02
+        },
+        "color": "#d93025",
+        "label": "02",
+        "title": "둘째 장소",
+        "visible": true
+      },
+      "2": {
+        "position": {
+          "lat": 35.04,
+          "lng": 139.04
+        },
+        "color": "#1a73e8",
+        "label": "03",
+        "title": "셋째 장소",
+        "visible": true
+      }
+    },
+    "legs": {
+      "0>1": {
+        "segments": [
+          {
+            "kind": "straight",
+            "path": [
+              [
+                35,
+                139
+              ],
+              [
+                35.02,
+                139.02
+              ]
+            ]
+          }
+        ],
+        "color": "#d93025",
+        "visible": true
+      }
+    }
+  },
+  "status": "통과",
+  "finished": "2026-10-30T14:47:18.940Z"
+}
