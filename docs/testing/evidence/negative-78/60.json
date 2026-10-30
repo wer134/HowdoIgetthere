@@ -1,0 +1,192 @@
+{
+  "id": 60,
+  "started": "2026-10-29T18:11:52.414Z",
+  "steps": "저장 여행 id를 다른 여행 ID로 변조 → 열어 편집; updated/records/library 타입 변조는 별도 페이지로 검사",
+  "checks": [
+    {
+      "name": "선택한 여행과 열리는 여행 일치",
+      "status": "결함 확인",
+      "actual": {
+        "fileName": "부정 테스트 B"
+      }
+    },
+    {
+      "name": "ID 변조로 다른 여행 덮어쓰기 방지",
+      "status": "결함 확인",
+      "actual": {
+        "B": "부정 테스트 B",
+        "records": [
+          "다른 여행 장소",
+          "ID 충돌"
+        ]
+      }
+    },
+    {
+      "name": "updated 타입 변조 안전 처리",
+      "status": "결함 확인",
+      "actual": {
+        "errors": [],
+        "invalidDate": true,
+        "rows": [
+          "첫 장소",
+          "둘째 장소",
+          "셋째 장소"
+        ]
+      }
+    },
+    {
+      "name": "records 타입 변조 안전 처리",
+      "status": "결함 확인",
+      "actual": {
+        "errors": [
+          "snapshot.records.map is not a function or its return value is not iterable"
+        ],
+        "invalidDate": false,
+        "rows": []
+      }
+    },
+    {
+      "name": "cells 타입 변조 안전 처리",
+      "status": "결함 확인",
+      "actual": {
+        "errors": [
+          "r.cells.map is not a function"
+        ],
+        "invalidDate": false,
+        "rows": []
+      }
+    },
+    {
+      "name": "library 타입 변조 안전 처리",
+      "status": "결함 확인",
+      "actual": {
+        "errors": [
+          "travelLibrary.map is not a function"
+        ],
+        "invalidDate": false,
+        "rows": []
+      }
+    },
+    {
+      "name": "dates 타입 변조 안전 처리",
+      "status": "결함 확인",
+      "actual": {
+        "errors": [
+          "travelDates is not iterable"
+        ],
+        "invalidDate": false,
+        "rows": [
+          "첫 장소",
+          "둘째 장소",
+          "셋째 장소"
+        ]
+      }
+    },
+    {
+      "name": "mapping 타입 변조 안전 처리",
+      "status": "결함 확인",
+      "actual": {
+        "errors": [
+          "Cannot read properties of null (reading 'date')",
+          "Cannot read properties of null (reading 'time')",
+          "Cannot read properties of null (reading 'time')"
+        ],
+        "invalidDate": false,
+        "rows": [
+          "첫 장소",
+          "둘째 장소",
+          "셋째 장소"
+        ]
+      }
+    }
+  ],
+  "errors": [
+    "snapshot.records.map is not a function or its return value is not iterable",
+    "r.cells.map is not a function",
+    "travelLibrary.map is not a function",
+    "travelDates is not iterable",
+    "Cannot read properties of null (reading 'date')",
+    "Cannot read properties of null (reading 'time')",
+    "Cannot read properties of null (reading 'time')"
+  ],
+  "consoleErrors": [
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+  ],
+  "mode": "브라우저 UI + 모의 Google SDK/지도 호출 기록",
+  "screenshots": [
+    "60.png"
+  ],
+  "finalDOM": {
+    "toast": "✓되돌리기",
+    "save": "이 기기에 여행을 자동 저장합니다.",
+    "rows": [
+      "첫 장소",
+      "둘째 장소",
+      "셋째 장소"
+    ]
+  },
+  "mock": {
+    "searches": [
+      {
+        "textQuery": "첫 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793297517740
+      },
+      {
+        "textQuery": "둘째 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793297517740
+      },
+      {
+        "textQuery": "셋째 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793297517740
+      }
+    ],
+    "fields": [],
+    "routes": [],
+    "markers": {},
+    "legs": {}
+  },
+  "status": "결함 확인",
+  "finished": "2026-10-29T18:11:58.018Z"
+}

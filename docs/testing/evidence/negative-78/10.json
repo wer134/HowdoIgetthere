@@ -1,0 +1,119 @@
+{
+  "id": 10,
+  "started": "2026-10-29T18:12:10.755Z",
+  "steps": "HTML 이벤트 문자열·100k 메모 저장, 잘못된 좌표, 손상 파일/저장 데이터 별도 검사",
+  "checks": [
+    {
+      "name": "HTML 문자열 비실행",
+      "status": "통과",
+      "actual": [
+        "첫 장소",
+        "둘째 장소",
+        "셋째 장소",
+        "<img src=x onerror=\"window.__xss=1\">"
+      ]
+    },
+    {
+      "name": "긴 메모 저장/응답 유지",
+      "status": "통과",
+      "actual": "100000자 보존"
+    },
+    {
+      "name": "범위 밖 좌표 핀 제외",
+      "status": "통과",
+      "actual": {
+        "position": null,
+        "color": "#d93025",
+        "label": "01",
+        "title": "첫 장소",
+        "visible": true
+      }
+    },
+    {
+      "name": "손상 ZIP 입력 후 활성 여행 유지",
+      "status": "통과",
+      "actual": {
+        "title": "부정 테스트 A",
+        "error": "파일을 읽지 못했습니다"
+      }
+    },
+    {
+      "name": "엑셀 위장 텍스트 입력 후 활성 여행 유지",
+      "status": "결함 확인",
+      "actual": {
+        "title": "renamed.xlsx",
+        "visible": [
+          "첫 장소",
+          "둘째 장소",
+          "셋째 장소",
+          "<img src=x onerror=\"window.__xss=1\">"
+        ]
+      }
+    }
+  ],
+  "errors": [],
+  "consoleErrors": [
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+  ],
+  "mode": "브라우저 UI + 모의 Google SDK/지도 호출 기록",
+  "screenshots": [
+    "10.png"
+  ],
+  "finalDOM": {
+    "toast": "✓일정 파일을 불러왔어요 · 0행되돌리기",
+    "save": "이 기기에 저장됨 · 사진·리뷰 제외",
+    "rows": [
+      "첫 장소",
+      "둘째 장소",
+      "셋째 장소",
+      "<img src=x onerror=\"window.__xss=1\">"
+    ]
+  },
+  "mock": {
+    "searches": [],
+    "fields": [],
+    "routes": [],
+    "markers": {
+      "0": {
+        "position": null,
+        "color": "#d93025",
+        "label": "01",
+        "title": "첫 장소",
+        "visible": true
+      },
+      "1": {
+        "position": {
+          "lat": 35.02,
+          "lng": 139.02
+        },
+        "color": "#d93025",
+        "label": "02",
+        "title": "둘째 장소",
+        "visible": true
+      },
+      "2": {
+        "position": {
+          "lat": 35.04,
+          "lng": 139.04
+        },
+        "color": "#1a73e8",
+        "label": "03",
+        "title": "셋째 장소",
+        "visible": true
+      },
+      "3": {
+        "position": null,
+        "color": "#d93025",
+        "label": "04",
+        "title": "<img src=x onerror=\"window.__xss=1\">",
+        "visible": true
+      }
+    },
+    "legs": {}
+  },
+  "status": "결함 확인",
+  "finished": "2026-10-29T18:12:14.108Z"
+}

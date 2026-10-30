@@ -1,0 +1,191 @@
+{
+  "id": 72,
+  "started": "2026-10-29T18:15:11.073Z",
+  "steps": "긴 한국어 이름+계산된 글꼴 크기 2배 모의 확대 → 버튼 가로 경계",
+  "checks": [
+    {
+      "name": "2배 글꼴 모의 확대 버튼 경계",
+      "status": "통과",
+      "actual": {
+        "overflow": false,
+        "buttons": []
+      }
+    },
+    {
+      "name": "브라우저 실제 텍스트 확대 200%",
+      "status": "검증 불가",
+      "actual": "CSS 계산 글꼴 2배 대체 검사이며 브라우저 텍스트 확대 설정 자체는 미실행"
+    }
+  ],
+  "errors": [],
+  "consoleErrors": [
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+  ],
+  "mode": "브라우저 UI + 모의 Google SDK/지도 호출 기록",
+  "screenshots": [
+    "72.png"
+  ],
+  "finalDOM": {
+    "toast": "✓일정을 반영했어요. 엑셀 저장으로 변경 내용을 보관하세요.되돌리기",
+    "save": "이 기기에 저장됨 · 사진·리뷰 제외",
+    "rows": [
+      "첫 장소",
+      "둘째 장소",
+      "셋째 장소",
+      "매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름"
+    ]
+  },
+  "mock": {
+    "searches": [
+      {
+        "textQuery": "첫 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793297711751
+      },
+      {
+        "textQuery": "둘째 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793297711751
+      },
+      {
+        "textQuery": "셋째 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793297711751
+      },
+      {
+        "textQuery": "매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793297712010
+      }
+    ],
+    "fields": [
+      {
+        "id": "p0",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793297711755
+      },
+      {
+        "id": "p1",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793297711755
+      },
+      {
+        "id": "p2",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793297711755
+      }
+    ],
+    "routes": [],
+    "markers": {
+      "0": {
+        "position": {
+          "lat": 35,
+          "lng": 139
+        },
+        "color": "#d93025",
+        "label": "01",
+        "title": "첫 장소",
+        "visible": true
+      },
+      "1": {
+        "position": {
+          "lat": 35.02,
+          "lng": 139.02
+        },
+        "color": "#d93025",
+        "label": "02",
+        "title": "둘째 장소",
+        "visible": true
+      },
+      "2": {
+        "position": {
+          "lat": 35.04,
+          "lng": 139.04
+        },
+        "color": "#1a73e8",
+        "label": "03",
+        "title": "셋째 장소",
+        "visible": true
+      },
+      "3": {
+        "position": null,
+        "color": "#d93025",
+        "label": "04",
+        "title": "매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름매우긴한국어장소이름",
+        "visible": true
+      }
+    },
+    "legs": {
+      "0>1": {
+        "segments": [
+          {
+            "kind": "straight",
+            "path": [
+              [
+                35,
+                139
+              ],
+              [
+                35.02,
+                139.02
+              ]
+            ]
+          }
+        ],
+        "color": "#d93025",
+        "visible": true
+      }
+    }
+  },
+  "status": "검증 불가",
+  "finished": "2026-10-29T18:15:12.750Z"
+}

@@ -1,0 +1,43 @@
+
+> excel-map-maker@0.1.0 test
+> node --test tests/*.test.js
+
+✔ 드래그 슬라이더와 버튼이 지도 줌을 바꾸고 지도 변경을 알린다 (3.399246ms)
+✔ 추천 장소 유형에 맞는 한국어 설명을 만든다 (1.443598ms)
+✔ 유형 정보가 없으면 장소에 대한 주장을 덧붙이지 않는다 (0.268924ms)
+✔ 사진만 요청하고 첫 사진과 출처를 반환한다 (5.314487ms)
+✔ 사진이 없는 장소는 빈 결과로 처리한다 (0.739943ms)
+✔ 사진 객체가 getUrl을 제공하는 경우에도 주소를 읽는다 (0.709032ms)
+✔ 일정 수정용 장소 유형을 Google Places ID로 확인한다 (1.117264ms)
+✔ 한국어 요청에도 일본어로 온 장소 설명은 화면에서 제외한다 (1.128702ms)
+✔ 좌표만 있는 일정에는 가까운 Google 장소 ID만 붙인다 (0.468196ms)
+✔ openai: 요청·수정 지시·일정 변환·엑셀 내보내기 (53.55269ms)
+✔ gemini: 요청·수정 지시·일정 변환·엑셀 내보내기 (7.228179ms)
+✔ API 오류 401는 사용자에게 전달 (1.272132ms)
+✔ API 오류 402는 사용자에게 전달 (0.741611ms)
+✔ API 오류 403는 사용자에게 전달 (0.494146ms)
+✔ API 오류 429는 사용자에게 전달 (0.422985ms)
+✔ API 오류 400는 사용자에게 전달 (0.337199ms)
+✔ API 오류 500는 사용자에게 전달 (0.432497ms)
+✔ openai: 불완전하거나 잘못된 일정은 사용하지 않음 {"status":"incomplete"} (0.530306ms)
+✔ openai: 불완전하거나 잘못된 일정은 사용하지 않음 {"status":"completed","output":[{"content":[{"type":"refusal"}]}] (0.951833ms)
+✔ gemini: 불완전하거나 잘못된 일정은 사용하지 않음 {"candidates":[{"finishReason":"MAX_TOKENS"}]} (1.086159ms)
+✔ gemini: 불완전하거나 잘못된 일정은 사용하지 않음 {"candidates":[{"finishReason":"STOP","content":{"parts":[{"text" (0.688039ms)
+✔ gemini: 불완전하거나 잘못된 일정은 사용하지 않음 {"candidates":[{"finishReason":"STOP","content":{"parts":[{"text" (0.431044ms)
+✔ 빈 키와 미지원 제공업체는 요청 전에 거부 (0.326344ms)
+✔ Gemini 모델 목록에서 generateContent 지원 모델만 고른다 (1.902848ms)
+✔ Gemini 404는 키를 가리고 Google 상세 오류를 보여 준다 (1.024793ms)
+✔ Gemini 402는 선불 크레딧 소진을 안내한다 (0.703334ms)
+ℹ tests 26
+ℹ suites 0
+ℹ pass 26
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 415.549554
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice

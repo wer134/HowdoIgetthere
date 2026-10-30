@@ -1,0 +1,208 @@
+{
+  "id": 39,
+  "started": "2026-10-29T18:14:02.090Z",
+  "steps": "선택 일정 삭제 → 패널/이웃 대상 확인",
+  "checks": [
+    {
+      "name": "삭제 대상 패널 잔존 없음",
+      "status": "통과",
+      "actual": "⌖Google에 공개된 사진이 없습니다Google 지도에서 사진 보기 ↗\n    \n    2026-11-01 · 1번째 장소\n    둘째 장소\n    ⌖ 테스트 주소\n    ◷ 12:00–13:00\n    \n    \n    확인함구글 지도에서 보기 ↗\n    장소 정보\n    한국어 장소 설명이 제공되지 않았어요. 구글 지도에서 자세한 정보를 확인해 주세요.\n    \n    \n    \n    장소 수정 · 주변 추천가고 싶은 곳에 보관\n    \n    \n    \n    \n      \n      다시 검색\n    \n    일정 수정일정 삭제\n    \n      \n      지도에서 직접 찍기\n      구글 지도 ↗\n    \n    \n      주변 맛집\n      카페\n      주변 명소\n    \n    엑셀 3행 · 핀을 끌어서 위치를 고칠 수도 있어요\n  \n    "
+    },
+    {
+      "name": "삭제 대상 레코드 없음",
+      "status": "통과",
+      "actual": [
+        "둘째 장소",
+        "셋째 장소"
+      ]
+    },
+    {
+      "name": "삭제된 DOM의 수정/이동 동작 무효",
+      "status": "통과",
+      "actual": {
+        "names": [
+          "둘째 장소",
+          "셋째 장소"
+        ]
+      }
+    }
+  ],
+  "errors": [],
+  "consoleErrors": [
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+  ],
+  "mode": "브라우저 UI + 모의 Google SDK/지도 호출 기록",
+  "screenshots": [
+    "39.png"
+  ],
+  "finalDOM": {
+    "toast": "✓일정을 삭제했어요. 엑셀 저장으로 변경 내용을 보관하세요.되돌리기",
+    "save": "이 기기에 저장됨 · 사진·리뷰 제외",
+    "rows": [
+      "둘째 장소",
+      "셋째 장소"
+    ]
+  },
+  "mock": {
+    "searches": [
+      {
+        "textQuery": "첫 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793297642997
+      },
+      {
+        "textQuery": "둘째 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793297642997
+      },
+      {
+        "textQuery": "셋째 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793297642997
+      }
+    ],
+    "fields": [
+      {
+        "id": "p0",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793297643001
+      },
+      {
+        "id": "p1",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793297643001
+      },
+      {
+        "id": "p2",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793297643001
+      },
+      {
+        "id": "p0",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "rating",
+          "userRatingCount",
+          "regularOpeningHours",
+          "photos",
+          "reviews",
+          "reviewSummary",
+          "editorialSummary",
+          "websiteURI",
+          "nationalPhoneNumber",
+          "isReservable",
+          "hasTakeout",
+          "hasDineIn",
+          "hasDelivery",
+          "servesBreakfast",
+          "servesLunch",
+          "servesDinner",
+          "servesVegetarianFood",
+          "paymentOptions",
+          "isGoodForChildren",
+          "isGoodForGroups",
+          "hasOutdoorSeating",
+          "hasRestroom"
+        ],
+        "at": 1793297643124
+      },
+      {
+        "id": "p1",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "rating",
+          "userRatingCount",
+          "regularOpeningHours",
+          "photos",
+          "reviews",
+          "reviewSummary",
+          "editorialSummary",
+          "websiteURI",
+          "nationalPhoneNumber",
+          "isReservable",
+          "hasTakeout",
+          "hasDineIn",
+          "hasDelivery",
+          "servesBreakfast",
+          "servesLunch",
+          "servesDinner",
+          "servesVegetarianFood",
+          "paymentOptions",
+          "isGoodForChildren",
+          "isGoodForGroups",
+          "hasOutdoorSeating",
+          "hasRestroom"
+        ],
+        "at": 1793297643313
+      }
+    ],
+    "routes": [],
+    "markers": {
+      "0": {
+        "position": {
+          "lat": 35.02,
+          "lng": 139.02
+        },
+        "color": "#d93025",
+        "label": "01",
+        "title": "둘째 장소",
+        "visible": true
+      },
+      "1": {
+        "position": {
+          "lat": 35.04,
+          "lng": 139.04
+        },
+        "color": "#1a73e8",
+        "label": "02",
+        "title": "셋째 장소",
+        "visible": true
+      }
+    },
+    "legs": {}
+  },
+  "status": "통과",
+  "finished": "2026-10-29T18:14:06.724Z"
+}
