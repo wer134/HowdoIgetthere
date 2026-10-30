@@ -3684,7 +3684,7 @@ function restoreTravel(snapshot, fromStorage = false) {
   travelLibrary = structuredClone(snapshot.library || []);
   const notes=loadLibraryNotes();
   for(const p of travelLibrary) {const note=notes[`${travelId}:${p.id || p.name}`];if(note && typeof note.memo==='string' && (p.memo || '')===note.base)p.memo=note.memo;}
-  travelLibrary = travelLibrary.map(p => !p.id || Date.now() - (p.cachedAt || snapshot.updated) < 30 * 86400000 ? p : {id:p.id,name:p.name});
+  travelLibrary = travelLibrary.map(p => !p.id || Date.now() - (p.cachedAt || snapshot.updated) < 30 * 86400000 ? p : {id:p.id,name:p.name,memo:p.memo || ''});
   travelEl('travelSearchResults').replaceChildren();
   travelEl('travelSearchStatus').textContent = '';
   selectedSchedulePlace = null;
