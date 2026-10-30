@@ -1392,6 +1392,24 @@ function renderPlanCheck() {
       + group('놓치면 오래 기다리는 차 · 타기 전 여유가 모자라요', rides, openRisk ? renderRideDetail(openRisk) : '')
       + edits;
   }
+  const warnings = [];
+  for (const it of state.items) {
+    if (/^\d{1,2}\s*[/.월]/.test(it.day)) warnings.push(`${it.name}: 연도가 모호한 날짜입니다. 연도를 확인하고 YYYY-MM-DD로 입력하세요.`);
+    const time=parseTimeRange(it.timeText);
+    if (it.timeText && time.start == null && it.timeText !== '시간 미정') warnings.push(`${it.name}: 지원하지 않는 시간 형식입니다. HH:MM으로 입력하세요.`);
+    if (time.start != null && time.end < time.start) warnings.push(`${it.name}: 종료 시간이 시작 시간보다 빠릅니다. 자정 넘김인지 시간 입력 오류인지 확인하세요.`);
+  }
+  const intervals = state.items.map(it => ({it, ...parseTimeRange(it.timeText)}))
+    .filter(t => t.start != null && t.end > t.start)
+    .sort((a,b) => a.it.day.localeCompare(b.it.day) || a.start-b.start);
+  let previous = null;
+  for (const current of intervals) {
+    if (previous?.it.day === current.it.day && current.start < previous.end) {
+      warnings.push(`${previous.it.name} · ${current.it.name}: 방문 시간이 겹칩니다. 일정 충돌을 확인하세요.`);
+      if (current.end > previous.end) previous = current;
+    } else previous = current;
+  }
+  if(warnings.length) html += `<div role="status" class="plan-input-warnings">${[...new Set(warnings)].map(w=>`<p>${escapeHtml(w)}</p>`).join('')}</div>`;
   els.planCheck.classList.toggle('hidden', !html);
   // 버튼을 누르는 도중 다시 그려 클릭이 사라지지 않도록, 바뀐 경우에만 다시 그린다
   if (html !== lastPlanCheckHtml) {
@@ -2625,7 +2643,7 @@ function renderItem(it) {
       <span class="timeline-copy">
         <strong class="item-name">${escapeHtml(placeDisplayName(it))}</strong>
         <span class="item-meta"><span class="badge ${st.cls}">${st.label}</span><span class="item-sub">${escapeHtml(itemSubline(it))}</span></span>
-        <span class="schedule-actions"><button type="button" data-action="edit" aria-label="${escapeHtml(it.name)} 수정">수정</button><button type="button" data-action="travel-move">이동</button><button type="button" data-action="travel-keep">보관함으로</button><button type="button" data-action="delete" aria-label="${escapeHtml(it.name)} 삭제">삭제</button></span>
+        <small class="muted">장소의 폐업·이전 여부는 방문 전에 확인하세요.</small><span class="schedule-actions"><button type="button" data-action="edit" aria-label="${escapeHtml(it.name)} 수정">수정</button><button type="button" data-action="travel-move">이동</button><button type="button" data-action="travel-keep">보관함으로</button><button type="button" data-action="delete" aria-label="${escapeHtml(it.name)} 삭제">삭제</button></span>
       </span>
       <span class="timeline-thumb" aria-hidden="true">${photo?.url && !failedPhotoUrls.has(photo.url) ? `<img src="${escapeHtml(photo.url)}" data-photo-id="${escapeHtml(it.place?.id || '')}" alt="">` : '⌖'}</span>
     </div>
@@ -3752,7 +3770,7 @@ function setTravelTab(library) {
 travelEl('travelPlanTab').onclick = () => setTravelTab(false);
 travelEl('travelLibraryTab').onclick = () => setTravelTab(true);
 function renderTravelLibrary() {
-  travelEl('travelLibraryList').innerHTML = travelLibrary.length ? travelLibrary.map((p, i) => `<article class="travel-place" draggable="true" data-library="${i}"><strong>${escapeHtml(p.name)}</strong><p>${escapeHtml(p.address || '')}</p><label class="travel-note">메모<input data-travel-note="${i}" aria-label="${escapeHtml(p.name)} 메모" value="${escapeHtml(p.memo || '')}" placeholder="가고 싶은 이유, 먹고 싶은 메뉴"></label><button type="button" data-travel-add="${i}">일정에 넣기</button><button type="button" data-travel-remove="${i}">보관함에서 삭제</button></article>`).join('') : '<p>가고 싶은 장소를 검색해서 보관하세요. 날짜는 나중에 정해도 됩니다.</p>';
+  travelEl('travelLibraryList').innerHTML = travelLibrary.length ? travelLibrary.map((p, i) => `<article class="travel-place" draggable="true" data-library="${i}"><strong>${escapeHtml(p.name)}</strong><p>${escapeHtml(p.address || '')}</p><p class="muted">보관한 정보입니다. 폐업·이전·이름 변경 여부는 방문 전에 확인하세요.</p><label class="travel-note">메모<input data-travel-note="${i}" aria-label="${escapeHtml(p.name)} 메모" value="${escapeHtml(p.memo || '')}" placeholder="가고 싶은 이유, 먹고 싶은 메뉴"></label><button type="button" data-travel-add="${i}">일정에 넣기</button><button type="button" data-travel-remove="${i}">보관함에서 삭제</button></article>`).join('') : '<p>가고 싶은 장소를 검색해서 보관하세요. 날짜는 나중에 정해도 됩니다.</p>';
   const days = [...new Set([...travelDates, ...state.items.map(it => it.day).filter(Boolean)])];
   travelEl('travelLibraryDays').innerHTML = days.map(day => `<button type="button" data-travel-day="${escapeHtml(day)}">${escapeHtml(day)}</button>`).join('');
   renderTravelLibraryPins();
@@ -3769,14 +3787,15 @@ travelEl('travelSearchForm').onsubmit = async (event) => {
   event.preventDefault();
   if (mapState !== 'ready') { travelEl('travelSearchStatus').textContent = '설정에서 Google Maps를 먼저 연결해 주세요.'; return; }
   const version = ++travelSearchVersion;
+  const query = travelEl('travelSearch').value.trim();
   const button = event.currentTarget.querySelector('button'); button.disabled = true;
   travelEl('travelSearchStatus').textContent = '장소를 찾는 중…';
   try {
-    const results = await searchPlaces(travelEl('travelSearch').value.trim(), searchOptions(CFG.language));
+    const results = await searchPlaces(query, searchOptions(CFG.language));
     if (version !== travelSearchVersion) return;
     travelSearchResults = results;
     travelEl('travelSearchResults').innerHTML = results.map((p,i) => `<article class="travel-place"><strong>${escapeHtml(p.name)}</strong><p>${escapeHtml(p.address)}</p><button type="button" data-travel-save="${i}">보관하기</button><button type="button" data-travel-direct="${i}">일정에 넣기</button></article>`).join('');
-    travelEl('travelSearchStatus').textContent = results.length ? `${results.length}곳을 찾았어요.` : '검색어에 지역 이름을 더해 보세요.';
+    travelEl('travelSearchStatus').textContent = results.length ? `“${query}” 검색 결과 · ${results.length}곳을 찾았어요.` : '검색어에 지역 이름을 더해 보세요.';
   } catch (err) { if (version === travelSearchVersion) travelEl('travelSearchStatus').textContent = `검색하지 못했어요: ${err.message}`; }
   finally { button.disabled = false; }
 };

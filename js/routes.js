@@ -41,11 +41,11 @@ export function distanceMeters(a, b) {
 
 // 글자 속 시각들과 그 위치. 일정 점검에서 시각 한 곳만 고쳐 쓸 때도 쓴다
 export function timeMatches(text) {
-  return [...String(text ?? '').matchAll(/(오전|오후|AM|PM)?\s*(\d{1,2}):(\d{2})\s*(AM|PM)?/gi)]
+  return [...String(text ?? '').matchAll(/(오전|오후|AM|PM)?\s*(\d{1,2})(?::(\d{2})|시(?:\s*(\d{1,2})분)?)\s*(AM|PM)?/gi)]
     .map((match) => {
       let h = Number(match[2]);
-      const min = Number(match[3]);
-      const ampm = (match[1] || match[4] || '').toUpperCase();
+      const min = Number(match[3] || match[4] || 0);
+      const ampm = (match[1] || match[5] || '').toUpperCase();
       if ((ampm === 'PM' || ampm === '오후') && h < 12) h += 12;
       if ((ampm === 'AM' || ampm === '오전') && h === 12) h = 0;
       return { match, minutes: h < 24 && min < 60 ? h * 60 + min : null };
