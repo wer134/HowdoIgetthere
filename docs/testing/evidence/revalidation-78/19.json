@@ -1,0 +1,280 @@
+{
+  "id": 19,
+  "started": "2026-10-30T14:08:53.251Z",
+  "steps": "24:00·25:30·오전 12시·시간 미정 입력, 실제 시간 파서 결과와 UI 경고 확인",
+  "checks": [
+    {
+      "name": "24:00",
+      "status": "통과",
+      "actual": {
+        "parsed": {
+          "start": null,
+          "end": null
+        },
+        "warning": true,
+        "stored": true
+      }
+    },
+    {
+      "name": "25:30",
+      "status": "통과",
+      "actual": {
+        "parsed": {
+          "start": null,
+          "end": null
+        },
+        "warning": true,
+        "stored": true
+      }
+    },
+    {
+      "name": "오전 12시",
+      "status": "통과",
+      "actual": {
+        "parsed": {
+          "start": 0,
+          "end": 0
+        },
+        "warning": true,
+        "stored": true
+      }
+    },
+    {
+      "name": "시간 미정",
+      "status": "통과",
+      "actual": {
+        "parsed": {
+          "start": null,
+          "end": null
+        },
+        "warning": true,
+        "stored": true
+      }
+    },
+    {
+      "name": "오전 12시의 경로 출발 시각 해석",
+      "status": "통과",
+      "actual": {
+        "departureHour": 0,
+        "departureMinute": 0,
+        "note": "실제 legTiming 모듈 실행. 이 형식이 null이면 출발 시각을 기본 10시로 대체함. 실제 Google 호출 아님"
+      }
+    }
+  ],
+  "errors": [],
+  "consoleErrors": [
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+  ],
+  "mode": "브라우저 UI + 모의 Google SDK/지도 호출 기록",
+  "screenshots": [
+    "19.png"
+  ],
+  "finalDOM": {
+    "toast": "✓일정을 반영했어요. 엑셀 저장으로 변경 내용을 보관하세요.되돌리기삭제 되돌리기",
+    "save": "이 기기에 저장됨 · 사진·리뷰 제외",
+    "rows": [
+      "첫 장소",
+      "둘째 장소",
+      "셋째 장소",
+      "24:00",
+      "25:30",
+      "오전 12시",
+      "시간 미정"
+    ]
+  },
+  "mock": {
+    "searches": [
+      {
+        "textQuery": "첫 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793369333930
+      },
+      {
+        "textQuery": "둘째 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793369333930
+      },
+      {
+        "textQuery": "셋째 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793369333930
+      },
+      {
+        "textQuery": "24:00",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793369334212
+      },
+      {
+        "textQuery": "25:30",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793369334943
+      },
+      {
+        "textQuery": "오전 12시",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793369335661
+      },
+      {
+        "textQuery": "시간 미정",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793369336393
+      }
+    ],
+    "fields": [
+      {
+        "id": "p0",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793369333934
+      },
+      {
+        "id": "p1",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793369333934
+      },
+      {
+        "id": "p2",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793369333935
+      }
+    ],
+    "routes": [],
+    "markers": {
+      "0": {
+        "position": {
+          "lat": 35,
+          "lng": 139
+        },
+        "color": "#d93025",
+        "label": "01",
+        "title": "첫 장소",
+        "visible": true
+      },
+      "1": {
+        "position": {
+          "lat": 35.02,
+          "lng": 139.02
+        },
+        "color": "#d93025",
+        "label": "02",
+        "title": "둘째 장소",
+        "visible": true
+      },
+      "2": {
+        "position": {
+          "lat": 35.04,
+          "lng": 139.04
+        },
+        "color": "#1a73e8",
+        "label": "03",
+        "title": "셋째 장소",
+        "visible": true
+      },
+      "6": {
+        "position": null,
+        "color": "#d93025",
+        "label": "07",
+        "title": "시간 미정",
+        "visible": true
+      }
+    },
+    "legs": {
+      "0>1": {
+        "segments": [
+          {
+            "kind": "straight",
+            "path": [
+              [
+                35,
+                139
+              ],
+              [
+                35.02,
+                139.02
+              ]
+            ]
+          }
+        ],
+        "color": "#d93025",
+        "visible": true
+      }
+    }
+  },
+  "status": "통과",
+  "finished": "2026-10-30T14:08:57.065Z"
+}

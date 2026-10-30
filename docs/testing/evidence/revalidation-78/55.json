@@ -1,0 +1,269 @@
+{
+  "id": 55,
+  "started": "2026-10-30T14:10:18.651Z",
+  "steps": "쿼터 초과·결제 중단 모의 응답 → 실제 retry 횟수/안내 확인",
+  "checks": [
+    {
+      "name": "쿼터 재시도 3회 제한",
+      "status": "통과",
+      "actual": 3
+    },
+    {
+      "name": "쿼터 안내",
+      "status": "통과",
+      "actual": "\n            \n              ✦ SMART ROUTING\n              이제 이동 경로를 찾아볼까요?\n              일정표의 이동 수단과 시간에 맞춰, 구간마다 구글이 추천하는 경로와 소요 시간을 찾아요. 일정표에 잡은 이동 시간이 모자란 구간도 알려 드려요.\n              \n              1구간\n              경로 요청 한도를 넘었습니다. 잠시 뒤 「경로 찾기」를 다시 눌러 주세요.\n            \n            \n              ✦경로 찾기 · 1구간→\n            \n          "
+    },
+    {
+      "name": "결제 중단 재시도 제한",
+      "status": "통과",
+      "actual": 4
+    },
+    {
+      "name": "결제 원인 안내",
+      "status": "통과",
+      "actual": "\n            \n              ✦ SMART ROUTING\n              이제 이동 경로를 찾아볼까요?\n              일정표의 이동 수단과 시간에 맞춰, 구간마다 구글이 추천하는 경로와 소요 시간을 찾아요. 일정표에 잡은 이동 시간이 모자란 구간도 알려 드려요.\n              \n              1구간\n              이동 경로를 찾을 수 없습니다. Google Cloud 콘솔에서 \"Routes API\"를 사용 설정하고, API 키 제한 목록에도 넣었는지 확인하세요. (billing disabled 403)\n            \n            \n              ✦경로 찾기 · 1구간→\n            \n          "
+    }
+  ],
+  "errors": [],
+  "consoleErrors": [
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+  ],
+  "mode": "브라우저 UI + 모의 Google SDK/지도 호출 기록",
+  "screenshots": [
+    "55.png"
+  ],
+  "finalDOM": {
+    "toast": "✓되돌리기삭제 되돌리기",
+    "save": "이 기기에 저장됨 · 사진·리뷰 제외",
+    "rows": [
+      "첫 장소",
+      "둘째 장소",
+      "셋째 장소"
+    ]
+  },
+  "mock": {
+    "searches": [
+      {
+        "textQuery": "첫 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793369419280
+      },
+      {
+        "textQuery": "둘째 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793369419280
+      },
+      {
+        "textQuery": "셋째 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793369419280
+      }
+    ],
+    "fields": [
+      {
+        "id": "p0",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793369419283
+      },
+      {
+        "id": "p1",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793369419283
+      },
+      {
+        "id": "p2",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793369419283
+      }
+    ],
+    "routes": [
+      {
+        "origin": {
+          "lat": 35,
+          "lng": 139
+        },
+        "destination": {
+          "lat": 35.02,
+          "lng": 139.02
+        },
+        "travelMode": "TRANSIT",
+        "fields": [
+          "path",
+          "legs",
+          "distanceMeters",
+          "durationMillis",
+          "localizedValues",
+          "travelAdvisory"
+        ],
+        "language": "ko",
+        "region": "kr",
+        "departureTime": "2026-11-01T02:00:00.000Z",
+        "at": 1793369419403
+      },
+      {
+        "origin": {
+          "lat": 35,
+          "lng": 139
+        },
+        "destination": {
+          "lat": 35.02,
+          "lng": 139.02
+        },
+        "travelMode": "TRANSIT",
+        "fields": [
+          "path",
+          "legs",
+          "distanceMeters",
+          "durationMillis",
+          "localizedValues",
+          "travelAdvisory"
+        ],
+        "language": "ko",
+        "region": "kr",
+        "departureTime": "2026-11-01T02:00:00.000Z",
+        "at": 1793369420416
+      },
+      {
+        "origin": {
+          "lat": 35,
+          "lng": 139
+        },
+        "destination": {
+          "lat": 35.02,
+          "lng": 139.02
+        },
+        "travelMode": "TRANSIT",
+        "fields": [
+          "path",
+          "legs",
+          "distanceMeters",
+          "durationMillis",
+          "localizedValues",
+          "travelAdvisory"
+        ],
+        "language": "ko",
+        "region": "kr",
+        "departureTime": "2026-11-01T02:00:00.000Z",
+        "at": 1793369422416
+      },
+      {
+        "origin": {
+          "lat": 35,
+          "lng": 139
+        },
+        "destination": {
+          "lat": 35.02,
+          "lng": 139.02
+        },
+        "travelMode": "TRANSIT",
+        "fields": [
+          "path",
+          "legs",
+          "distanceMeters",
+          "durationMillis",
+          "localizedValues",
+          "travelAdvisory"
+        ],
+        "language": "ko",
+        "region": "kr",
+        "departureTime": "2026-11-01T02:00:00.000Z",
+        "at": 1793369423035
+      }
+    ],
+    "markers": {
+      "0": {
+        "position": {
+          "lat": 35,
+          "lng": 139
+        },
+        "color": "#d93025",
+        "label": "01",
+        "title": "첫 장소",
+        "visible": true
+      },
+      "1": {
+        "position": {
+          "lat": 35.02,
+          "lng": 139.02
+        },
+        "color": "#d93025",
+        "label": "02",
+        "title": "둘째 장소",
+        "visible": true
+      },
+      "2": {
+        "position": {
+          "lat": 35.04,
+          "lng": 139.04
+        },
+        "color": "#1a73e8",
+        "label": "03",
+        "title": "셋째 장소",
+        "visible": true
+      }
+    },
+    "legs": {
+      "0>1": {
+        "segments": [
+          {
+            "kind": "straight",
+            "path": [
+              [
+                35,
+                139
+              ],
+              [
+                35.02,
+                139.02
+              ]
+            ]
+          }
+        ],
+        "color": "#d93025",
+        "visible": true
+      }
+    }
+  },
+  "status": "통과",
+  "finished": "2026-10-30T14:10:23.431Z"
+}

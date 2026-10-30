@@ -172,7 +172,7 @@ out += ['', '## 남은 검증과 필요한 조건','',
 '- 40: OS 창 밖 네이티브 드래그/드롭 환경. 50·71: 실제 지도 DOM과 제스처. 59: 이전 정식 버전 snapshot/명세.',
 '- 67: 실제 KML 소비자에서의 위험 URL/description 해석. 69: 실기기 소프트 키보드. 72: 실제 브라우저 텍스트 확대 설정. 75: 실제 스크린리더.',
 '', '앱 결함을 고치거나 테스트 조건을 삭제하지 않았다. 이 보고서는 환경 준비나 기본 테스트 성공과 제품의 부정 테스트 통과를 구분한 검증 결과다.', '']
-(HERE/'negative-tests-78.md').write_text('\n'.join(out))
+(HERE/'negative-tests-78-baseline.md').write_text('\n'.join(out))
 summary={'commit':'de2ecb4808a2a422bbe90b59d43d398cc137abad','counts':dict(counts),'actual_google_calls':0,'case_count':78,'subcase_count':sum(len(r['checks']) for r in results.values()),'harness_errors':[],'cases':[{k:r[k] for k in ['id','status','started','finished']} for r in results.values()]}
 (EVIDENCE/'summary.json').write_text(json.dumps(summary,ensure_ascii=False,indent=2)+'\n')
 print(json.dumps(summary['counts'],ensure_ascii=False),summary['subcase_count'],'하위 케이스')

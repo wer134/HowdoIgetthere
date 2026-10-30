@@ -1,0 +1,341 @@
+{
+  "id": 34,
+  "started": "2026-10-30T14:09:27.792Z",
+  "steps": "교체 후보 선택 → 직접 다른 이름 입력 → 저장 후 이전 후보 좌표 혼합 여부",
+  "checks": [
+    {
+      "name": "후보 좌표와 직접 이름 혼합 방지",
+      "status": "통과",
+      "actual": {
+        "record": {
+          "rowNumber": 2,
+          "cells": [
+            {
+              "t": "s",
+              "v": "직접 수정 이름"
+            },
+            {
+              "t": "s",
+              "v": "2026-11-01"
+            },
+            {
+              "t": "s",
+              "v": "10:00–11:00"
+            },
+            {
+              "t": "s",
+              "v": "후보 주소"
+            },
+            {
+              "t": "s",
+              "v": ""
+            },
+            {
+              "t": "s",
+              "v": "테스트 주소"
+            },
+            null,
+            null
+          ]
+        },
+        "places": [
+          {
+            "recordIndex": 1,
+            "place": {
+              "id": "p1",
+              "name": "둘째 장소",
+              "address": "테스트 주소",
+              "lat": 35.02,
+              "lng": 139.02,
+              "url": "",
+              "cachedAt": 1793369369234
+            },
+            "status": "confirmed",
+            "cachedAt": 1793369369234
+          },
+          {
+            "recordIndex": 2,
+            "place": {
+              "id": "p2",
+              "name": "셋째 장소",
+              "address": "테스트 주소",
+              "lat": 35.04,
+              "lng": 139.04,
+              "url": "",
+              "cachedAt": 1793369369234
+            },
+            "status": "confirmed",
+            "cachedAt": 1793369369234
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [],
+  "consoleErrors": [
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+  ],
+  "mode": "브라우저 UI + 모의 Google SDK/지도 호출 기록",
+  "screenshots": [
+    "34.png"
+  ],
+  "finalDOM": {
+    "toast": "✓일정을 반영했어요. 엑셀 저장으로 변경 내용을 보관하세요.되돌리기삭제 되돌리기",
+    "save": "이 기기에 저장됨 · 사진·리뷰 제외",
+    "rows": [
+      "직접 수정 이름",
+      "둘째 장소",
+      "셋째 장소"
+    ]
+  },
+  "mock": {
+    "searches": [
+      {
+        "textQuery": "첫 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793369368437
+      },
+      {
+        "textQuery": "둘째 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793369368437
+      },
+      {
+        "textQuery": "셋째 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793369368437
+      },
+      {
+        "fields": [
+          "id",
+          "displayName",
+          "location",
+          "rating",
+          "userRatingCount",
+          "priceLevel",
+          "priceRange",
+          "regularOpeningHours",
+          "primaryType",
+          "types",
+          "postalAddress",
+          "formattedAddress",
+          "businessStatus",
+          "googleMapsURI",
+          "utcOffsetMinutes"
+        ],
+        "maxResultCount": 20,
+        "language": "ko",
+        "region": "kr",
+        "locationRestriction": {
+          "center": {
+            "lat": 35,
+            "lng": 139
+          },
+          "radius": 1500
+        },
+        "includedTypes": [
+          "tourist_attraction",
+          "museum",
+          "art_gallery",
+          "park",
+          "garden",
+          "historical_landmark",
+          "shinto_shrine",
+          "buddhist_temple",
+          "church",
+          "castle",
+          "observation_deck",
+          "scenic_spot",
+          "aquarium",
+          "zoo",
+          "amusement_park",
+          "market",
+          "beach"
+        ],
+        "excludedPrimaryTypes": [
+          "restaurant",
+          "cafe",
+          "coffee_shop",
+          "gift_shop",
+          "hotel"
+        ],
+        "rankPreference": "POPULARITY",
+        "textQuery": "__nearby",
+        "at": 1793369368682
+      },
+      {
+        "fields": [
+          "id",
+          "displayName",
+          "location",
+          "rating",
+          "userRatingCount",
+          "priceLevel",
+          "priceRange",
+          "regularOpeningHours",
+          "primaryType",
+          "types",
+          "postalAddress",
+          "formattedAddress",
+          "businessStatus",
+          "googleMapsURI",
+          "utcOffsetMinutes"
+        ],
+        "textQuery": "교체",
+        "maxResultCount": 10,
+        "language": "ko",
+        "region": "kr",
+        "locationBias": {
+          "center": {
+            "lat": 35,
+            "lng": 139
+          },
+          "radius": 20000
+        },
+        "at": 1793369368719
+      },
+      {
+        "textQuery": "직접 수정 이름 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793369368824
+      }
+    ],
+    "fields": [
+      {
+        "id": "p0",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793369368441
+      },
+      {
+        "id": "p1",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793369368441
+      },
+      {
+        "id": "p2",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793369368441
+      },
+      {
+        "id": "p0",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "rating",
+          "userRatingCount",
+          "regularOpeningHours",
+          "photos",
+          "reviews",
+          "reviewSummary",
+          "editorialSummary",
+          "websiteURI",
+          "nationalPhoneNumber",
+          "isReservable",
+          "hasTakeout",
+          "hasDineIn",
+          "hasDelivery",
+          "servesBreakfast",
+          "servesLunch",
+          "servesDinner",
+          "servesVegetarianFood",
+          "paymentOptions",
+          "isGoodForChildren",
+          "isGoodForGroups",
+          "hasOutdoorSeating",
+          "hasRestroom"
+        ],
+        "at": 1793369368633
+      },
+      {
+        "id": "p0",
+        "fields": [
+          "primaryType",
+          "types"
+        ],
+        "at": 1793369368668
+      }
+    ],
+    "routes": [],
+    "markers": {
+      "0": {
+        "position": null,
+        "color": "#d93025",
+        "label": "01",
+        "title": "직접 수정 이름",
+        "visible": true
+      },
+      "1": {
+        "position": {
+          "lat": 35.02,
+          "lng": 139.02
+        },
+        "color": "#d93025",
+        "label": "02",
+        "title": "둘째 장소",
+        "visible": true
+      },
+      "2": {
+        "position": {
+          "lat": 35.04,
+          "lng": 139.04
+        },
+        "color": "#1a73e8",
+        "label": "03",
+        "title": "셋째 장소",
+        "visible": true
+      }
+    },
+    "legs": {}
+  },
+  "status": "통과",
+  "finished": "2026-10-30T14:09:29.587Z"
+}

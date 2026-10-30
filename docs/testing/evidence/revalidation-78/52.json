@@ -1,0 +1,95 @@
+{
+  "id": 52,
+  "started": "2026-10-30T14:10:12.405Z",
+  "steps": "동일 좌표/1m 근접 좌표 두 방문을 각각 복원 → 경로/요청/NaN 확인",
+  "checks": [
+    {
+      "name": "좌표 차이 0 경로 요청 생략",
+      "status": "통과",
+      "actual": {
+        "requests": [],
+        "buttonHidden": true,
+        "legs": {}
+      }
+    },
+    {
+      "name": "좌표 차이 0.00001 경로 요청 생략",
+      "status": "통과",
+      "actual": {
+        "requests": [],
+        "buttonHidden": true,
+        "legs": {}
+      }
+    }
+  ],
+  "errors": [],
+  "consoleErrors": [
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+  ],
+  "mode": "브라우저 UI + 모의 Google SDK/지도 호출 기록",
+  "screenshots": [
+    "52.png"
+  ],
+  "finalDOM": {
+    "toast": "✓되돌리기삭제 되돌리기",
+    "save": "이 기기에 저장됨 · 사진·리뷰 제외",
+    "rows": [
+      "첫 장소",
+      "둘째 장소"
+    ]
+  },
+  "mock": {
+    "searches": [],
+    "fields": [
+      {
+        "id": "p0",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793369414556
+      },
+      {
+        "id": "p1",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793369414556
+      }
+    ],
+    "routes": [],
+    "markers": {
+      "0": {
+        "position": {
+          "lat": 35,
+          "lng": 139
+        },
+        "color": "#d93025",
+        "label": "01",
+        "title": "첫 장소",
+        "visible": true
+      },
+      "1": {
+        "position": {
+          "lat": 35.00001,
+          "lng": 139
+        },
+        "color": "#d93025",
+        "label": "02",
+        "title": "둘째 장소",
+        "visible": true
+      }
+    },
+    "legs": {}
+  },
+  "status": "통과",
+  "finished": "2026-10-30T14:10:15.377Z"
+}
