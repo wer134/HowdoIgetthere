@@ -1,3 +1,4 @@
+import { createTravelStore, validTravel } from './travel-store.js';
 // 화면 흐름: API 키 → 엑셀 올리기 → 열 맞추기 → 장소 검색·지도 표시 → 동선 → 결과 확인·내보내기
 import { escapeHtml, downloadBlob, storage, PALETTE, STATUS, normalizeText, similarity } from './util.js';
 import {
@@ -142,7 +143,8 @@ let undoToastAction = null;
 const toastUndoButton = document.getElementById('toastUndo');
 function showToast(message, undo = null) {
   els.toast.querySelector('strong').textContent = message;
-  undoToastAction = undo;
+  const undoTravel = travelId;
+  undoToastAction = undo ? () => { if (travelId === undoTravel) undo(); } : null;
   toastUndoButton.classList.toggle('hidden', !undo);
   els.toast.classList.add('is-visible');
   clearTimeout(toastTimer);
@@ -264,7 +266,7 @@ async function handleFile(file) {
   try {
     const buffer = await file.arrayBuffer();
     const workbook = readWorkbook(buffer, file.name);
-    saveTravelNow(); travelReady = true; travelId = crypto.randomUUID(); travelLibrary = []; travelDates = []; travelSearchVersion++; travelEl('travelSearchResults').replaceChildren();
+    await saveTravelNow(); undoToastAction = null; toastUndoButton.classList.add('hidden'); travelReady = true; travelId = crypto.randomUUID(); travelLibrary = []; travelDates = []; travelSearchVersion++; travelEl('travelSearchResults').replaceChildren();
     document.body.classList.remove('travel-native');
     state.workbook = workbook;
     state.fileBuffer = buffer;
@@ -3571,23 +3573,39 @@ function travelSnapshot() {
     places: state.items.filter(it => it.place).map(it => ({ recordIndex: it.recordIndex, place: it.place, status: it.status, cachedAt: it.place.cachedAt ||= Date.now() })),
     region: els.commonRegion.value, sheetName: state.sheetName };
 }
-function saveTravelNow() {
+const travelStore = createTravelStore({
+  read: () => localStorage.getItem(TRAVEL_STORE),
+  write: value => storage.set(TRAVEL_STORE, value),
+  lock: navigator.locks ? action => navigator.locks.request(TRAVEL_STORE, action) : null,
+});
+let travelHistoryEntries = new Map();
+function travelSaveMessage(result) {
+  return result.ok ? '이 기기에 저장됨 · 사진·리뷰 제외'
+    : result.conflict ? '다른 탭에서 이 여행을 변경하거나 삭제했어요. 현재 편집은 엑셀로 보관하고 저장한 여행에서 다시 열어 주세요.'
+    : result.unsupported ? '이 브라우저는 안전한 자동 저장을 지원하지 않아요. 엑셀로 저장해 주세요.'
+    : result.invalid ? '여행 데이터 형식을 확인해 주세요. 저장본은 변경하지 않았어요.'
+    : '저장 공간이 부족하거나 저장할 수 없어요. 엑셀로 저장해 주세요.';
+}
+async function saveTravelNow() {
   clearTimeout(travelSaveTimer);
   if (!travelReady || !state.workbook) return;
-  const all = loadJson(TRAVEL_STORE, {});
-  const snapshot = travelSnapshot();
-  const comparable = {...snapshot, updated:0};
-  if(all[travelId] && JSON.stringify({...all[travelId],updated:0}) === JSON.stringify(comparable)) return;
-  all[travelId] = snapshot;
-  const ok = storage.set(TRAVEL_STORE, JSON.stringify(all));
-  travelEl('travelSaveStatus').textContent = ok ? '이 기기에 저장됨 · 사진·리뷰 제외' : '저장 공간이 부족해요. 엑셀로 저장해 주세요.';
+  const id = travelId;
+  const result = await travelStore.save(travelSnapshot());
+  if (id === travelId) travelEl('travelSaveStatus').textContent = travelSaveMessage(result);
+  return result;
 }
 function scheduleTravelSave() {
   clearTimeout(travelSaveTimer);
   travelSaveTimer = setTimeout(saveTravelNow, 400);
 }
 window.addEventListener('pagehide', saveTravelNow);
-function restoreTravel(snapshot) {
+function restoreTravel(snapshot, fromStorage = false) {
+  if (!validTravel(snapshot)) { showToast('저장한 여행 데이터가 손상되어 열 수 없어요. 현재 여행은 유지됩니다.'); return false; }
+  if (fromStorage) travelStore.observe(snapshot.id, snapshot);
+  undoToastAction = null;
+  toastUndoButton.classList.add('hidden');
+  scheduleDialog.close();
+  clearTimeout(travelSaveTimer);
   travelReady = false;
   closeRecs();
   rendered.clear();
@@ -3640,6 +3658,7 @@ function restoreTravel(snapshot) {
   document.body.classList.add('has-itinerary');
   travelReady = true;
   render(); renderTravelLibrary();
+  return true;
 }
 function travelUndoSnapshot() { return structuredClone(travelSnapshot()); }
 function travelChanged(message, before) {
@@ -3777,22 +3796,33 @@ function keepTravelItem(it) {
   state.records.splice(it.recordIndex,1);
   travelChanged('일정에서 빼고 보관함에 남겼어요.',before);
 }
-travelEl('savedTravels').onclick=()=>{
+travelEl('savedTravels').onclick=async()=>{
   if(travelBusy()) return;
-  saveTravelNow();
-  const all=Object.values(loadJson(TRAVEL_STORE,{})).sort((a,b)=>b.updated-a.updated);
-  travelEl('travelHistoryList').innerHTML=all.length?all.map(t=>`<article class="travel-place"><strong>${escapeHtml(t.name)}</strong><p>${t.records.length}행 · ${new Date(t.updated).toLocaleString('ko-KR')}</p><button type="button" data-travel-open="${escapeHtml(t.id)}">열기</button><button type="button" data-travel-delete="${escapeHtml(t.id)}">삭제</button></article>`).join(''):'<p>아직 저장한 여행이 없습니다.</p>';
+  await saveTravelNow();
+  const listing=travelStore.list();
+  travelHistoryEntries=new Map(listing.entries);
+  const all=listing.entries.map(([,s])=>s).sort((a,b)=>b.updated-a.updated);
+  travelEl('travelHistoryList').innerHTML=(listing.invalid ? '<p role="alert">일부 저장 데이터가 손상되어 목록에서 제외했어요. 원본은 보존했습니다.</p>' : '') + (all.length?all.map(t=>`<article class="travel-place"><strong>${escapeHtml(t.name)}</strong><p>${t.records.length}행 · ${new Date(t.updated).toLocaleString('ko-KR')}</p><button type="button" data-travel-open="${escapeHtml(t.id)}">열기</button><button type="button" data-travel-delete="${escapeHtml(t.id)}">삭제</button></article>`).join(''):'<p>아직 저장한 여행이 없습니다.</p>');
   travelEl('travelHistoryDialog').showModal();
 };
-travelEl('travelHistoryList').onclick=event=>{
-  const b=event.target.closest('button');if(!b)return;
-  const all=loadJson(TRAVEL_STORE,{});
-  if(b.dataset.travelOpen) {saveTravelNow();restoreTravel(all[b.dataset.travelOpen]);setTravelTab(false);travelEl('travelHistoryDialog').close();}
-  if(b.dataset.travelDelete && confirm('이 기기에 저장한 여행을 삭제할까요?')) {
-    const id=b.dataset.travelDelete;delete all[id];storage.set(TRAVEL_STORE,JSON.stringify(all));
-    if(id===travelId) {travelReady=false;clearTimeout(travelSaveTimer);}
-    b.closest('article').remove();
-  }
+travelEl('travelHistoryList').onclick=async event=>{
+  const b=event.target.closest('button');if(!b || b.disabled)return;
+  b.disabled=true;
+  try {
+    if(b.dataset.travelOpen) {
+      await saveTravelNow();
+      const snapshot=travelStore.list().entries.find(([id])=>id===b.dataset.travelOpen)?.[1];
+      if(!snapshot) {showToast('이 여행이 다른 탭에서 삭제되었거나 손상됐어요. 목록을 다시 열어 주세요.');return;}
+      if(restoreTravel(snapshot,true)) {setTravelTab(false);travelEl('travelHistoryDialog').close();}
+    }
+    if(b.dataset.travelDelete && confirm('이 기기에 저장한 여행을 삭제할까요?')) {
+      const id=b.dataset.travelDelete;
+      const result=await travelStore.remove(id,travelHistoryEntries.get(id));
+      if(!result.ok) {showToast(travelSaveMessage(result));return;}
+      if(id===travelId) {travelReady=false;clearTimeout(travelSaveTimer);undoToastAction=null;toastUndoButton.classList.add('hidden');}
+      b.closest('article').remove();
+    }
+  } finally {b.disabled=false;}
 };
 
 let travelDragged = null;
