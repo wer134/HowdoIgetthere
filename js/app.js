@@ -1,3 +1,4 @@
+import { encodeTravelBackup, decodeTravelBackup, MAX_BACKUP_BYTES, itineraryContent, itineraryDocument } from './travel-portability.js';
 import { createTravelStore, validTravel } from './travel-store.js';
 // 화면 흐름: API 키 → 엑셀 올리기 → 열 맞추기 → 장소 검색·지도 표시 → 동선 → 결과 확인·내보내기
 import { escapeHtml, safeUrl, downloadBlob, storage, PALETTE, STATUS, normalizeText, similarity } from './util.js';
@@ -167,14 +168,10 @@ const PLACEHOLDER = {
   nokey: `
     <div class="overlay-card">
       <div class="section-kicker">GOOGLE MAPS</div>
-      <h3>구글 지도 API 키가 필요해요</h3>
-      <ol>
-        <li><a href="https://console.cloud.google.com/google/maps-apis/start" target="_blank" rel="noopener">Google Cloud 콘솔</a>에서 프로젝트를 만들고 결제 계정을 연결</li>
-        <li><b>Maps JavaScript API</b>, <b>Places API (New)</b>, <b>Routes API</b> 사용 설정</li>
-        <li>API 키를 만들어 설정에 붙여 넣기</li>
-      </ol>
-      <p class="muted">매달 무료: 지도 표시 10,000회 · 장소 검색 5,000건 · 경로 10,000건</p>
-      <button type="button" class="primary-button" data-open="settingsDialog"><span class="button-icon">✦</span>API 키 입력하기<span class="button-arrow">→</span></button>
+      <h3>여행 계획은 지금 시작하세요</h3>
+      <p>일정과 가고 싶은 곳, 메모는 지도 없이도 만들 수 있어요.</p>
+      <p class="muted">지도·장소 검색·이동 경로를 사용하려면 설정에서 Google Maps를 연결하세요. Google API 사용 요금은 별도입니다.</p>
+      <button type="button" class="secondary-button" data-open="settingsDialog">지도 연결하기<span class="button-arrow">→</span></button>
     </div>`,
   loading: '<div class="overlay-card"><p>지도를 불러오는 중…</p></div>',
   error: `
@@ -199,7 +196,7 @@ function setKeyStatus(text, tone = '') {
 // 상단 막대 · 사이드바 카드에 지도 연결 상태를 보여 준다
 function setConnection() {
   const view = {
-    none: ['warn', 'API 키 필요', 'API 키를 넣으면<br>지도가 열려요.'],
+    none: ['warn', '지도 연결 전', 'API 키를 넣으면<br>지도가 열려요.'],
     loading: ['', '지도 불러오는 중', '지도를<br>불러오는 중이에요.'],
     ready: ['ok', '지도 연결됨', '지도가<br>연결되어 있어요.'],
     error: ['warn', 'API 키 확인 필요', 'API 키를<br>확인해 주세요.'],
@@ -2474,6 +2471,8 @@ function render() {
   els.runAlert.classList.toggle('hidden', !state.alert);
   els.exportXlsx.disabled = state.running || !state.items.length;
   els.exportKml.disabled = state.running || !placed;
+  for (const id of ['travelBackup','travelItinerary','mobileTravelBackup','mobileTravelItinerary']) document.getElementById(id).disabled = !state.workbook || state.running;
+  document.getElementById('travelWelcome').classList.toggle('hidden', !!state.workbook);
   els.navCount.textContent = state.items.length ? String(placed).padStart(2, '0') : '';
   els.planSummary.textContent = planSummaryText();
   if (state.items.length) renderTrip(state.items);
@@ -2643,7 +2642,7 @@ function renderItem(it) {
       <span class="timeline-copy">
         <strong class="item-name">${escapeHtml(placeDisplayName(it))}</strong>
         <span class="item-meta"><span class="badge ${st.cls}">${st.label}</span><span class="item-sub">${escapeHtml(itemSubline(it))}</span></span>
-        <small class="muted">장소의 폐업·이전 여부는 방문 전에 확인하세요.</small><span class="schedule-actions"><button type="button" data-action="edit" aria-label="${escapeHtml(it.name)} 수정">수정</button><button type="button" data-action="travel-move">이동</button><button type="button" data-action="travel-keep">보관함으로</button><button type="button" data-action="delete" aria-label="${escapeHtml(it.name)} 삭제">삭제</button></span>
+        <span class="schedule-actions"><button type="button" data-action="edit" aria-label="${escapeHtml(it.name)} 수정">수정</button><button type="button" data-action="travel-move">이동</button><button type="button" data-action="travel-keep">보관함으로</button><button type="button" data-action="delete" aria-label="${escapeHtml(it.name)} 삭제">삭제</button></span>
       </span>
       <span class="timeline-thumb" aria-hidden="true">${photo?.url && !failedPhotoUrls.has(photo.url) ? `<img src="${escapeHtml(photo.url)}" data-photo-id="${escapeHtml(it.place?.id || '')}" alt="">` : '⌖'}</span>
     </div>
@@ -2717,7 +2716,7 @@ function renderList() {
   ));
   queuePlacePhotos(visible);
   if (!visible.length) {
-    list.innerHTML = `<li class="empty">${state.items.length ? '해당하는 곳이 없습니다' : '표시할 행이 없습니다'}</li>`;
+    list.innerHTML = `<li class="empty">${state.items.length ? '검색어나 날짜에 맞는 장소가 없어요. <button type="button" data-reset-filters>전체 일정 보기</button>' : '<strong>첫 일정을 만들어 볼까요?</strong><p>위의 일정 추가로 장소·시간·메모를 적어 보세요.<br>날짜를 못 정했다면 가고 싶은 곳에 먼저 보관해도 좋아요.</p>'}</li>`;
     rendered.clear();
     return;
   }
@@ -2725,7 +2724,7 @@ function renderList() {
   // 동선을 켜면 각 장소 앞에 그곳으로 오는 구간을 끼워 넣는다 (필터 없이 볼 때만)
   const legTo = new Map(state.showRoutes && whole ? state.legs.filter(legVisible).map((l) => [l.to.idx, l]) : []);
   const dividers = whole && state.day == null && byDate();
-  const rows = [];
+  const rows = [['notice', '<li class="place-freshness-note">장소의 폐업·이전·영업시간은 방문 전에 확인하세요.</li>']];
   let lastCategory;
   let dividerCount = 0;
   for (const it of visible) {
@@ -3243,6 +3242,7 @@ document.querySelector('.mobile-workspace-nav').addEventListener('click', event 
 document.getElementById('mobileSave').addEventListener('click', () => {
   document.getElementById('mobileExportXlsx').disabled = els.exportXlsx.disabled;
   document.getElementById('mobileExportKml').disabled = els.exportKml.disabled;
+  for (const id of ['mobileTravelBackup','mobileTravelItinerary']) document.getElementById(id).disabled = !state.workbook || state.running;
   document.getElementById('mobileExportDialog').showModal();
 });
 for (const [mobile, original] of [['mobileExportXlsx', els.exportXlsx], ['mobileExportKml', els.exportKml]]) {
@@ -3739,7 +3739,14 @@ function travelChanged(message, before) {
 }
 function travelBusy() { if(state.running || state.routeRunning || state.planner.running) {showToast('진행 중인 작업이 끝나면 다시 시도해 주세요.');return true;} return false; }
 travelEl('travelImport').onclick = () => {if(!travelBusy()) els.fileInput.click();};
-travelEl('newTravel').onclick = () => {if(!travelBusy()) travelEl('travelDialog').showModal();};
+travelEl('newTravel').onclick = () => {
+  if (travelBusy()) return;
+  if (!travelEl('travelStart').value) {
+    const today = new Date();
+    travelEl('travelStart').value = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+  }
+  travelEl('travelDialog').showModal();
+};
 travelEl('newTravelForm').onsubmit = (event) => {
   event.preventDefault();
   if (!travelEl('travelDialog').open) return;
@@ -3757,8 +3764,8 @@ travelEl('newTravelForm').onsubmit = (event) => {
   const headers = ['장소','날짜','시간','지역','메모','주소','위도','경도'];
   restoreTravel({id: crypto.randomUUID(), name: travelEl('travelName').value.trim(), updated: Date.now(), headers,
     records: [], mapping: autoMap(headers), dates, library: [], places: [], sheetName: '일정'});
-  travelEl('travelDialog').close(); setTravelTab(true); saveTravelNow();
-  showToast('여행을 만들었어요. 가고 싶은 장소를 모아 보세요.');
+  travelEl('travelDialog').close(); setTravelTab(mapState === 'ready'); saveTravelNow();
+  showToast('여행을 만들었어요. 첫 일정이나 가고 싶은 곳을 추가해 보세요.');
 };
 function setTravelTab(library) {
   document.body.classList.toggle('travel-library-open', library);
@@ -3770,7 +3777,8 @@ function setTravelTab(library) {
 travelEl('travelPlanTab').onclick = () => setTravelTab(false);
 travelEl('travelLibraryTab').onclick = () => setTravelTab(true);
 function renderTravelLibrary() {
-  travelEl('travelLibraryList').innerHTML = travelLibrary.length ? travelLibrary.map((p, i) => `<article class="travel-place" draggable="true" data-library="${i}"><strong>${escapeHtml(p.name)}</strong><p>${escapeHtml(p.address || '')}</p><p class="muted">보관한 정보입니다. 폐업·이전·이름 변경 여부는 방문 전에 확인하세요.</p><label class="travel-note">메모<input data-travel-note="${i}" aria-label="${escapeHtml(p.name)} 메모" value="${escapeHtml(p.memo || '')}" placeholder="가고 싶은 이유, 먹고 싶은 메뉴"></label><button type="button" data-travel-add="${i}">일정에 넣기</button><button type="button" data-travel-remove="${i}">보관함에서 삭제</button></article>`).join('') : '<p>가고 싶은 장소를 검색해서 보관하세요. 날짜는 나중에 정해도 됩니다.</p>';
+  travelEl('travelConnectionHint').textContent = mapState === 'ready' ? '직접 적거나 Google 지도에서 장소를 검색해 보세요.' : '지도 없이 이름과 메모를 보관하세요. 검색하려면 설정에서 지도를 연결해 주세요.';
+  travelEl('travelLibraryList').innerHTML = travelLibrary.length ? travelLibrary.map((p, i) => `<article class="travel-place" draggable="true" data-library="${i}"><strong>${escapeHtml(p.name)}</strong><p>${escapeHtml(p.address || '')}</p><p class="muted">보관한 정보입니다. 폐업·이전·이름 변경 여부는 방문 전에 확인하세요.</p><label class="travel-note">메모<input data-travel-note="${i}" aria-label="${escapeHtml(p.name)} 메모" value="${escapeHtml(p.memo || '')}" placeholder="가고 싶은 이유, 먹고 싶은 메뉴"></label><button type="button" data-travel-add="${i}">일정에 넣기</button><button type="button" data-travel-remove="${i}">보관함에서 삭제</button></article>`).join('') : '<p>맛집, 숙소, 산책할 곳을 먼저 모아 보세요. 위의 직접 장소 보관으로 시작할 수 있어요.</p>';
   const days = [...new Set([...travelDates, ...state.items.map(it => it.day).filter(Boolean)])];
   travelEl('travelLibraryDays').innerHTML = days.map(day => `<button type="button" data-travel-day="${escapeHtml(day)}">${escapeHtml(day)}</button>`).join('');
   renderTravelLibraryPins();
@@ -3945,3 +3953,90 @@ travelEl('travelLibraryList').addEventListener('input', event => {
     p.memo=event.target.value;saveTravelNow();
   }
 });
+
+
+// 여행자에게 필요한 로컬 보관·이동·일정표 흐름.
+travelEl('manualPlaceAdd').onclick = () => travelEl('manualPlaceDialog').showModal();
+travelEl('manualPlaceForm').onsubmit = event => {
+  event.preventDefault();
+  if (!travelEl('manualPlaceDialog').open || travelBusy()) return;
+  const name = travelEl('manualPlaceName').value.trim();
+  if (!name) { travelEl('manualPlaceName').focus(); return; }
+  const address = travelEl('manualPlaceAddress').value.trim(), memo = travelEl('manualPlaceMemo').value.trim();
+  // 사용자가 구분해 보관한 동명 장소는 합치지 않는다.
+  travelLibrary.push({name,address,memo});
+  renderTravelLibrary(); saveTravelNow();
+  travelEl('manualPlaceDialog').close(); event.currentTarget.reset();
+  showToast('가고 싶은 곳에 보관했어요. 방문할 날은 나중에 정해도 됩니다.');
+};
+els.resultList.addEventListener('click', event => {
+  if (!event.target.closest('[data-reset-filters]')) return;
+  travelEl('workspaceSearch').value = ''; state.filter = 'all'; setDay(null); render();
+});
+travelEl('renameTravel').onclick = () => {
+  if (travelBusy()) return;
+  travelEl('renameTravelName').value = state.fileBase;
+  travelEl('renameTravelDialog').showModal();
+};
+travelEl('renameTravelForm').onsubmit = async event => {
+  event.preventDefault();
+  if (!travelEl('renameTravelDialog').open) return;
+  const name = travelEl('renameTravelName').value.trim(); if (!name) return;
+  state.fileBase = name; els.fileName.textContent = name;
+  travelEl('renameTravelDialog').close();
+  const result = await saveTravelNow();
+  showToast(result?.ok ? '여행 이름을 저장했어요.' : travelSaveMessage(result || {}));
+};
+function downloadTravelBackup() {
+  if (!state.workbook || travelBusy()) return;
+  try {
+    const data = encodeTravelBackup(travelSnapshot());
+    downloadBlob(new Blob([data],{type:'application/json'}), `${state.fileBase || '내 여행'}_RouteFlow.json`);
+    showToast('전체 백업 다운로드를 요청했어요. 일정·후보·메모가 포함됩니다.');
+  } catch (error) { showToast(error.message); }
+}
+for (const id of ['travelBackup','mobileTravelBackup']) travelEl(id).onclick = downloadTravelBackup;
+travelEl('travelRestore').onclick = () => { if (!travelBusy()) travelEl('travelBackupInput').click(); };
+let restoringBackup = false;
+travelEl('travelBackupInput').onchange = async event => {
+  const file = event.target.files?.[0]; event.target.value = ''; if (!file || restoringBackup || travelBusy()) return;
+  restoringBackup = true;
+  const sourceTravel = travelId;
+  try {
+    if (file.size > MAX_BACKUP_BYTES) throw new Error('백업 파일은 20MB 이하로 선택해 주세요.');
+    const snapshot = decodeTravelBackup(await file.text(), {id:crypto.randomUUID()});
+    if (sourceTravel !== travelId) throw new Error('여행이 바뀌어 복원을 중단했어요. 백업을 다시 선택해 주세요.');
+    const saved = await saveTravelNow();
+    if (saved && !saved.ok) throw new Error('현재 여행을 저장하지 못해 복원을 중단했어요. 먼저 전체 백업으로 보관해 주세요.');
+    // 새 여행 저장에 성공한 뒤에만 화면을 전환한다.
+    const result = await travelStore.save(snapshot);
+    if (!result.ok) throw new Error(travelSaveMessage(result));
+    restoreTravel(snapshot,true); setTravelTab(false); setMobileView('itinerary');
+    showToast('백업을 새 여행으로 복원했어요. 기존 여행도 그대로 남아 있습니다.');
+  } catch (error) { showToast(error.message); }
+  finally { restoringBackup = false; }
+};
+function showTravelItinerary() {
+  if (!state.workbook || travelBusy()) return;
+  for (const id of ['workspaceTools','mobileExportDialog']) travelEl(id).close();
+  travelEl('itineraryPreview').innerHTML = itineraryContent(travelSnapshot());
+  travelEl('travelItineraryDialog').showModal();
+}
+for (const id of ['travelItinerary','mobileTravelItinerary']) travelEl(id).onclick = showTravelItinerary;
+travelEl('printItinerary').onclick = () => window.print();
+travelEl('saveItinerary').onclick = () => {
+  const data = itineraryDocument(travelSnapshot());
+  downloadBlob(new Blob([data],{type:'text/html;charset=utf-8'}),`${state.fileBase || '내 여행'}_일정표.html`);
+  showToast('일정표 다운로드를 요청했어요. 인터넷 없이 열어 볼 수 있습니다.');
+};
+
+const recentTravel = travelStore.list().entries.map(([,snapshot]) => snapshot).sort((a,b) => b.updated-a.updated)[0];
+if (recentTravel) {
+  travelEl('continueTravel').textContent = `${recentTravel.name} · 이어서 준비하기`;
+  travelEl('continueTravel').classList.remove('hidden');
+  travelEl('continueTravel').onclick = () => {
+    const latest = travelStore.list().entries.find(([id]) => id === recentTravel.id)?.[1];
+    if (!latest) { showToast('이 여행은 삭제되었거나 열 수 없어요. 저장한 여행 목록을 확인해 주세요.'); return; }
+    if (restoreTravel(latest,true)) {setTravelTab(false);setMobileView('itinerary');}
+  };
+}
