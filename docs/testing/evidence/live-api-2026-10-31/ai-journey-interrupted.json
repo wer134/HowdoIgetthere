@@ -1,0 +1,14 @@
+{
+  "mode": "실제 Gemini + Google Places + 앱 UI",
+  "errors": [],
+  "requests": [],
+  "engine": "Google Gemini (gemini-3.8-flash)로 짜고 구글 지도로 확인해요",
+  "plannerStatus": "",
+  "fileName": "",
+  "rows": [],
+  "saveStatus": "이 기기에 여행을 자동 저장합니다.",
+  "saved": [],
+  "dateWarning": false,
+  "completed": false,
+  "error": "page.waitForFunction: Timeout 15000ms exceeded."
+}

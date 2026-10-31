@@ -1,0 +1,128 @@
+{
+  "id": 14,
+  "started": "2026-10-31T12:48:11.193Z",
+  "steps": "연말·월말·윤년 출발일로 3일 생성 후 날짜 배열 비교",
+  "checks": [
+    {
+      "name": "2026-12-31",
+      "status": "통과",
+      "actual": [
+        "2026-12-31",
+        "2027-01-01",
+        "2027-01-02"
+      ]
+    },
+    {
+      "name": "2026-04-30",
+      "status": "통과",
+      "actual": [
+        "2026-04-30",
+        "2026-05-01",
+        "2026-05-02"
+      ]
+    },
+    {
+      "name": "2028-02-28",
+      "status": "통과",
+      "actual": [
+        "2028-02-28",
+        "2028-02-29",
+        "2028-03-01"
+      ]
+    }
+  ],
+  "errors": [],
+  "consoleErrors": [
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+  ],
+  "mode": "브라우저 UI + 모의 Google SDK/지도 호출 기록",
+  "screenshots": [
+    "14.png"
+  ],
+  "finalDOM": {
+    "toast": "✓여행을 만들었어요. 첫 일정이나 가고 싶은 곳을 추가해 보세요.되돌리기삭제 되돌리기",
+    "save": "이 기기에 저장됨 · 사진·리뷰 제외",
+    "rows": []
+  },
+  "mock": {
+    "searches": [
+      {
+        "textQuery": "첫 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793450892002
+      },
+      {
+        "textQuery": "둘째 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793450892002
+      },
+      {
+        "textQuery": "셋째 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793450892002
+      }
+    ],
+    "fields": [
+      {
+        "id": "p0",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793450892016
+      },
+      {
+        "id": "p1",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793450892016
+      },
+      {
+        "id": "p2",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793450892016
+      }
+    ],
+    "routes": [],
+    "markers": {},
+    "legs": {}
+  },
+  "status": "통과",
+  "finished": "2026-10-31T12:48:14.853Z"
+}

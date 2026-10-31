@@ -1,0 +1,12 @@
+{
+  "status": "실패",
+  "message": "Google Gemini 오류 (404): This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/gemini-3.8-flash for the latest features and improvements. We recommend you to use the Interactions API (https://ai.google.dev/gemini-api/docs/get-started). · 설정에서 ‘사용 가능한 모델 확인’을 눌러 이 키로 제공되는 모델을 선택해 주세요.",
+  "requests": [
+    {
+      "host": "generativelanguage.googleapis.com",
+      "path": "/v1beta/models/gemini-2.5-flash:generateContent",
+      "http": 404,
+      "error": "This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/gemini-3.8-flash for the latest features and improvements. We recommend you to use the Interactions API (https://ai.google.dev/gemini-api/docs/get-started)."
+    }
+  ]
+}

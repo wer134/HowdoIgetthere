@@ -1,0 +1,74 @@
+{
+  "status": "통과",
+  "layer": "실제 Gemini API + 실제 planner.js 구조화 출력 검증",
+  "model": "gemini-3.8-flash",
+  "days": 1,
+  "title": "부산 해운대 당일 여행 · 바다와 동백섬 산책",
+  "items": [
+    {
+      "title": "부산역 → 해운대역",
+      "place": "",
+      "place_ko": ""
+    },
+    {
+      "title": "숙소 짐 맡기기 (해운대역 주변 추천)",
+      "place": "해운대역",
+      "place_ko": "해운대역"
+    },
+    {
+      "title": "점심 (해운대역 주변) (돼지국밥·밀면)",
+      "place": "",
+      "place_ko": ""
+    },
+    {
+      "title": "해운대역 → 해운대해수욕장",
+      "place": "",
+      "place_ko": ""
+    },
+    {
+      "title": "해운대해수욕장 백사장 산책 및 바다 감상",
+      "place": "해운대해수욕장",
+      "place_ko": "해운대해수욕장"
+    },
+    {
+      "title": "해운대해수욕장 → 동백섬",
+      "place": "",
+      "place_ko": ""
+    },
+    {
+      "title": "동백섬 해안 데크길 산책 및 누리마루 APEC하우스 관람",
+      "place": "동백섬",
+      "place_ko": "동백섬"
+    },
+    {
+      "title": "동백섬 → 해운대역",
+      "place": "",
+      "place_ko": ""
+    },
+    {
+      "title": "해운대역 → 부산역",
+      "place": "",
+      "place_ko": ""
+    }
+  ],
+  "requests": [
+    {
+      "host": "generativelanguage.googleapis.com",
+      "path": "/v1beta/models/gemini-3.8-flash:generateContent",
+      "http": 200,
+      "usage": {
+        "promptTokenCount": 923,
+        "candidatesTokenCount": 1326,
+        "totalTokenCount": 3152,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 923
+          }
+        ],
+        "thoughtsTokenCount": 903,
+        "serviceTier": "standard"
+      }
+    }
+  ]
+}

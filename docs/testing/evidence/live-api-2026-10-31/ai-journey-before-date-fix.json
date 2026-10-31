@@ -1,0 +1,39 @@
+{
+  "mode": "실제 Gemini + Google Places + 앱 UI",
+  "errors": [],
+  "requests": [
+    {
+      "service": "Gemini generateContent",
+      "http": 200,
+      "usage": {
+        "promptTokenCount": 946,
+        "candidatesTokenCount": 1124,
+        "totalTokenCount": 2794,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 946
+          }
+        ],
+        "thoughtsTokenCount": 724,
+        "serviceTier": "standard"
+      }
+    }
+  ],
+  "engine": "Google Gemini (gemini-3.8-flash)로 짜고 구글 지도로 확인해요",
+  "plannerStatus": "\n    후쿠오카 당일치기 · 오호리공원과 미술관 산책Google Gemini 초안 · 구글 지도로 확인\n    후쿠오카 공항에서 지하철로 바로 연결되는 오호리공원 일대를 중심으로 구성한 여유로운 당일치기 문화 예술 코스입니다. 도심 속 호수 공원 산책과 후쿠오카시 미술관 전시 관람을 핵심으로 편안하게 둘러봅니다.\n    11/7 (토)후쿠오카 · 오호리공원 호숫가 산책과 후쿠오카시 미술관 예술 탐방2곳\n    \n    알아 둘 점항공편은 오전 11:00 후쿠오카공항 도착, 오후 18:00경 출발(16:30 공항 복귀) 일정으로 가정한 당일치기 코스입니다.후쿠오카 지하철 공항선은 한국 신용카드의 컨택트리스(비접촉 결제) 또는 전국 호환 교통카드(스이카, 이코카 등)를 그대로 태그하여 이용할 수 있습니다.후쿠오카시 미술관 상설전시 관람료는 1인 200엔이며, 매주 월요일이 휴관일(토요일 정상 운영)입니다.11월 초 후쿠오카는 쾌적한 늦가을 날씨로 호수 주변을 여유롭게 걷기 좋습니다.\n    \n      추천 일정 엑셀 내려받기\n      \n    \n    일정 점검·하루 예산·빈 끼니의 맛집 추천은 아래에서 그대로 쓸 수 있어요.\n  ",
+  "fileName": "일본_후쿠오카_1일_추천일정.xlsx",
+  "rows": [
+    "오호리공원",
+    "후쿠오카시 미술관"
+  ],
+  "saveStatus": "이 기기에 저장됨 · 사진·리뷰 제외",
+  "saved": [
+    {
+      "name": "일본_후쿠오카_1일_추천일정",
+      "records": 6,
+      "places": 2
+    }
+  ],
+  "completed": true
+}

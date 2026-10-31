@@ -1,0 +1,39 @@
+7 통과 
+8 통과 
+57 통과 
+58 통과 
+60 통과 
+3 통과 
+9 통과 
+10 통과 
+1 통과 
+2 통과 
+4 통과 
+5 검증 불가 page.fill: Timeout 4000ms exceeded.
+Call log:
+[2m  - waiting for locator('#apiKeyInput')[22m
+[2m    - locator resolved to <input type="password" id="apiKeyInput" autocomplete="off" spellcheck="false" placeholder="AIza로 시작하는 키"/>[22m
+[2m    - fill("")[22m
+[2m  - attempting fill action[22m
+[2m    2 × waiting for element to be visible, enabled and editable[22m
+[2m      - element is not visible[22m
+[2m    - retrying fill action[22m
+[2m    - waiting 20ms[22m
+[2m    2 × waiting for element to be visible, enabled and editable[22m
+[2m      - element is not visible[22m
+[2m    - retrying fill action[22m
+[2m      - waiting 100ms[22m
+[2m    8 × waiting for element to be visible, enabled and editable[22m
+[2m      - element is not visible[22m
+[2m    - retrying fill action[22m
+[2m      - waiting 500ms[22m
+
+6 통과 
+11 통과 
+12 통과 
+13 통과 
+14 통과 
+15 통과 
+16 통과 
+17 통과 
+18 검증 불가 page.waitForTimeout: Target page, context or browser has been closed

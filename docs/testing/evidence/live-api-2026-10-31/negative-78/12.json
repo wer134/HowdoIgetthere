@@ -1,0 +1,128 @@
+{
+  "id": 12,
+  "started": "2026-10-31T12:47:52.922Z",
+  "steps": "같은 이름 여행 두 개 생성 → 저장 목록 구분·별도 ID 확인",
+  "checks": [
+    {
+      "name": "같은 이름 별도 ID",
+      "status": "통과",
+      "actual": [
+        {
+          "id": "cf5e2d89-ee9f-4cf4-b479-4f49dea93d15",
+          "dates": [
+            "2026-11-01",
+            "2026-11-02",
+            "2026-11-03"
+          ]
+        },
+        {
+          "id": "e4274d44-ed11-43f4-9460-249dbb8b25b7",
+          "dates": [
+            "2026-11-02",
+            "2026-11-03",
+            "2026-11-04"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "목록 구분 정보",
+      "status": "통과",
+      "actual": "동일 이름0행 · 2026. 10. 31. 오후 9:47:54열기삭제동일 이름0행 · 2026. 10. 31. 오후 9:47:54열기삭제부정 테스트 A3행 · 2026. 10. 31. 오후 9:47:54열기삭제부정 테스트 B1행 · 2026. 10. 31. 오후 9:47:52열기삭제"
+    }
+  ],
+  "errors": [],
+  "consoleErrors": [
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+  ],
+  "mode": "브라우저 UI + 모의 Google SDK/지도 호출 기록",
+  "screenshots": [
+    "12.png"
+  ],
+  "finalDOM": {
+    "toast": "✓여행을 만들었어요. 첫 일정이나 가고 싶은 곳을 추가해 보세요.되돌리기삭제 되돌리기",
+    "save": "이 기기에 저장됨 · 사진·리뷰 제외",
+    "rows": []
+  },
+  "mock": {
+    "searches": [
+      {
+        "textQuery": "첫 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793450873753
+      },
+      {
+        "textQuery": "둘째 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793450873753
+      },
+      {
+        "textQuery": "셋째 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793450873753
+      }
+    ],
+    "fields": [
+      {
+        "id": "p0",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793450873757
+      },
+      {
+        "id": "p1",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793450873757
+      },
+      {
+        "id": "p2",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793450873757
+      }
+    ],
+    "routes": [],
+    "markers": {},
+    "legs": {}
+  },
+  "status": "통과",
+  "finished": "2026-10-31T12:47:55.277Z"
+}
