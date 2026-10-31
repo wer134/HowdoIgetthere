@@ -1288,3 +1288,19 @@ body.travel-native #dropzone,body.travel-native #importSteps {display:none}
 body:not(.has-itinerary) #runBtn {display:none}
 #renameTravel {flex:none;border:1px solid var(--line);border-radius:8px;background:white;padding:8px 10px;color:#215fe5;font-size:11px;cursor:pointer}
 #continueTravel {width:100%;min-height:44px;margin-top:8px;text-align:left;overflow-wrap:anywhere}
+
+/* 선택한 날짜의 AI 수정안 */
+.day-revision-open { width: 100%; margin: 0 0 16px; }
+.day-revision-dialog { width: min(900px, calc(100vw - 24px)); max-width: 900px; box-sizing: border-box; }
+.revision-comparison { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; margin: 20px 0; }
+.revision-comparison section { min-width: 0; }
+.revision-comparison ol, .revision-comparison ul { padding-left: 22px; }
+.revision-comparison li { padding: 12px 8px; border-bottom: 1px solid #e3e9f2; overflow-wrap: anywhere; }
+.revision-comparison li > span, .revision-comparison small { display: block; margin-top: 5px; color: #52637e; }
+.revision-comparison p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.revision-lock { display: flex; align-items: center; gap: 7px; margin-top: 10px; font-size: 13px; }
+.revision-lock input { width: 18px; height: 18px; }
+.revision-apply { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding-top: 16px; border-top: 1px solid #e3e9f2; }
+#dayRevisionStatus { white-space: pre-wrap; overflow-wrap: anywhere; }
+@media (max-width: 600px) { .revision-comparison { grid-template-columns: minmax(0, 1fr); } }
+.day-revision-dialog .text-link { border: 0; background: transparent; padding: 6px 0; color: #0756e8; cursor: pointer; text-decoration: underline; }

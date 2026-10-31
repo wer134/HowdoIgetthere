@@ -201,6 +201,7 @@
             <div class="travel-tabs"><button type="button" id="travelPlanTab" aria-pressed="true">일정</button><button type="button" id="travelLibraryTab" aria-pressed="false">가고 싶은 곳</button></div>
             <section id="travelLibrary" class="hidden"><div class="library-start"><button type="button" class="secondary-button" id="manualPlaceAdd">＋ 직접 장소 보관</button><p id="travelConnectionHint" class="muted">장소 이름과 메모는 직접 보관할 수 있어요.</p></div><form id="travelSearchForm" class="research"><input id="travelSearch" placeholder="지역과 장소 검색 (예: 후쿠오카 카페)" aria-label="보관할 장소 검색" required><button class="secondary-button">검색</button></form><p id="travelSearchStatus" role="status"></p><div id="travelSearchResults"></div><p>후보를 보관한 뒤 ‘일정에 넣기’로 방문할 날을 정하세요.</p><div id="travelLibraryDays" class="travel-days"></div><h3>보관한 장소</h3><div id="travelLibraryList"></div></section>
             <button class="schedule-add" id="scheduleAdd" type="button">＋ 일정 추가</button>
+            <button class="secondary-button day-revision-open hidden" id="dayRevisionOpen" type="button">✦ AI로 하루 일정 수정</button>
             <div class="progress"><div class="progress-bar" id="progressBar"></div></div>
             <p class="progress-text" id="progressText"></p>
             <p class="alert hidden" id="runAlert"></p>
@@ -300,6 +301,21 @@
 <dialog class="dialog" id="travelDialog"><form method="dialog"><button class="dialog-x" aria-label="닫기">×</button></form><h2>새 여행 시작</h2><form id="newTravelForm" class="schedule-form"><label>여행 이름<input id="travelName" required maxlength="100" placeholder="후쿠오카 여행"></label><label>출발일<input id="travelStart" type="date" required></label><label>여행 일수<input id="travelDays" type="number" min="1" max="60" value="3" required></label><button class="primary-button">여행 만들기</button></form><p>엑셀 없이 시작할 수 있어요. 현재 여행도 이 기기에 저장됩니다.</p></dialog>
 <dialog class="dialog" id="travelHistoryDialog"><form method="dialog"><button class="dialog-x" aria-label="닫기">×</button></form><h2>저장한 여행</h2><p>이 브라우저에 저장한 여행입니다. 다른 기기로 옮기려면 여행 도구에서 전체 백업을 받으세요.</p><div id="travelHistoryList"></div></dialog>
 <dialog class="dialog" id="travelAssignDialog"><form method="dialog"><button class="dialog-x" aria-label="닫기">×</button></form><h2 id="travelAssignTitle">일정에 넣기</h2><form id="travelAssignForm" class="schedule-form"><label>날짜<input id="travelAssignDay" list="travelDateOptions" required></label><datalist id="travelDateOptions"></datalist><label>배치 위치<select id="travelAssignPosition"></select></label><button class="primary-button">적용</button></form></dialog>
+<dialog class="dialog day-revision-dialog" id="dayRevisionDialog" aria-labelledby="dayRevisionTitle">
+  <form method="dialog"><button class="dialog-x" aria-label="수정안 닫기">×</button></form>
+  <h2 id="dayRevisionTitle">AI로 하루 일정 수정</h2>
+  <p>내 일정에서 바꾸고 싶은 하루를 골라 주세요. 수정안을 확인한 후 적용할 수 있어요.</p>
+  <p id="dayRevisionProvider" class="muted"></p><button type="button" id="dayRevisionSettings" class="text-link">AI 설정</button>
+  <form id="dayRevisionForm" class="schedule-form">
+    <label>수정할 날짜<select id="dayRevisionDay" required></select></label>
+    <label>어떻게 바꿀까요?<textarea id="dayRevisionRequest" required maxlength="2000" rows="3" placeholder="예: 오후에는 덜 걷고 싶어요. 미술관 예약은 그대로 두고 가까운 카페를 넣어 주세요."></textarea></label>
+    <button id="dayRevisionGenerate" class="primary-button" type="submit">수정안 만들기</button>
+  </form>
+  <p id="dayRevisionStatus" role="status" aria-live="polite"></p>
+  <div class="revision-comparison"><section><h3>현재 일정</h3><p class="muted">예약처럼 바뀌면 안 되는 장소·시간은 체크해 주세요.</p><ol id="dayRevisionBefore"></ol></section><section><h3>AI 수정안</h3><div id="dayRevisionAfter"></div></section></div>
+  <div class="revision-apply"><button type="button" id="dayRevisionApply" class="primary-button" disabled>이 날짜에 적용</button><small>적용 후 되돌리기로 이전 일정으로 돌아갈 수 있어요.</small></div>
+</dialog>
+
 <dialog class="dialog" id="settingsDialog" aria-labelledby="settingsTitle">
   <form method="dialog"><button class="dialog-x" aria-label="닫기">×</button></form>
   <div class="section-kicker">SETTINGS</div>

@@ -1,5 +1,7 @@
 import { encodeTravelBackup, decodeTravelBackup, MAX_BACKUP_BYTES, itineraryContent, itineraryDocument } from './travel-portability.js';
 import { createTravelStore, validTravel } from './travel-store.js';
+import { revisionDays, revisionFingerprint } from './day-revision.js';
+import { setupDayRevision } from './day-revision-ui.js';
 // 화면 흐름: API 키 → 엑셀 올리기 → 열 맞추기 → 장소 검색·지도 표시 → 동선 → 결과 확인·내보내기
 import { escapeHtml, safeUrl, downloadBlob, storage, PALETTE, STATUS, normalizeText, similarity } from './util.js';
 import {
@@ -2466,6 +2468,9 @@ function render() {
   const { done, total } = state.progress;
   els.progressBar.style.width = total ? `${(done / total) * 100}%` : '100%';
   const placed = state.items.filter((it) => it.place).length;
+  const revisionButton = document.getElementById('dayRevisionOpen');
+  revisionButton.classList.toggle('hidden', !placed || !revisionDays({ records: state.records, mapping: state.mapping }).size);
+  revisionButton.disabled = state.running || state.routeRunning || state.planner.running;
   els.progressText.textContent = state.running
     ? `장소 검색 중… ${done} / ${total}`
     : `${state.items.length}곳 중 ${placed}곳을 지도에 표시했습니다.`;
@@ -4042,3 +4047,33 @@ if (recentTravel) {
     if (restoreTravel(latest,true)) {setTravelTab(false);setMobileView('itinerary');}
   };
 }
+
+setupDayRevision({
+  snapshot: travelSnapshot,
+  currentDay: () => state.day,
+  settings: aiSettings,
+  ready: () => !travelBusy() && state.items.some(item => item.place),
+  openSettings: () => { els.aiProvider.value = aiSettings().provider; fillAISettings(); els.settingsDialog.showModal(); },
+  apply: async (before, next, day) => {
+    const unchanged = () => revisionFingerprint(travelSnapshot()) === revisionFingerprint(before);
+    if (!unchanged()) throw new Error('일정이 변경됐어요. 창을 닫고 현재 일정으로 다시 요청해 주세요.');
+    const saved = await saveTravelNow();
+    if (!saved?.ok) throw new Error(travelSaveMessage(saved || {}));
+    if (!unchanged()) throw new Error('일정이 변경됐어요. 현재 일정으로 다시 요청해 주세요.');
+    const result = await travelStore.save(next);
+    if (!result.ok) throw new Error(travelSaveMessage(result));
+    restoreTravel(next, true);
+    state.scheduleChanged = true;
+    setDay(state.colors.has(day) ? day : null);
+    const applied = revisionFingerprint(travelSnapshot());
+    showToast(`${day} 수정안을 적용했어요. 경로 찾기로 이동 시간을 다시 확인하세요.`, async () => {
+      if (revisionFingerprint(travelSnapshot()) !== applied) { showToast('이후 일정이 변경됐어요. 현재 내용을 보존하기 위해 자동 되돌리기를 중단했어요.'); return; }
+      clearTimeout(travelSaveTimer);
+      const result = await travelStore.save(before);
+      if (!result.ok) { showToast(travelSaveMessage(result)); return; }
+      restoreTravel(before, true);
+      setDay(state.colors.has(day) ? day : null);
+      showToast('AI 수정 전 일정으로 되돌렸어요.');
+    });
+  },
+});
