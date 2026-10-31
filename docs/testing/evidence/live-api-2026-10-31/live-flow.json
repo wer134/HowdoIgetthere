@@ -1,0 +1,106 @@
+{
+  "mode": "실제 Google SDK/MapView, 모의 응답 없음",
+  "checks": [
+    {
+      "name": "실제 지도 초기화",
+      "status": "지도 연결됨",
+      "mapElements": 1
+    },
+    {
+      "name": "실제 장소 검색",
+      "query": "후쿠오카 오호리공원",
+      "status": "“후쿠오카 오호리공원” 검색 결과 · 1곳을 찾았어요.",
+      "results": [
+        "오호리 공원"
+      ]
+    },
+    {
+      "name": "실제 장소 검색",
+      "query": "후쿠오카 시립미술관",
+      "status": "“후쿠오카 시립미술관” 검색 결과 · 2곳을 찾았어요.",
+      "results": [
+        "후쿠오카시 미술관",
+        "후쿠오카현립미술관"
+      ]
+    },
+    {
+      "name": "실제 두 장소 경로",
+      "summary": "11/7 (토) 이동 경로총 이동 거리1.0km이동 시간14분방문 장소2곳",
+      "routeStatus": "1구간 · 이동 14분",
+      "alert": "",
+      "legs": [
+        "\n    \n      \n      \n      도보14분 · 1.0 km\n    \n    \n  "
+      ]
+    },
+    {
+      "name": "실제 저장 여행",
+      "travels": [
+        {
+          "name": "실제 API 검증용 후쿠오카",
+          "rows": 2,
+          "places": [
+            {
+              "name": "오호리 공원",
+              "lat": 33.586206499999996,
+              "lng": 130.3764646
+            },
+            {
+              "name": "후쿠오카시 미술관",
+              "lat": 33.5841636,
+              "lng": 130.37967179999998
+            }
+          ]
+        }
+      ],
+      "mockPresent": false
+    },
+    {
+      "name": "실제 지도 확대 버튼",
+      "before": 17,
+      "after": 18,
+      "passed": true
+    }
+  ],
+  "errors": [
+    "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+    "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+    "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+    "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  ],
+  "failures": [
+    {
+      "host": "fonts.googleapis.com",
+      "error": "net::ERR_TUNNEL_CONNECTION_FAILED"
+    },
+    {
+      "host": "fonts.googleapis.com",
+      "error": "net::ERR_TUNNEL_CONNECTION_FAILED"
+    },
+    {
+      "host": "fonts.googleapis.com",
+      "error": "net::ERR_TUNNEL_CONNECTION_FAILED"
+    },
+    {
+      "host": "maps.gstatic.com",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "host": "api.frankfurter.dev",
+      "error": "net::ERR_TUNNEL_CONNECTION_FAILED"
+    },
+    {
+      "host": "maps.gstatic.com",
+      "error": "net::ERR_ABORTED"
+    }
+  ],
+  "http": {
+    "127.0.0.1 200": 19,
+    "maps.googleapis.com 200": 132,
+    "maps.gstatic.com 200": 2,
+    "places.googleapis.com 200": 4,
+    "places.googleapis.com 302": 2,
+    "lh3.googleusercontent.com 200": 2,
+    "routes.googleapis.com 200": 1
+  },
+  "completed": true
+}

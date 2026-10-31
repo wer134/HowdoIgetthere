@@ -1,0 +1,208 @@
+{
+  "id": 7,
+  "started": "2026-10-30T14:07:05.920Z",
+  "steps": "정상 저장본 확보 → Storage.setItem에 QuotaExceededError/일반 쓰기 오류 주입 → 일정 수정 → 저장 상태·원본 비교",
+  "checks": [
+    {
+      "name": "용량 초과 시 실패 안내",
+      "status": "통과",
+      "actual": "저장 공간이 부족하거나 저장할 수 없어요. 엑셀로 저장해 주세요."
+    },
+    {
+      "name": "이전 정상 저장본 보존",
+      "status": "통과",
+      "actual": "저장 records 비교"
+    },
+    {
+      "name": "일반 쓰기 실패 안내",
+      "status": "통과",
+      "actual": "저장 공간이 부족하거나 저장할 수 없어요. 엑셀로 저장해 주세요."
+    }
+  ],
+  "errors": [],
+  "consoleErrors": [
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+  ],
+  "mode": "브라우저 UI + 모의 Google SDK/지도 호출 기록",
+  "screenshots": [
+    "07.png"
+  ],
+  "finalDOM": {
+    "toast": "✓일정을 반영했어요. 엑셀 저장으로 변경 내용을 보관하세요.되돌리기삭제 되돌리기",
+    "save": "저장 공간이 부족하거나 저장할 수 없어요. 엑셀로 저장해 주세요.",
+    "rows": [
+      "첫 장소",
+      "둘째 장소",
+      "셋째 장소",
+      "용량 초과 후 추가",
+      "일반 실패"
+    ]
+  },
+  "mock": {
+    "searches": [
+      {
+        "textQuery": "첫 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793369226740
+      },
+      {
+        "textQuery": "둘째 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793369226740
+      },
+      {
+        "textQuery": "셋째 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793369226740
+      },
+      {
+        "textQuery": "용량 초과 후 추가",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793369227685
+      },
+      {
+        "textQuery": "일반 실패",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793369229097
+      }
+    ],
+    "fields": [
+      {
+        "id": "p0",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793369226748
+      },
+      {
+        "id": "p1",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793369226748
+      },
+      {
+        "id": "p2",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793369226748
+      }
+    ],
+    "routes": [],
+    "markers": {
+      "0": {
+        "position": {
+          "lat": 35,
+          "lng": 139
+        },
+        "color": "#d93025",
+        "label": "01",
+        "title": "첫 장소",
+        "visible": true
+      },
+      "1": {
+        "position": {
+          "lat": 35.02,
+          "lng": 139.02
+        },
+        "color": "#d93025",
+        "label": "02",
+        "title": "둘째 장소",
+        "visible": true
+      },
+      "2": {
+        "position": {
+          "lat": 35.04,
+          "lng": 139.04
+        },
+        "color": "#1a73e8",
+        "label": "03",
+        "title": "셋째 장소",
+        "visible": true
+      },
+      "4": {
+        "position": null,
+        "color": "#d93025",
+        "label": "05",
+        "title": "일반 실패",
+        "visible": true
+      }
+    },
+    "legs": {
+      "0>1": {
+        "segments": [
+          {
+            "kind": "straight",
+            "path": [
+              [
+                35,
+                139
+              ],
+              [
+                35.02,
+                139.02
+              ]
+            ]
+          }
+        ],
+        "color": "#d93025",
+        "visible": true
+      }
+    }
+  },
+  "status": "통과",
+  "finished": "2026-10-30T14:07:09.774Z"
+}

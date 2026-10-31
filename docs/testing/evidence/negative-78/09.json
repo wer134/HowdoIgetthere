@@ -1,0 +1,319 @@
+{
+  "id": 9,
+  "started": "2026-10-29T18:12:05.672Z",
+  "steps": "첫 장소 이동 → 삭제 → 되돌리기 → 날짜 필터 → B/A 여행 전환 → 데이터·모의 핀 확인",
+  "checks": [
+    {
+      "name": "다른 여행 오염 없이 이동·삭제 취소 유지",
+      "status": "통과",
+      "actual": {
+        "rows": [
+          [
+            "둘째 장소",
+            "2026-11-01"
+          ],
+          [
+            "셋째 장소",
+            "2026-11-02"
+          ],
+          [
+            "첫 장소",
+            "2026-11-02"
+          ]
+        ]
+      }
+    },
+    {
+      "name": "현재 여행 모의 핀 수",
+      "status": "통과",
+      "actual": {
+        "0": {
+          "position": {
+            "lat": 35.02,
+            "lng": 139.02
+          },
+          "color": "#d93025",
+          "label": "01",
+          "title": "둘째 장소",
+          "visible": true
+        },
+        "1": {
+          "position": {
+            "lat": 35.04,
+            "lng": 139.04
+          },
+          "color": "#1a73e8",
+          "label": "02",
+          "title": "셋째 장소",
+          "visible": true
+        },
+        "2": {
+          "position": {
+            "lat": 35,
+            "lng": 139
+          },
+          "color": "#1a73e8",
+          "label": "03",
+          "title": "첫 장소",
+          "visible": true
+        }
+      }
+    },
+    {
+      "name": "여행 전환 뒤 이전 삭제 undo의 다른 여행 오염 방지",
+      "status": "결함 확인",
+      "actual": {
+        "B": [
+          "둘째 장소",
+          "다른 여행 장소"
+        ],
+        "A": [
+          "셋째 장소",
+          "첫 장소"
+        ]
+      }
+    }
+  ],
+  "errors": [],
+  "consoleErrors": [
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+  ],
+  "mode": "브라우저 UI + 모의 Google SDK/지도 호출 기록",
+  "screenshots": [
+    "09.png"
+  ],
+  "finalDOM": {
+    "toast": "✓삭제를 되돌렸어요.되돌리기",
+    "save": "이 기기에 저장됨 · 사진·리뷰 제외",
+    "rows": [
+      "둘째 장소",
+      "다른 여행 장소"
+    ]
+  },
+  "mock": {
+    "searches": [
+      {
+        "textQuery": "첫 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793297526477
+      },
+      {
+        "textQuery": "둘째 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793297526477
+      },
+      {
+        "textQuery": "셋째 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793297526477
+      },
+      {
+        "textQuery": "다른 여행 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793297527354
+      }
+    ],
+    "fields": [
+      {
+        "id": "p0",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793297526481
+      },
+      {
+        "id": "p1",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793297526481
+      },
+      {
+        "id": "p2",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793297526481
+      },
+      {
+        "id": "p0",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "rating",
+          "userRatingCount",
+          "regularOpeningHours",
+          "photos",
+          "reviews",
+          "reviewSummary",
+          "editorialSummary",
+          "websiteURI",
+          "nationalPhoneNumber",
+          "isReservable",
+          "hasTakeout",
+          "hasDineIn",
+          "hasDelivery",
+          "servesBreakfast",
+          "servesLunch",
+          "servesDinner",
+          "servesVegetarianFood",
+          "paymentOptions",
+          "isGoodForChildren",
+          "isGoodForGroups",
+          "hasOutdoorSeating",
+          "hasRestroom"
+        ],
+        "at": 1793297526888
+      },
+      {
+        "id": "p2",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "rating",
+          "userRatingCount",
+          "regularOpeningHours",
+          "photos",
+          "reviews",
+          "reviewSummary",
+          "editorialSummary",
+          "websiteURI",
+          "nationalPhoneNumber",
+          "isReservable",
+          "hasTakeout",
+          "hasDineIn",
+          "hasDelivery",
+          "servesBreakfast",
+          "servesLunch",
+          "servesDinner",
+          "servesVegetarianFood",
+          "paymentOptions",
+          "isGoodForChildren",
+          "isGoodForGroups",
+          "hasOutdoorSeating",
+          "hasRestroom"
+        ],
+        "at": 1793297527148
+      },
+      {
+        "id": "p1",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "rating",
+          "userRatingCount",
+          "regularOpeningHours",
+          "photos",
+          "reviews",
+          "reviewSummary",
+          "editorialSummary",
+          "websiteURI",
+          "nationalPhoneNumber",
+          "isReservable",
+          "hasTakeout",
+          "hasDineIn",
+          "hasDelivery",
+          "servesBreakfast",
+          "servesLunch",
+          "servesDinner",
+          "servesVegetarianFood",
+          "paymentOptions",
+          "isGoodForChildren",
+          "isGoodForGroups",
+          "hasOutdoorSeating",
+          "hasRestroom"
+        ],
+        "at": 1793297528663
+      }
+    ],
+    "routes": [],
+    "markers": {
+      "0": {
+        "position": {
+          "lat": 35.02,
+          "lng": 139.02
+        },
+        "color": "#d93025",
+        "label": "01",
+        "title": "둘째 장소",
+        "visible": true
+      },
+      "1": {
+        "position": {
+          "lat": 35,
+          "lng": 139
+        },
+        "color": "#d93025",
+        "label": "02",
+        "title": "다른 여행 장소",
+        "visible": true
+      }
+    },
+    "legs": {
+      "0>1": {
+        "segments": [
+          {
+            "kind": "straight",
+            "path": [
+              [
+                35.02,
+                139.02
+              ],
+              [
+                35,
+                139
+              ]
+            ]
+          }
+        ],
+        "color": "#d93025",
+        "visible": true
+      }
+    }
+  },
+  "status": "결함 확인",
+  "finished": "2026-10-29T18:12:10.743Z"
+}

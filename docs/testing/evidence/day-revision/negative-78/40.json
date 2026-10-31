@@ -1,0 +1,179 @@
+{
+  "id": 40,
+  "started": "2026-10-31T13:05:05.369Z",
+  "steps": "드래그 시작 → Escape/목록 밖 드롭 → 원본 비교",
+  "checks": [
+    {
+      "name": "Escape 취소 원본 유지",
+      "status": "통과",
+      "actual": [
+        "첫 장소",
+        "둘째 장소",
+        "셋째 장소"
+      ]
+    },
+    {
+      "name": "외부 드롭 원본 유지",
+      "status": "통과",
+      "actual": [
+        "첫 장소",
+        "둘째 장소",
+        "셋째 장소"
+      ]
+    },
+    {
+      "name": "OS 창 밖 네이티브 드롭",
+      "status": "검증 불가",
+      "actual": "브라우저 DOM 밖 OS 드롭은 이 headless 환경에서 미실행. 합성 dragstart/dragend와 body 드롭만 실행"
+    }
+  ],
+  "errors": [],
+  "consoleErrors": [
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+  ],
+  "mode": "브라우저 UI + 모의 Google SDK/지도 호출 기록",
+  "screenshots": [
+    "40.png"
+  ],
+  "finalDOM": {
+    "toast": "✓되돌리기삭제 되돌리기",
+    "save": "이 기기에 저장됨 · 사진·리뷰 제외",
+    "rows": [
+      "첫 장소",
+      "둘째 장소",
+      "셋째 장소"
+    ]
+  },
+  "mock": {
+    "searches": [
+      {
+        "textQuery": "첫 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793451906117
+      },
+      {
+        "textQuery": "둘째 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793451906117
+      },
+      {
+        "textQuery": "셋째 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793451906117
+      }
+    ],
+    "fields": [
+      {
+        "id": "p0",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793451906121
+      },
+      {
+        "id": "p1",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793451906122
+      },
+      {
+        "id": "p2",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793451906122
+      }
+    ],
+    "routes": [],
+    "markers": {
+      "0": {
+        "position": {
+          "lat": 35,
+          "lng": 139
+        },
+        "color": "#d93025",
+        "label": "01",
+        "title": "첫 장소",
+        "visible": true
+      },
+      "1": {
+        "position": {
+          "lat": 35.02,
+          "lng": 139.02
+        },
+        "color": "#d93025",
+        "label": "02",
+        "title": "둘째 장소",
+        "visible": true
+      },
+      "2": {
+        "position": {
+          "lat": 35.04,
+          "lng": 139.04
+        },
+        "color": "#1a73e8",
+        "label": "03",
+        "title": "셋째 장소",
+        "visible": true
+      }
+    },
+    "legs": {
+      "0>1": {
+        "segments": [
+          {
+            "kind": "straight",
+            "path": [
+              [
+                35,
+                139
+              ],
+              [
+                35.02,
+                139.02
+              ]
+            ]
+          }
+        ],
+        "color": "#d93025",
+        "visible": true
+      }
+    }
+  },
+  "status": "검증 불가",
+  "finished": "2026-10-31T13:05:09.611Z"
+}

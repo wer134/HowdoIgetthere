@@ -1,0 +1,21 @@
+{
+  "source_commit": "a6d7bcd8c799db4aeb36379cc29176068891a9ed",
+  "actual_google_calls": 0,
+  "google_mode": "신규 사용자 시나리오는 SDK 없이 실행; 78개는 모의 SDK/MapView",
+  "browser": "Chromium 154.0.8037.57",
+  "playwright": "1.62.1",
+  "counts": {
+    "통과": 70,
+    "결함 확인": 0,
+    "검증 불가": 8
+  },
+  "cases": 78,
+  "subcases": 190,
+  "unit_tests": 46,
+  "browser_widths": [
+    1440,
+    390
+  ],
+  "started": "2026-10-30T14:43:25.591Z",
+  "finished": "2026-10-30T14:47:23.130Z"
+}

@@ -1,0 +1,168 @@
+{
+  "id": 5,
+  "started": "2026-10-31T12:45:52.798Z",
+  "steps": "지도 인증 실패 콜백 후 로컬 편집; 키 제거로 reload → 초안 손실 확인",
+  "checks": [
+    {
+      "name": "키 무효화 후 편집 유지",
+      "status": "통과",
+      "actual": "API 키를 쓸 수 없습니다. 키가 맞는지, Maps JavaScript API가 사용 설정되어 있는지, 결제 계정이 연결되어 있는지 확인하세요."
+    },
+    {
+      "name": "추가 실행 중단",
+      "status": "검증 불가",
+      "actual": "page.fill: Timeout 4000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#apiKeyInput')\u001b[22m\n\u001b[2m    - locator resolved to <input type=\"password\" id=\"apiKeyInput\" autocomplete=\"off\" spellcheck=\"false\" placeholder=\"AIza로 시작하는 키\"/>\u001b[22m\n\u001b[2m    - fill(\"\")\u001b[22m\n\u001b[2m  - attempting fill action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and editable\u001b[22m\n\u001b[2m      - element is not visible\u001b[22m\n\u001b[2m    - retrying fill action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and editable\u001b[22m\n\u001b[2m      - element is not visible\u001b[22m\n\u001b[2m    - retrying fill action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    8 × waiting for element to be visible, enabled and editable\u001b[22m\n\u001b[2m      - element is not visible\u001b[22m\n\u001b[2m    - retrying fill action\u001b[22m\n\u001b[2m      - waiting 500ms\u001b[22m\n"
+    }
+  ],
+  "errors": [],
+  "consoleErrors": [
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+  ],
+  "mode": "브라우저 UI + 모의 Google SDK/지도 호출 기록",
+  "screenshots": [
+    "05.png"
+  ],
+  "harnessError": "page.fill: Timeout 4000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#apiKeyInput')\u001b[22m\n\u001b[2m    - locator resolved to <input type=\"password\" id=\"apiKeyInput\" autocomplete=\"off\" spellcheck=\"false\" placeholder=\"AIza로 시작하는 키\"/>\u001b[22m\n\u001b[2m    - fill(\"\")\u001b[22m\n\u001b[2m  - attempting fill action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and editable\u001b[22m\n\u001b[2m      - element is not visible\u001b[22m\n\u001b[2m    - retrying fill action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and editable\u001b[22m\n\u001b[2m      - element is not visible\u001b[22m\n\u001b[2m    - retrying fill action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    8 × waiting for element to be visible, enabled and editable\u001b[22m\n\u001b[2m      - element is not visible\u001b[22m\n\u001b[2m    - retrying fill action\u001b[22m\n\u001b[2m      - waiting 500ms\u001b[22m\n",
+  "finalDOM": {
+    "toast": "✓일정을 반영했어요. 엑셀 저장으로 변경 내용을 보관하세요.되돌리기삭제 되돌리기",
+    "save": "이 기기에 저장됨 · 사진·리뷰 제외",
+    "rows": [
+      "첫 장소",
+      "둘째 장소",
+      "셋째 장소",
+      "무효화 후 로컬 편집"
+    ]
+  },
+  "mock": {
+    "searches": [
+      {
+        "textQuery": "첫 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793450753564
+      },
+      {
+        "textQuery": "둘째 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793450753564
+      },
+      {
+        "textQuery": "셋째 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793450753564
+      }
+    ],
+    "fields": [
+      {
+        "id": "p0",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793450753570
+      },
+      {
+        "id": "p1",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793450753570
+      },
+      {
+        "id": "p2",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793450753570
+      }
+    ],
+    "routes": [],
+    "markers": {
+      "0": {
+        "position": {
+          "lat": 35,
+          "lng": 139
+        },
+        "color": "#d93025",
+        "label": "01",
+        "title": "첫 장소",
+        "visible": true
+      },
+      "1": {
+        "position": {
+          "lat": 35.02,
+          "lng": 139.02
+        },
+        "color": "#d93025",
+        "label": "02",
+        "title": "둘째 장소",
+        "visible": true
+      },
+      "2": {
+        "position": {
+          "lat": 35.04,
+          "lng": 139.04
+        },
+        "color": "#1a73e8",
+        "label": "03",
+        "title": "셋째 장소",
+        "visible": true
+      }
+    },
+    "legs": {
+      "0>1": {
+        "segments": [
+          {
+            "kind": "straight",
+            "path": [
+              [
+                35,
+                139
+              ],
+              [
+                35.02,
+                139.02
+              ]
+            ]
+          }
+        ],
+        "color": "#d93025",
+        "visible": true
+      }
+    }
+  },
+  "status": "검증 불가",
+  "finished": "2026-10-31T12:45:59.442Z"
+}

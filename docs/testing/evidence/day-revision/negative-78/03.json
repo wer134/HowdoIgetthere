@@ -1,0 +1,179 @@
+{
+  "id": 3,
+  "started": "2026-10-31T13:02:52.863Z",
+  "steps": "수정 중 새로고침/탭 종료/뒤로가기, 드래그 확정 직후 새로고침",
+  "checks": [
+    {
+      "name": "새로고침 미저장 초안 보호",
+      "status": "통과",
+      "actual": {
+        "warning": false,
+        "memo": "미저장 초안"
+      }
+    },
+    {
+      "name": "확정 이동 새로고침 복원",
+      "status": "통과",
+      "actual": "저장 날짜 확인"
+    },
+    {
+      "name": "뒤로가기 왕복 초안 보호",
+      "status": "통과",
+      "actual": {
+        "memo": "뒤로가기 초안"
+      }
+    },
+    {
+      "name": "탭 종료 후 초안 복원",
+      "status": "통과",
+      "actual": {
+        "memo": "탭 종료 초안"
+      }
+    },
+    {
+      "name": "실제 브라우저 dragTo 확정 후 새로고침 복원",
+      "status": "통과",
+      "actual": [
+        "둘째 장소",
+        "셋째 장소",
+        "첫 장소"
+      ]
+    }
+  ],
+  "errors": [],
+  "consoleErrors": [
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+  ],
+  "mode": "브라우저 UI + 모의 Google SDK/지도 호출 기록",
+  "screenshots": [
+    "03.png"
+  ],
+  "finalDOM": {
+    "toast": "✓되돌리기삭제 되돌리기",
+    "save": "이 기기에 저장됨 · 사진·리뷰 제외",
+    "rows": [
+      "둘째 장소",
+      "셋째 장소",
+      "첫 장소"
+    ]
+  },
+  "mock": {
+    "searches": [],
+    "fields": [
+      {
+        "id": "p1",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793451779732
+      },
+      {
+        "id": "p2",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793451779732
+      },
+      {
+        "id": "p0",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793451779732
+      }
+    ],
+    "routes": [],
+    "markers": {
+      "0": {
+        "position": {
+          "lat": 35.02,
+          "lng": 139.02
+        },
+        "color": "#d93025",
+        "label": "01",
+        "title": "둘째 장소",
+        "visible": true
+      },
+      "1": {
+        "position": {
+          "lat": 35.04,
+          "lng": 139.04
+        },
+        "color": "#d93025",
+        "label": "02",
+        "title": "셋째 장소",
+        "visible": true
+      },
+      "2": {
+        "position": {
+          "lat": 35,
+          "lng": 139
+        },
+        "color": "#d93025",
+        "label": "03",
+        "title": "첫 장소",
+        "visible": true
+      }
+    },
+    "legs": {
+      "0>1": {
+        "segments": [
+          {
+            "kind": "straight",
+            "path": [
+              [
+                35.02,
+                139.02
+              ],
+              [
+                35.04,
+                139.04
+              ]
+            ]
+          }
+        ],
+        "color": "#d93025",
+        "visible": true
+      },
+      "1>2": {
+        "segments": [
+          {
+            "kind": "straight",
+            "path": [
+              [
+                35.04,
+                139.04
+              ],
+              [
+                35,
+                139
+              ]
+            ]
+          }
+        ],
+        "color": "#d93025",
+        "visible": true
+      }
+    }
+  },
+  "status": "통과",
+  "finished": "2026-10-31T13:03:01.267Z"
+}

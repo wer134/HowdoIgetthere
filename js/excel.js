@@ -1,6 +1,6 @@
 /* global XLSX */
 // 엑셀 읽기/쓰기 — SheetJS(vendor/xlsx.full.min.js)를 전역 XLSX로 사용
-import { normalizeText, STATUS } from './util.js';
+import { normalizeText, STATUS, safeUrl } from './util.js';
 
 // 앱이 이해하는 열. synonyms에 있는 머리글은 자동으로 연결되며, 앞에 있는 낱말일수록 우선한다
 export const FIELDS = [
@@ -55,6 +55,12 @@ export function cellNumber(cell) {
 
 // 올린 파일 그대로(buffer)도 앱이 들고 있다가, 고친 일정을 저장할 때 원래 파일에 써 넣는다
 export function readWorkbook(buffer, fileName) {
+  if (/\.(xlsx|xlsm)$/i.test(fileName)) {
+    const bytes = new Uint8Array(buffer);
+    if (bytes[0] !== 0x50 || bytes[1] !== 0x4b || bytes[2] !== 3 || bytes[3] !== 4) throw new Error('올바른 XLSX 파일이 아닙니다. CSV 파일은 .csv 확장자로 선택해 주세요.');
+    const zip = XLSX.CFB.read(bytes, {type:'array'});
+    if (!zip.FullPaths.some(p => p.endsWith('/xl/workbook.xml'))) throw new Error('엑셀 통합 문서가 없는 ZIP 파일입니다.');
+  }
   if (/\.csv$/i.test(fileName)) {
     // 한국어 엑셀이 저장한 CSV는 대개 EUC-KR(CP949)이라 인코딩을 직접 판별한다
     return XLSX.read(decodeText(buffer), { type: 'string', raw: true });
@@ -280,6 +286,6 @@ export function buildResultWorkbook({ headers, mapping, items, sheetName, nextLe
 }
 
 export function placeUrl(place) {
-  if (place.url) return place.url;
+  if (safeUrl(place.url)) return safeUrl(place.url);
   return `https://www.google.com/maps/search/?api=1&query=${place.lat},${place.lng}`;
 }

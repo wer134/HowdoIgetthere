@@ -1,0 +1,243 @@
+{
+  "id": 49,
+  "started": "2026-10-31T13:05:27.392Z",
+  "steps": "날짜 필터 10회 반복·보관함 전환 → 모의 핀 가시성 기록",
+  "checks": [
+    {
+      "name": "현재 날짜 일정 핀만 표시",
+      "status": "통과",
+      "actual": {
+        "0": {
+          "position": {
+            "lat": 35,
+            "lng": 139
+          },
+          "color": "#d93025",
+          "label": "01",
+          "title": "첫 장소",
+          "visible": true
+        },
+        "1": {
+          "position": {
+            "lat": 35.02,
+            "lng": 139.02
+          },
+          "color": "#d93025",
+          "label": "02",
+          "title": "둘째 장소",
+          "visible": true
+        },
+        "2": {
+          "position": {
+            "lat": 35.04,
+            "lng": 139.04
+          },
+          "color": "#1a73e8",
+          "label": "03",
+          "title": "셋째 장소",
+          "visible": false
+        }
+      }
+    },
+    {
+      "name": "보관함 탭에서 별 핀 표시",
+      "status": "통과",
+      "actual": {
+        "position": {
+          "lat": 35.1,
+          "lng": 139.1
+        },
+        "color": "#8b5cf6",
+        "label": "☆",
+        "title": "모의 장소",
+        "visible": true
+      }
+    },
+    {
+      "name": "일정 탭에서 별 핀 숨김",
+      "status": "통과",
+      "actual": {
+        "position": {
+          "lat": 35.1,
+          "lng": 139.1
+        },
+        "color": "#8b5cf6",
+        "label": "☆",
+        "title": "모의 장소",
+        "visible": false
+      }
+    }
+  ],
+  "errors": [],
+  "consoleErrors": [
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+  ],
+  "mode": "브라우저 UI + 모의 Google SDK/지도 호출 기록",
+  "screenshots": [
+    "49.png"
+  ],
+  "finalDOM": {
+    "toast": "✓가고 싶은 곳에 보관했어요.되돌리기삭제 되돌리기",
+    "save": "이 기기에 저장됨 · 사진·리뷰 제외",
+    "rows": [
+      "첫 장소",
+      "둘째 장소"
+    ]
+  },
+  "mock": {
+    "searches": [
+      {
+        "textQuery": "첫 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793451928174
+      },
+      {
+        "textQuery": "둘째 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793451928174
+      },
+      {
+        "textQuery": "셋째 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793451928174
+      },
+      {
+        "textQuery": "보관함 핀",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793451928719
+      }
+    ],
+    "fields": [
+      {
+        "id": "p0",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793451928178
+      },
+      {
+        "id": "p1",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793451928179
+      },
+      {
+        "id": "p2",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793451928179
+      }
+    ],
+    "routes": [],
+    "markers": {
+      "0": {
+        "position": {
+          "lat": 35,
+          "lng": 139
+        },
+        "color": "#d93025",
+        "label": "01",
+        "title": "첫 장소",
+        "visible": true
+      },
+      "1": {
+        "position": {
+          "lat": 35.02,
+          "lng": 139.02
+        },
+        "color": "#d93025",
+        "label": "02",
+        "title": "둘째 장소",
+        "visible": true
+      },
+      "2": {
+        "position": {
+          "lat": 35.04,
+          "lng": 139.04
+        },
+        "color": "#1a73e8",
+        "label": "03",
+        "title": "셋째 장소",
+        "visible": false
+      },
+      "-1": {
+        "position": {
+          "lat": 35.1,
+          "lng": 139.1
+        },
+        "color": "#8b5cf6",
+        "label": "☆",
+        "title": "모의 장소",
+        "visible": false
+      }
+    },
+    "legs": {
+      "0>1": {
+        "segments": [
+          {
+            "kind": "straight",
+            "path": [
+              [
+                35,
+                139
+              ],
+              [
+                35.02,
+                139.02
+              ]
+            ]
+          }
+        ],
+        "color": "#d93025",
+        "visible": true
+      }
+    }
+  },
+  "status": "통과",
+  "finished": "2026-10-31T13:05:28.951Z"
+}

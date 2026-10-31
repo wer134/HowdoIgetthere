@@ -1,0 +1,264 @@
+{
+  "id": 4,
+  "started": "2026-10-29T18:12:22.745Z",
+  "steps": "잘못된 키·리퍼러 제한·API 비활성화 모의 거부와 0결과를 비교; 로컬 편집",
+  "checks": [
+    {
+      "name": "API_KEY_INVALID",
+      "status": "통과",
+      "actual": "검색하지 못했어요: API_KEY_INVALID"
+    },
+    {
+      "name": "RefererNotAllowedMapError REQUEST_DENIED",
+      "status": "통과",
+      "actual": "검색하지 못했어요: RefererNotAllowedMapError REQUEST_DENIED"
+    },
+    {
+      "name": "Places API has not been used or is disabled",
+      "status": "통과",
+      "actual": "검색하지 못했어요: Places API has not been used or is disabled"
+    },
+    {
+      "name": "0결과와 거부 구분",
+      "status": "통과",
+      "actual": "검색어에 지역 이름을 더해 보세요."
+    },
+    {
+      "name": "로컬 편집 가능",
+      "status": "통과",
+      "actual": [
+        "첫 장소",
+        "둘째 장소",
+        "셋째 장소",
+        "권한 오류 뒤 로컬 편집"
+      ]
+    }
+  ],
+  "errors": [],
+  "consoleErrors": [
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+  ],
+  "mode": "브라우저 UI + 모의 Google SDK/지도 호출 기록",
+  "screenshots": [
+    "04.png"
+  ],
+  "finalDOM": {
+    "toast": "✓일정을 반영했어요. 엑셀 저장으로 변경 내용을 보관하세요.되돌리기",
+    "save": "이 기기에 저장됨 · 사진·리뷰 제외",
+    "rows": [
+      "첫 장소",
+      "둘째 장소",
+      "셋째 장소",
+      "권한 오류 뒤 로컬 편집"
+    ]
+  },
+  "mock": {
+    "searches": [
+      {
+        "textQuery": "첫 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793297543474
+      },
+      {
+        "textQuery": "둘째 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793297543474
+      },
+      {
+        "textQuery": "셋째 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793297543474
+      },
+      {
+        "textQuery": "API_KEY_INVALID",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793297543678
+      },
+      {
+        "textQuery": "RefererNotAllowedMapError REQUEST_DENIED",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793297543993
+      },
+      {
+        "textQuery": "Places API has not been used or is disabled",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793297544193
+      },
+      {
+        "textQuery": "0건",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793297544425
+      },
+      {
+        "textQuery": "권한 오류 뒤 로컬 편집",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793297544699
+      }
+    ],
+    "fields": [
+      {
+        "id": "p0",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793297543479
+      },
+      {
+        "id": "p1",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793297543479
+      },
+      {
+        "id": "p2",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793297543480
+      }
+    ],
+    "routes": [],
+    "markers": {
+      "0": {
+        "position": {
+          "lat": 35,
+          "lng": 139
+        },
+        "color": "#d93025",
+        "label": "01",
+        "title": "첫 장소",
+        "visible": true
+      },
+      "1": {
+        "position": {
+          "lat": 35.02,
+          "lng": 139.02
+        },
+        "color": "#d93025",
+        "label": "02",
+        "title": "둘째 장소",
+        "visible": true
+      },
+      "2": {
+        "position": {
+          "lat": 35.04,
+          "lng": 139.04
+        },
+        "color": "#1a73e8",
+        "label": "03",
+        "title": "셋째 장소",
+        "visible": true
+      },
+      "3": {
+        "position": null,
+        "color": "#d93025",
+        "label": "04",
+        "title": "권한 오류 뒤 로컬 편집",
+        "visible": true
+      }
+    },
+    "legs": {
+      "0>1": {
+        "segments": [
+          {
+            "kind": "straight",
+            "path": [
+              [
+                35,
+                139
+              ],
+              [
+                35.02,
+                139.02
+              ]
+            ]
+          }
+        ],
+        "color": "#d93025",
+        "visible": true
+      }
+    }
+  },
+  "status": "통과",
+  "finished": "2026-10-29T18:12:26.727Z"
+}

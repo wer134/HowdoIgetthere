@@ -125,7 +125,7 @@ const colNumber = (letters) => [...letters].reduce((n, ch) => n * 26 + ch.charCo
 
 // .xls·.csv 또는 직접 고치지 못한 파일: 바뀐 칸만 갈아 끼운 사본을 SheetJS로 쓴다 (서식은 남지 않는다)
 function rewriteWithSheetJS({ workbook, sheetName, edits, base, ext }) {
-  const sheet = { ...workbook.Sheets[sheetName] };
+  const sheet = Object.fromEntries(Object.entries(workbook.Sheets[sheetName]).map(([ref,cell]) => [ref, cell && typeof cell === 'object' && !Array.isArray(cell) ? {...cell} : cell]));
   for (const { ref, text, number } of edits) sheet[ref] = number != null ? { t: 'n', v: number } : { t: 's', v: text };
   // 범위 밖 칸(빈 열)을 채웠으면 시트 범위를 넓힌다
   const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1');
@@ -138,6 +138,9 @@ function rewriteWithSheetJS({ workbook, sheetName, edits, base, ext }) {
   const book = { ...workbook, Sheets: { ...workbook.Sheets, [sheetName]: sheet } };
   if (ext === 'csv') {
     // 엑셀이 한글을 깨뜨리지 않도록 BOM을 붙인 UTF-8로
+    for (const [ref, cell] of Object.entries(sheet)) {
+      if (!ref.startsWith('!') && cell?.t === 's' && /^[\s\uFEFF]*[=+@-]/.test(String(cell.v))) sheet[ref] = {...cell, v: "'" + cell.v, w: undefined, f: undefined};
+    }
     const csv = XLSX.write(book, { bookType: 'csv', type: 'string', sheet: sheetName });
     return { data: `﻿${csv}`, fileName: `${base}_수정.csv`, type: 'text/csv;charset=utf-8', keptFormat: true };
   }

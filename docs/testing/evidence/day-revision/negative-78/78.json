@@ -1,0 +1,210 @@
+{
+  "id": 78,
+  "started": "2026-10-31T13:06:23.546Z",
+  "steps": "상세/편집 패널 15회 열고 닫기 → 뒤 버튼 hit test·포커스",
+  "checks": [
+    {
+      "name": "뒤 버튼 클릭 가로채기 없음",
+      "status": "통과",
+      "actual": "scheduleAdd"
+    },
+    {
+      "name": "패널 재열기 가능",
+      "status": "통과",
+      "actual": true
+    },
+    {
+      "name": "뒤 지도 영역 위 숨은 패널 가로채기 없음",
+      "status": "통과",
+      "actual": {
+        "tag": "DIV",
+        "id": "map",
+        "interceptor": null
+      }
+    },
+    {
+      "name": "닫기 반복 후 키보드 포커스/재열기",
+      "status": "통과",
+      "actual": "scheduleName"
+    }
+  ],
+  "errors": [],
+  "consoleErrors": [
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+  ],
+  "mode": "브라우저 UI + 모의 Google SDK/지도 호출 기록",
+  "screenshots": [
+    "78.png"
+  ],
+  "finalDOM": {
+    "toast": "✓되돌리기삭제 되돌리기",
+    "save": "이 기기에 여행을 자동 저장합니다.",
+    "rows": [
+      "첫 장소",
+      "둘째 장소",
+      "셋째 장소"
+    ]
+  },
+  "mock": {
+    "searches": [
+      {
+        "textQuery": "첫 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793451984294
+      },
+      {
+        "textQuery": "둘째 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793451984294
+      },
+      {
+        "textQuery": "셋째 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793451984294
+      }
+    ],
+    "fields": [
+      {
+        "id": "p0",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793451984299
+      },
+      {
+        "id": "p1",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793451984299
+      },
+      {
+        "id": "p2",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793451984299
+      },
+      {
+        "id": "p0",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "rating",
+          "userRatingCount",
+          "regularOpeningHours",
+          "photos",
+          "reviews",
+          "reviewSummary",
+          "editorialSummary",
+          "websiteURI",
+          "nationalPhoneNumber",
+          "isReservable",
+          "hasTakeout",
+          "hasDineIn",
+          "hasDelivery",
+          "servesBreakfast",
+          "servesLunch",
+          "servesDinner",
+          "servesVegetarianFood",
+          "paymentOptions",
+          "isGoodForChildren",
+          "isGoodForGroups",
+          "hasOutdoorSeating",
+          "hasRestroom"
+        ],
+        "at": 1793451984420
+      }
+    ],
+    "routes": [],
+    "markers": {
+      "0": {
+        "position": {
+          "lat": 35,
+          "lng": 139
+        },
+        "color": "#d93025",
+        "label": "01",
+        "title": "첫 장소",
+        "visible": true
+      },
+      "1": {
+        "position": {
+          "lat": 35.02,
+          "lng": 139.02
+        },
+        "color": "#d93025",
+        "label": "02",
+        "title": "둘째 장소",
+        "visible": true
+      },
+      "2": {
+        "position": {
+          "lat": 35.04,
+          "lng": 139.04
+        },
+        "color": "#1a73e8",
+        "label": "03",
+        "title": "셋째 장소",
+        "visible": true
+      }
+    },
+    "legs": {
+      "0>1": {
+        "segments": [
+          {
+            "kind": "straight",
+            "path": [
+              [
+                35,
+                139
+              ],
+              [
+                35.02,
+                139.02
+              ]
+            ]
+          }
+        ],
+        "color": "#d93025",
+        "visible": true
+      }
+    }
+  },
+  "status": "통과",
+  "finished": "2026-10-31T13:06:27.824Z"
+}

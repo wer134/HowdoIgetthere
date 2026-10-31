@@ -13,7 +13,7 @@ export const CLAUDE_MODEL = 'claude-opus-5-5';
 export const AI_PROVIDERS = {
   claude: { label: 'Claude', model: CLAUDE_MODEL, keyStorage: 'anthropicApiKey' },
   openai: { label: 'OpenAI', model: 'gpt-4.1-mini', keyStorage: 'openaiApiKey' },
-  gemini: { label: 'Google Gemini', model: 'gemini-2.5-flash', keyStorage: 'geminiApiKey' },
+  gemini: { label: 'Google Gemini', model: 'gemini-3.8-flash', keyStorage: 'geminiApiKey' },
 };
 
 export async function listGeminiModels(apiKey) {
@@ -70,7 +70,7 @@ function parseIso(s) {
 }
 const isoOf = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
-// 앱이 읽는 날짜 칸 모양: "11/28 (토)"
+// 추천 요약에 표시하는 짧은 날짜. 일정표 데이터에는 ISO 날짜를 보존한다.
 const dateLabel = (date, i) => (date ? `${date.getMonth() + 1}/${date.getDate()} (${WEEK[date.getDay()]})` : `${i + 1}일차`);
 
 /* ── Claude로 짜기 ── */
@@ -172,77 +172,49 @@ function claudeError(err, Anthropic) {
   return err;
 }
 
-/**
- * Claude에게 일정 초안을 받는다. previous가 있으면 그 일정에서 issues만 고쳐 달라고 한다
- * @param {(p: {chars: number, days: number}) => void} onProgress 받는 동안 글자 수·쓰고 있는 날
- * @returns {Promise<{plan, raw: string, cost: number, model: string}>}
- */
-export async function planWithClaude(req, { apiKey, onProgress, previous = null, issues = [], model = CLAUDE_MODEL }) {
-  const { Anthropic, client } = await claude(apiKey);
-  let content = requestText(req);
-  if (previous) {
-    content += `\n\n앞서 짠 일정(JSON):\n${previous}\n\n구글 지도로 확인했더니 아래 문제가 있었어요. 이 부분만 고친 전체 일정을 다시 주세요. 문제없는 부분은 그대로 둡니다.\n${issues.map((s) => `- ${s}`).join('\n')}`;
-  }
-  let text = '';
-  try {
-    const stream = client.beta.messages.stream({
-      model,
-      max_tokens: 64000,
-      // 안전 분류기가 거절하면 서버가 알맞은 모델로 다시 돌린다
-      betas: ['server-side-fallback-2026-07-01'],
-      fallbacks: 'default',
-      output_config: { effort: 'medium', format: { type: 'json_schema', schema: PLAN_SCHEMA } },
-      system: SYSTEM,
-      messages: [{ role: 'user', content }],
-    });
-    stream.on('text', (delta) => {
-      text += delta;
-      onProgress?.({ chars: text.length, days: (text.match(/"items"\s*:/g) || []).length });
-    });
-    const message = await stream.finalMessage();
-    if (message.stop_reason === 'refusal') throw new Error('Claude가 이 요청에 답하지 않았어요. 요청 내용을 바꿔 다시 시도해 주세요.');
-    if (message.stop_reason === 'max_tokens') throw new Error('일정이 너무 길어 끝까지 받지 못했어요. 기간을 줄여 다시 시도해 주세요.');
-    const raw = message.content.filter((b) => b.type === 'text').map((b) => b.text).join('');
-    let plan;
-    try {
-      plan = JSON.parse(raw);
-    } catch {
-      throw new Error('Claude가 보낸 일정을 읽지 못했어요. 다시 시도해 주세요.');
-    }
-    const usage = message.usage || {};
-    const cost = model === CLAUDE_MODEL ? ((usage.input_tokens || 0) * PRICE.input + (usage.output_tokens || 0) * PRICE.output) / 1e6 : null;
-    return { plan: tidyPlan(plan, req), raw, cost, model: message.model || model };
-  } catch (err) {
-    throw claudeError(err, Anthropic);
-  }
-}
-
-// 제공업체 응답을 같은 일정 형식으로 변환한다. 키는 요청 헤더에만 넣는다.
-export async function planWithAI(req, { provider, apiKey, model, onProgress, previous = null, issues = [] }) {
+/** 제공업체별 구조화 응답. 일정 생성과 선택 날짜 수정에서 함께 쓴다. */
+export async function requestAIJSON({ provider, apiKey, model, system, schema, content, onProgress, signal }) {
   const config = AI_PROVIDERS[provider];
-  if (!config) throw new Error('지원하지 않는 AI 제공업체입니다.');
+  if (!config) throw new Error('지원하지 않는 AI 제공업체입니다. 설정에서 제공업체를 선택해 주세요.');
   if (!apiKey?.trim()) throw new Error(`${config.label} API 키를 설정에서 입력해 주세요.`);
   model = model?.trim() || config.model;
   if (provider === 'gemini') model = model.replace(/^models\//, '');
-  if (provider === 'claude') return planWithClaude(req, { apiKey, model, onProgress, previous, issues });
-  let content = requestText(req);
-  if (previous) content += `\n\n앞서 짠 일정(JSON):\n${previous}\n\n아래 문제만 고친 전체 일정을 주세요.\n${issues.map(x => `- ${x}`).join('\n')}`;
+  signal = signal ? AbortSignal.any([signal, AbortSignal.timeout(180000)]) : AbortSignal.timeout(180000);
+  if (provider === 'claude') {
+    const { Anthropic, client } = await claude(apiKey);
+    try {
+      const stream = client.beta.messages.stream({
+        model, max_tokens: 64000, betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default',
+        output_config: { effort: 'medium', format: { type: 'json_schema', schema } },
+        system, messages: [{ role: 'user', content }],
+      }, { signal });
+      let chars = 0;
+      stream.on('text', delta => onProgress?.({ chars: chars += delta.length, days: 0 }));
+      const message = await stream.finalMessage();
+      if (message.stop_reason !== 'end_turn') throw new Error('Claude 응답이 완료되지 않았어요. 요청 내용을 줄여 다시 시도해 주세요.');
+      const raw = message.content.filter(b => b.type === 'text').map(b => b.text).join('');
+      const usage = message.usage || {};
+      const cost = model === CLAUDE_MODEL ? ((usage.input_tokens || 0) * PRICE.input + (usage.output_tokens || 0) * PRICE.output) / 1e6 : null;
+      return { data: JSON.parse(raw), raw, cost, model: message.model || model };
+    } catch (err) { if (signal.aborted) throw signal.reason; throw claudeError(err, Anthropic); }
+  }
   const openai = provider === 'openai';
   const url = openai ? 'https://api.openai.com/v1/responses'
     : `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
   const headers = { 'Content-Type': 'application/json', ...(openai ? { Authorization: `Bearer ${apiKey}` } : { 'x-goog-api-key': apiKey }) };
   const body = openai ? {
-    model, instructions: SYSTEM, input: content, max_output_tokens: 16000,
-    text: { format: { type: 'json_schema', name: 'travel_plan', strict: true, schema: PLAN_SCHEMA } },
+    model, instructions: system, input: content, max_output_tokens: 16000,
+    text: { format: { type: 'json_schema', name: 'travel_plan', strict: true, schema } },
   } : {
-    systemInstruction: { parts: [{ text: SYSTEM }] },
+    systemInstruction: { parts: [{ text: system }] },
     contents: [{ role: 'user', parts: [{ text: content }] }],
-    generationConfig: { maxOutputTokens: 16000, responseMimeType: 'application/json', responseJsonSchema: PLAN_SCHEMA },
+    generationConfig: { maxOutputTokens: 16000, responseMimeType: 'application/json', responseJsonSchema: schema },
   };
   let response;
   try {
-    response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body), signal: AbortSignal.timeout(180000) });
+    response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body), signal });
   } catch (err) {
+    if (signal.aborted) throw signal.reason;
     throw new Error(err.name === 'TimeoutError' ? `${config.label} 응답 시간이 초과됐어요. 기간을 줄여 다시 시도해 주세요.` : `${config.label}에 연결하지 못했어요. 네트워크와 브라우저 접근 허용 여부를 확인해 주세요.`);
   }
   if (!response.ok) {
@@ -267,14 +239,24 @@ export async function planWithAI(req, { provider, apiKey, model, onProgress, pre
     if (candidate?.finishReason !== 'STOP') throw new Error('Gemini 응답이 완료되지 않았어요. 요청 내용이나 일정 기간을 바꿔 주세요.');
     raw = (candidate.content?.parts || []).filter(x => !x.thought).map(x => x.text || '').join('');
   }
-  let plan;
-  try { plan = JSON.parse(raw); } catch { throw new Error(`${config.label}가 보낸 일정을 읽지 못했어요. 다시 시도해 주세요.`); }
-  if (!plan || typeof plan.title !== 'string' || typeof plan.summary !== 'string' || !Array.isArray(plan.tips) || plan.tips.some(x => typeof x !== 'string') || !Array.isArray(plan.days) || !plan.days.length || plan.days.some(d => !d || !Array.isArray(d.items) || d.items.some(i => !i || typeof i.title !== 'string'))) {
-    throw new Error(`${config.label}가 보낸 일정 형식이 올바르지 않아요. 다시 시도해 주세요.`);
-  }
-  onProgress?.({ chars: raw.length, days: plan.days.length });
-  return { plan: tidyPlan(plan, req), raw, cost: null, model: result.model || result.modelVersion || model };
+  let data;
+  try { data = JSON.parse(raw); } catch { throw new Error(`${config.label}가 보낸 응답을 읽지 못했어요. 다시 시도해 주세요.`); }
+  return { data, raw, cost: null, model: result.model || result.modelVersion || model };
 }
+
+export async function planWithAI(req, { provider, apiKey, model, onProgress, previous = null, issues = [] }) {
+  let content = requestText(req);
+  if (previous) content += `\n\n앞서 짠 일정(JSON):\n${previous}\n\n아래 문제만 고친 전체 일정을 주세요. 문제없는 부분은 그대로 둡니다.\n${issues.map(x => `- ${x}`).join('\n')}`;
+  const result = await requestAIJSON({ provider, apiKey, model, system: SYSTEM, schema: PLAN_SCHEMA, content, onProgress });
+  const plan = result.data;
+  if (!plan || typeof plan.title !== 'string' || typeof plan.summary !== 'string' || !Array.isArray(plan.tips) || plan.tips.some(x => typeof x !== 'string') || !Array.isArray(plan.days) || !plan.days.length || plan.days.some(d => !d || !Array.isArray(d.items) || d.items.some(i => !i || typeof i.title !== 'string'))) {
+    throw new Error('AI가 보낸 일정 형식이 올바르지 않아요. 다시 시도해 주세요.');
+  }
+  onProgress?.({ chars: result.raw.length, days: plan.days.length });
+  return { plan: tidyPlan(plan, req), raw: result.raw, cost: result.cost, model: result.model };
+}
+
+export function planWithClaude(req, options) { return planWithAI(req, { ...options, provider: 'claude' }); }
 
 // 받은 일정을 앱이 다루기 좋게 다듬는다: 빈 값·잘못된 시각·날짜를 바로잡는다
 export function tidyPlan(plan, req) {
@@ -656,7 +638,8 @@ const round7 = (v) => Math.round(v * 1e7) / 1e7;
 export function planToRows(plan) {
   const rows = [];
   plan.days.forEach((day, i) => {
-    const label = dateLabel(parseIso(day.date), i);
+    // 앱에 다시 가져오는 일정표이므로 날짜 그룹에 필요한 연도를 보존한다.
+    const label = parseIso(day.date) ? day.date : dateLabel(null, i);
     for (const it of day.items) {
       const time = it.start ? (it.end && it.end !== it.start ? `${it.start}–${it.end}` : it.start) : '';
       const hasPlace = (it.kind === 'place' || it.kind === 'stay') && (it.place_ko || it.place);

@@ -1,0 +1,166 @@
+{
+  "id": 62,
+  "started": "2026-10-30T14:10:30.655Z",
+  "steps": "빈 파일/빈 시트/헤더만 파일 업로드 → 안내 및 이후 정상 파일 선택",
+  "checks": [
+    {
+      "name": "빈파일.xlsx 명확한 빈 결과 안내",
+      "status": "통과",
+      "actual": {
+        "summary": "3곳 · 좌표 있음 3 · 새로 검색 0건",
+        "title": "파일을 읽지 못했습니다"
+      }
+    },
+    {
+      "name": "빈시트.xlsx 명확한 빈 결과 안내",
+      "status": "통과",
+      "actual": {
+        "summary": "이 시트에서 데이터 행을 찾지 못했습니다.",
+        "title": "새 파일로 바꾸기"
+      }
+    },
+    {
+      "name": "헤더만.xlsx 명확한 빈 결과 안내",
+      "status": "통과",
+      "actual": {
+        "summary": "이 시트에서 데이터 행을 찾지 못했습니다.",
+        "title": "새 파일로 바꾸기"
+      }
+    },
+    {
+      "name": "재선택 복구",
+      "status": "통과",
+      "actual": "11/1 (일) 1곳\n    \n      \n      01\n      \n        정상 파일\n        좌표 있음좌표로 표시\n        장소의 폐업·이전 여부는 방문 전에 확인하세요.수정이동보관함으로삭제\n      \n      ⌖\n    \n\n  "
+    }
+  ],
+  "errors": [],
+  "consoleErrors": [
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+  ],
+  "mode": "브라우저 UI + 모의 Google SDK/지도 호출 기록",
+  "screenshots": [
+    "62.png"
+  ],
+  "finalDOM": {
+    "toast": "✓일정 파일을 불러왔어요 · 1행되돌리기삭제 되돌리기",
+    "save": "이 기기에 저장됨 · 사진·리뷰 제외",
+    "rows": [
+      "정상 파일"
+    ]
+  },
+  "mock": {
+    "searches": [
+      {
+        "textQuery": "첫 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793369431286
+      },
+      {
+        "textQuery": "둘째 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793369431287
+      },
+      {
+        "textQuery": "셋째 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793369431287
+      },
+      {
+        "textQuery": "정상 파일",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793369432242
+      }
+    ],
+    "fields": [
+      {
+        "id": "p0",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793369431291
+      },
+      {
+        "id": "p1",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793369431291
+      },
+      {
+        "id": "p2",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793369431291
+      }
+    ],
+    "routes": [],
+    "markers": {},
+    "legs": {
+      "0>1": {
+        "segments": [
+          {
+            "kind": "straight",
+            "path": [
+              [
+                35,
+                139
+              ],
+              [
+                35.02,
+                139.02
+              ]
+            ]
+          }
+        ],
+        "color": "#d93025",
+        "visible": true
+      }
+    }
+  },
+  "status": "통과",
+  "finished": "2026-10-30T14:10:32.473Z"
+}

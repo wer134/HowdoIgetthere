@@ -1,0 +1,57 @@
+{
+  "mode": "실제 Gemini + Google Places + 앱 UI",
+  "errors": [],
+  "requests": [
+    {
+      "service": "Gemini generateContent",
+      "http": 200,
+      "usage": {
+        "promptTokenCount": 946,
+        "candidatesTokenCount": 1170,
+        "totalTokenCount": 2742,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 946
+          }
+        ],
+        "thoughtsTokenCount": 626,
+        "serviceTier": "standard"
+      }
+    }
+  ],
+  "engine": "Google Gemini (gemini-3.8-flash)로 짜고 구글 지도로 확인해요",
+  "formValidity": {
+    "valid": true,
+    "invalid": []
+  },
+  "plannerStatus": "\n    후쿠오카 당일치기 · 오호리 공원과 미술관 산책Google Gemini 초안 · 구글 지도로 확인\n    후쿠오카 공항에서 지하철로 바로 연결되는 오호리 공원과 후쿠오카시 미술관을 여유롭게 둘러보는 당일치기 문화 예술 코스입니다. 넓은 호수 정취를 즐기며 전시 관람과 가벼운 산책을 편안하게 즐길 수 있습니다.\n    11/7 (토)후쿠오카 · 도심 속 호수 공원 산책과 미술관 예술 감상2곳\n    \n    알아 둘 점후쿠오카 공항에서 지하철 공항선을 타면 환승 없이 약 15~17분 만에 오호리공원역까지 이동할 수 있어 당일치기에 최적입니다.후쿠오카 시내 대중교통은 한국의 컨택트리스(비접촉 결제) 지원 신용카드나 교통카드(ICOCA, Suica 등)로 바로 탑승 가능합니다.후쿠오카시 미술관은 컬렉션전(상설전) 기준 일반 200엔이며, 기획전에 따라 별도 요금이 부과될 수 있습니다.항공편은 오전 11:00경 후쿠오카 공항 도착, 오후 17:00경 공항 출발을 기준으로 구성한 당일 일정입니다.\n    \n      추천 일정 엑셀 내려받기\n      \n    \n    일정 점검·하루 예산·빈 끼니의 맛집 추천은 아래에서 그대로 쓸 수 있어요.\n  ",
+  "fileName": "일본_후쿠오카_1일_추천일정.xlsx",
+  "rows": [
+    "오호리 공원",
+    "후쿠오카시 미술관"
+  ],
+  "saveStatus": "이 기기에 저장됨 · 사진·리뷰 제외",
+  "saved": [
+    {
+      "name": "일본_후쿠오카_1일_추천일정",
+      "records": 7,
+      "places": 2,
+      "dates": [
+        "2026-11-07",
+        "2026-11-07",
+        "2026-11-07",
+        "2026-11-07",
+        "2026-11-07",
+        "2026-11-07",
+        "2026-11-07"
+      ]
+    }
+  ],
+  "dateWarning": false,
+  "completed": true,
+  "reopenedRows": [
+    "오호리 공원",
+    "후쿠오카시 미술관"
+  ]
+}

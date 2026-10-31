@@ -1,0 +1,12 @@
+{
+  "counts": {
+    "통과": 70,
+    "결함 확인": 0,
+    "검증 불가": 8
+  },
+  "subchecks": 190,
+  "harnessErrors": 0,
+  "pageErrors": 0,
+  "started": "2026-10-31T13:02:21.445Z",
+  "finished": "2026-10-31T13:06:27.824Z"
+}

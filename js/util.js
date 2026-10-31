@@ -114,3 +114,8 @@ export function similarity(a, b) {
   }
   return (2 * hits) / (bx.length + by.length);
 }
+
+// 외부 데이터의 링크는 HTTP(S) 절대 URL만 허용한다.
+export function safeUrl(value) {
+  try { const url = new URL(String(value)); return ['https:', 'http:'].includes(url.protocol) ? url.href : ''; } catch { return ''; }
+}

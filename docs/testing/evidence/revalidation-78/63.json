@@ -1,0 +1,150 @@
+{
+  "id": 63,
+  "started": "2026-10-30T14:10:32.482Z",
+  "steps": "병합 날짜·숨김행·2개 시트 XLSX 생성 → 날짜 상속/숨김행/시트 전환 확인",
+  "checks": [
+    {
+      "name": "병합 날짜 상속 확인",
+      "status": "통과",
+      "actual": {
+        "names": [
+          "병합 첫 장소",
+          "숨김 장소",
+          "다음 날짜"
+        ],
+        "body": "11/1 (일) 2곳\n    \n      \n      01\n      \n        병합 첫 장소\n        대기검색어: 병합 첫 장소\n        장소의 폐업·이전 여부는 방문 전에 확인하세요.수정이동보관함으로삭제\n      \n      ⌖\n    \n\n  \n    \n      \n      02\n      \n        숨김 장소\n        대기검색어: 숨김 장소\n        장소의 폐업·이전 여부는 방문 전에 확인하세요.수정이동보관함으로삭제\n      \n      ⌖\n    \n\n  11/2 (월) 1곳\n    \n      \n      03\n      \n        다음 날짜\n        대기검색어: 다음 날짜\n        장소의 폐업·이전 여부는 방문 전에 확인하세요.수정이동보관함으로삭제\n      \n      ⌖\n    \n\n  "
+      }
+    },
+    {
+      "name": "숨김행 처리 관찰",
+      "status": "통과",
+      "actual": {
+        "hiddenRowImported": true,
+        "policy": "현재 구현은 숨김행도 가져옴; 제외 정책/안내 없음"
+      }
+    },
+    {
+      "name": "선택한 시트만 표시",
+      "status": "통과",
+      "actual": [
+        "다른 시트 장소"
+      ]
+    }
+  ],
+  "errors": [],
+  "consoleErrors": [
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+  ],
+  "mode": "브라우저 UI + 모의 Google SDK/지도 호출 기록",
+  "screenshots": [
+    "63.png"
+  ],
+  "finalDOM": {
+    "toast": "✓일정 파일을 불러왔어요 · 3행되돌리기삭제 되돌리기",
+    "save": "이 기기에 저장됨 · 사진·리뷰 제외",
+    "rows": [
+      "다른 시트 장소"
+    ]
+  },
+  "mock": {
+    "searches": [
+      {
+        "textQuery": "첫 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793369433139
+      },
+      {
+        "textQuery": "둘째 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793369433139
+      },
+      {
+        "textQuery": "셋째 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793369433139
+      }
+    ],
+    "fields": [
+      {
+        "id": "p0",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793369433142
+      },
+      {
+        "id": "p1",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793369433143
+      },
+      {
+        "id": "p2",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793369433143
+      }
+    ],
+    "routes": [],
+    "markers": {},
+    "legs": {
+      "0>1": {
+        "segments": [
+          {
+            "kind": "straight",
+            "path": [
+              [
+                35,
+                139
+              ],
+              [
+                35.02,
+                139.02
+              ]
+            ]
+          }
+        ],
+        "color": "#d93025",
+        "visible": true
+      }
+    }
+  },
+  "status": "통과",
+  "finished": "2026-10-30T14:10:33.661Z"
+}

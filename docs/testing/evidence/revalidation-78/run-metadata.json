@@ -1,0 +1,11 @@
+{
+  "source_commit": "603ff2f7a503c2c4203b5b870b24b1fcce9fb872",
+  "baseline_commit": "de2ecb4808a2a422bbe90b59d43d398cc137abad",
+  "source_worktree_clean_at_start": true,
+  "node": "24.19.0",
+  "playwright": "1.62.1",
+  "chromium": "154.0.8037.57",
+  "actual_google_calls": 0,
+  "network": "localhost only; external requests blocked",
+  "browser_isolation": "separate Chromium process; nonpersistent context per case"
+}

@@ -1,0 +1,8 @@
+{
+  "provider": "gemini",
+  "defaultModel": "gemini-3.8-flash",
+  "status": "34개 모델을 찾았어요. 목록에서 모델을 고른 뒤 저장하세요.",
+  "modelCount": 34,
+  "defaultListed": true,
+  "mode": "실제 브라우저 설정 UI + Gemini 모델 목록 API"
+}

@@ -1,0 +1,114 @@
+- main:
+  - link "↗ RouteFlow 엑셀로 만든 여행 일정이 지도로 살아나요":
+    - /url: "#top"
+  - text: ⌕
+  - searchbox "일정 속 장소 검색"
+  - button "여행 도구"
+  - button "설정": ⚙
+  - button "지도 연결됨"
+  - button "엑셀 저장"
+  - button "KML 내보내기 ↗"
+  - region "일정 올리기와 일정 목록":
+    - article:
+      - button "＋ 새 여행 시작"
+      - button "저장한 여행"
+      - button "엑셀 가져오기"
+      - status: 저장 공간이 부족하거나 저장할 수 없어요. 엑셀로 저장해 주세요.
+      - text: XLS X
+      - strong: 부정 테스트 A
+      - text: 내 여행 · 3일 · 3곳 ✓
+      - button "✦ 지도에 표시하기 →"
+    - article:
+      - button "일정" [pressed]
+      - button "가고 싶은 곳"
+      - button "＋ 일정 추가"
+      - tablist "날짜":
+        - tab "전체 2일" [selected]:
+          - text: 전체
+          - strong: 2일
+        - tab "Day 1 11/1 (일)":
+          - text: Day 1
+          - strong: 11/1 (일)
+        - tab "Day 2 11/2 (월)":
+          - text: Day 2
+          - strong: 11/2 (월)
+      - button "전체 3"
+      - button "찾음 2"
+      - button "못 찾음 1"
+      - list:
+        - listitem: 11/1 (일) 2곳
+        - listitem:
+          - text: 12:00 01
+          - strong: 둘째 장소
+          - text: 테스트 주소 장소의 폐업·이전 여부는 방문 전에 확인하세요.
+          - button "둘째 장소 수정": 수정
+          - button "이동"
+          - button "보관함으로"
+          - button "둘째 장소 삭제": 삭제
+        - listitem: 11/2 (월) 1곳
+        - listitem:
+          - text: 10:00 02
+          - strong: 셋째 장소
+          - text: 테스트 주소 장소의 폐업·이전 여부는 방문 전에 확인하세요.
+          - button "셋째 장소 수정": 수정
+          - button "이동"
+          - button "보관함으로"
+          - button "셋째 장소 삭제": 삭제
+        - listitem: 11/1 (일) 2곳
+        - listitem:
+          - text: "03"
+          - strong: 접근성 저장 실패
+          - text: "검색어: 접근성 저장 실패 장소의 폐업·이전 여부는 방문 전에 확인하세요."
+          - button "접근성 저장 실패 수정": 수정
+          - button "이동"
+          - button "보관함으로"
+          - button "접근성 저장 실패 삭제": 삭제
+  - region "지도":
+    - article:
+      - button "지도"
+      - button "위성"
+      - text: 전체 일정
+      - checkbox "동선 잇기" [checked]
+      - text: 동선 잇기
+      - button "전체 보기 ⌖"
+      - button "전체"
+      - button "Day 1"
+      - button "Day 2"
+      - strong: 전체 일정 이동 경로
+      - text: 총 이동 거리 경로 검색 전 이동 시간 미정 방문 장소 3곳
+      - article
+      - button "지도 확대": +
+      - slider "지도 확대 수준": "7"
+      - button "지도 축소": −
+  - complementary "선택한 장소":
+    - button "장소 상세 닫기": ×
+    - text: ⌖ Google에 공개된 사진이 없습니다
+    - link "Google 지도에서 사진 보기 ↗":
+      - /url: https://www.google.com/maps/search/?api=1&query=35.02,139.02
+    - text: 2026-11-01 · 1번째 장소
+    - heading "둘째 장소" [level=2]
+    - paragraph: ⌖ 테스트 주소
+    - paragraph: ◷ 12:00–13:00
+    - text: 확인함
+    - link "구글 지도에서 보기 ↗":
+      - /url: https://www.google.com/maps/search/?api=1&query=35.02,139.02
+    - text: 장소 정보
+    - paragraph: 한국어 장소 설명이 제공되지 않았어요. 구글 지도에서 자세한 정보를 확인해 주세요.
+    - text: 장소 수정 · 주변 추천
+    - button "가고 싶은 곳에 보관"
+    - textbox "검색어": 둘째 장소 테스트 주소
+    - button "다시 검색"
+    - button "일정 수정"
+    - button "일정 삭제"
+    - button "지도에서 직접 찍기"
+    - link "구글 지도 ↗":
+      - /url: https://www.google.com/maps/search/?api=1&query=35.02,139.02
+    - button "주변 맛집"
+    - button "카페"
+    - button "주변 명소"
+    - paragraph: 엑셀 3행 · 핀을 끌어서 위치를 고칠 수도 있어요
+- status:
+  - text: ✓
+  - strong: 일정을 삭제했어요. 삭제 되돌리기로 복원할 수 있습니다.
+  - button "되돌리기"
+  - button "삭제 되돌리기"

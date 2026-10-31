@@ -1,0 +1,165 @@
+{
+  "id": 13,
+  "started": "2026-10-29T18:12:40.446Z",
+  "steps": "0·-1·1.5·1000일 HTML 제출과 submit 이벤트 직접 호출로 처리 단계 검증",
+  "checks": [
+    {
+      "name": "0 HTML 제약",
+      "status": "통과",
+      "actual": {
+        "count": 2
+      }
+    },
+    {
+      "name": "0 처리 단계 검증",
+      "status": "결함 확인",
+      "actual": [
+        {
+          "days": 0
+        }
+      ]
+    },
+    {
+      "name": "-1 HTML 제약",
+      "status": "통과",
+      "actual": {
+        "count": 3
+      }
+    },
+    {
+      "name": "-1 처리 단계 검증",
+      "status": "결함 확인",
+      "actual": [
+        {
+          "days": 0
+        }
+      ]
+    },
+    {
+      "name": "1.5 HTML 제약",
+      "status": "통과",
+      "actual": {
+        "count": 4
+      }
+    },
+    {
+      "name": "1.5 처리 단계 검증",
+      "status": "결함 확인",
+      "actual": [
+        {
+          "days": 1
+        }
+      ]
+    },
+    {
+      "name": "1000 HTML 제약",
+      "status": "통과",
+      "actual": {
+        "count": 5
+      }
+    },
+    {
+      "name": "1000 처리 단계 검증",
+      "status": "결함 확인",
+      "actual": [
+        {
+          "days": 1000
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "consoleErrors": [
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+  ],
+  "mode": "브라우저 UI + 모의 Google SDK/지도 호출 기록",
+  "screenshots": [
+    "13.png"
+  ],
+  "finalDOM": {
+    "toast": "✓여행을 만들었어요. 가고 싶은 장소를 모아 보세요.되돌리기",
+    "save": "이 기기에 저장됨 · 사진·리뷰 제외",
+    "rows": []
+  },
+  "mock": {
+    "searches": [
+      {
+        "textQuery": "첫 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793297561183
+      },
+      {
+        "textQuery": "둘째 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793297561183
+      },
+      {
+        "textQuery": "셋째 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793297561183
+      }
+    ],
+    "fields": [
+      {
+        "id": "p0",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793297561189
+      },
+      {
+        "id": "p1",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793297561189
+      },
+      {
+        "id": "p2",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793297561189
+      }
+    ],
+    "routes": [],
+    "markers": {},
+    "legs": {}
+  },
+  "status": "결함 확인",
+  "finished": "2026-10-29T18:12:56.275Z"
+}
