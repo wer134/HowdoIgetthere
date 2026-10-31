@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://wer134.github.io/HowdoIgetthere/sitemap.xml

@@ -5,10 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#202928">
   <title>RouteFlow · 여행 동선 지도</title>
-  <link rel="icon" href="data:,">
+  <meta name="description" content="작성한 여행 일정을 지도에서 확인하고 날짜별로 편집하세요. 엑셀 가져오기, AI 하루 수정, 여행 백업을 지원합니다.">
+  <link rel="canonical" href="https://wer134.github.io/HowdoIgetthere/">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="RouteFlow · 여행 일정 지도">
+  <meta property="og:description" content="내 여행 계획을 지도에서 확인하고 하루씩 다듬으세요.">
+  <meta property="og:url" content="https://wer134.github.io/HowdoIgetthere/">
+  <meta property="og:image" content="https://wer134.github.io/HowdoIgetthere/assets/og-routeflow.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap">
+  <link id="webFonts" rel="stylesheet" media="print" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap">
   <link rel="stylesheet" href="css/style.css">
   <script src="config.js"></script>
   <script src="runtime-config.js"></script>
@@ -318,6 +326,7 @@
 </dialog>
 
 <dialog class="dialog" id="settingsDialog" aria-labelledby="settingsTitle">
+  <nav class="policy-links" aria-label="서비스 안내"><a href="privacy.html" target="_blank" rel="noopener">데이터 처리 안내</a><a href="terms.html" target="_blank" rel="noopener">이용 안내</a><a href="https://github.com/wer134/HowdoIgetthere/issues" target="_blank" rel="noopener noreferrer">문의</a></nav>
   <form method="dialog"><button class="dialog-x" aria-label="닫기">×</button></form>
   <div class="section-kicker">SETTINGS</div>
   <h2 id="settingsTitle">설정</h2>
