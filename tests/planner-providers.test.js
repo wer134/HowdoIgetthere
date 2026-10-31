@@ -6,6 +6,16 @@ globalThis.XLSX = createRequire(import.meta.url)('../vendor/xlsx.full.min.js');
 const req = { region: '부산', days: 1, start: '', interests: [], pace: 'normal', transport: 'transit' };
 const plan = { title: '부산 여행', summary: '부산 하루', tips: [], days: [{ date: '', city: '부산', theme: '바다', items: [{ start: '10:00', end: '11:00', kind: 'place', title: '해변 산책', place_ko: '해운대해수욕장', place: '해운대해수욕장', search: '해운대해수욕장 부산', mode: '', memo: '' }] }] };
 const raw = JSON.stringify(plan);
+test('추천 일정 엑셀은 연말·연초 날짜의 연도를 보존하고 미정 날짜는 일차로 표시한다', () => {
+  const datedPlan = {
+    ...plan,
+    days: ['2026-12-31', '2027-01-01', ''].map((date) => ({ ...plan.days[0], date })),
+  };
+  const file = planToWorkbook(datedPlan, { ...req, days: 3 }, 'gemini');
+  const workbook = XLSX.read(file.buffer, { type: 'array' });
+  const rows = XLSX.utils.sheet_to_json(workbook.Sheets['일정표'], { header: 1 });
+  assert.deepEqual(rows.slice(2).map((row) => row[0]), ['2026-12-31', '2027-01-01', '3일차']);
+});
 const responses = {
   openai: { status: 'completed', output: [{ type: 'message', content: [{ type: 'output_text', text: raw }] }] },
   gemini: { candidates: [{ finishReason: 'STOP', content: { parts: [{ text: raw }] } }] },

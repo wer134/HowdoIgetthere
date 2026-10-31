@@ -70,7 +70,7 @@ function parseIso(s) {
 }
 const isoOf = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
-// 앱이 읽는 날짜 칸 모양: "11/28 (토)"
+// 추천 요약에 표시하는 짧은 날짜. 일정표 데이터에는 ISO 날짜를 보존한다.
 const dateLabel = (date, i) => (date ? `${date.getMonth() + 1}/${date.getDate()} (${WEEK[date.getDay()]})` : `${i + 1}일차`);
 
 /* ── Claude로 짜기 ── */
@@ -656,7 +656,8 @@ const round7 = (v) => Math.round(v * 1e7) / 1e7;
 export function planToRows(plan) {
   const rows = [];
   plan.days.forEach((day, i) => {
-    const label = dateLabel(parseIso(day.date), i);
+    // 앱에 다시 가져오는 일정표이므로 날짜 그룹에 필요한 연도를 보존한다.
+    const label = parseIso(day.date) ? day.date : dateLabel(null, i);
     for (const it of day.items) {
       const time = it.start ? (it.end && it.end !== it.start ? `${it.start}–${it.end}` : it.start) : '';
       const hasPlace = (it.kind === 'place' || it.kind === 'stay') && (it.place_ko || it.place);
