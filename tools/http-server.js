@@ -29,7 +29,7 @@ export function createStaticServer({ root, production = false, runtime = null, p
       res.writeHead(200, { 'Content-Type': types['.js'], 'Cache-Control': 'no-store' }).end(req.method === 'HEAD' ? undefined : runtime);
       return;
     }
-    const file = safeAsset(root, name, allowed);
+    const file = safeAsset(root, name, production ? allowed : new Set(publicAssets(root)));
     if (!file) { res.writeHead(404, { 'Content-Type': types['.txt'] }).end('Not found'); return; }
     try {
       let data = await fs.readFile(file);

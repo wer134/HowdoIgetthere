@@ -12,5 +12,9 @@
     "build": "node tools/build.js",
     "start:production": "node production-server.js",
     "check:release": "node tools/check-release.js"
+  },
+  "devDependencies": {
+    "lighthouse": "13.5.0",
+    "playwright": "1.62.1"
   }
 }

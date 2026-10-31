@@ -14,7 +14,7 @@ const proposal = { summary: '예약은 유지하고 미술관 시간을 늦춘 �
   { id: '', name: '새 카페', time: '14:30–15:00', region: '후쿠오카', note: '가까운 휴식 장소' },
 ] };
 (async () => {
-  const b = await chromium.launch({ executablePath: '/usr/bin/chromium', args: ['--no-sandbox'] });
+  const b = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/usr/bin/chromium', args: ['--no-sandbox'] });
   const results = [];
   try { for (const width of [1440, 390]) {
     const c = await b.newContext({ viewport: { width, height: 900 }, locale: 'ko-KR' });

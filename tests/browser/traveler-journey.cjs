@@ -7,7 +7,7 @@ fs.mkdirSync(OUT,{recursive:true});
 const store=p=>p.evaluate(()=>JSON.parse(localStorage.getItem('routeflow.travels.v1')||'{}'));
 const waitSave=p=>p.waitForFunction(()=>document.querySelector('#travelSaveStatus').textContent.includes('이 기기에 저장됨'));
 async function download(p,selector){const promise=p.waitForEvent('download');await p.click(selector);const d=await promise;const target=path.join(OUT,d.suggestedFilename());await d.saveAs(target);return target;}
-(async()=>{const browser=await chromium.launch({executablePath:'/usr/bin/chromium',args:['--no-sandbox']});const results=[];
+(async()=>{const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',args:['--no-sandbox']});const results=[];
  try{for(const width of [1440,390]){
   const c=await browser.newContext({viewport:{width,height:900},locale:'ko-KR'});const external=[];
   await c.route('**/*',r=>r.request().url().startsWith(BASE)||r.request().url().startsWith('blob:')?r.continue():(external.push(r.request().url().split('?')[0]),r.abort()));

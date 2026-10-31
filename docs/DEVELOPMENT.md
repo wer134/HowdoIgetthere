@@ -10,9 +10,11 @@ Node.js가 설치된 환경에서 실행합니다. 현재 서버 실행에는 �
 npm start
 ```
 
-Windows에서는 `start.bat`을 실행할 수도 있습니다. 기본 주소는 `http://localhost:8080`이며, 포트가 사용 중이면 서버가 안내하는 주소를 확인하세요.
+Windows에서는 `start.bat`을 실행할 수도 있습니다. 기본 주소는 `http://localhost:8080`이며, 포트가 사용 중이면 다른 PORT를 명시하세요.
 
-`googleAPI` 또는 `googlemap` 환경변수로 지도 키를 전달하거나 앱 설정 화면에서 입력할 수 있습니다. 둘 다 있으면 `googleAPI`를 우선합니다. `geminiapi`를 설정하면 기본 AI 제공업체가 Gemini로 선택되고 환경의 키를 사용합니다. 브라우저에서 저장한 제공업체·키·모델 설정을 우선하며, AI 키를 비우고 저장하면 해당 브라우저에서는 환경 키도 사용하지 않습니다. 이 개발 서버는 127.0.0.1에만 바인딩하며, 환경변수로 넣은 지도·Gemini 키도 로컬 브라우저에 전달됩니다. `runtime-config.js` 응답은 캐시하지 않습니다. 이 개발 서버를 키가 있는 상태로 공개 프록시 뒤에 배포하지 마세요. 웹사이트 리퍼러와 API 제한을 적용하고 키를 소스에 넣지 마세요. GitHub Pages에는 로컬 환경변수가 자동 전달되지 않습니다.
+`npm start`는 환경의 비밀 키를 브라우저에 전달하지 않습니다. 필요한 키는 설정 화면에서 입력합니다. 환경의 `googleAPI`/`googlemap` 및 `geminiapi`를 쓰는 **로컬 검증에만** `npm run start:local`을 사용하세요. 이 명령은 키를 로컬 브라우저로 전달하므로 공개 터널에 연결하면 안 됩니다. 브라우저에 직접 저장한 설정이 우선하며, 키를 비우고 저장하면 해당 브라우저의 환경 키 사용도 중지합니다.
+
+개발 서버는 127.0.0.1에만 바인딩하고 지정 포트가 점유되면 실패합니다. `PORT=8093 npm run start:local`처럼 포트를 정할 수 있습니다. 공개 운영은 `dist/`만 배포하며 [배포 안내](DEPLOYMENT.md)를 따릅니다.
 
 ## 검증
 
@@ -20,7 +22,7 @@ Windows에서는 `start.bat`을 실행할 수도 있습니다. 기본 주소는 
 npm test
 ```
 
-Playwright와 Chromium이 설치된 환경에서는 서버를 실행한 뒤 다음 브라우저 검증도 사용할 수 있습니다.
+`npm ci`와 `npx playwright install chromium`으로 검증 의존성을 설치합니다. Playwright와 Chromium이 설치된 환경에서는 서버를 실행한 뒤 다음 브라우저 검증도 사용할 수 있습니다.
 
 ```bash
 node tests/browser/travel-workspace.cjs
