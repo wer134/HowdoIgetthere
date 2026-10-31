@@ -13,7 +13,7 @@ export const CLAUDE_MODEL = 'claude-opus-5-5';
 export const AI_PROVIDERS = {
   claude: { label: 'Claude', model: CLAUDE_MODEL, keyStorage: 'anthropicApiKey' },
   openai: { label: 'OpenAI', model: 'gpt-4.1-mini', keyStorage: 'openaiApiKey' },
-  gemini: { label: 'Google Gemini', model: 'gemini-2.5-flash', keyStorage: 'geminiApiKey' },
+  gemini: { label: 'Google Gemini', model: 'gemini-3.8-flash', keyStorage: 'geminiApiKey' },
 };
 
 export async function listGeminiModels(apiKey) {
