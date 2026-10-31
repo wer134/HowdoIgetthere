@@ -35,7 +35,7 @@ async function newTrip(p,name='부정 테스트 새 여행',start=D,days='3',raw
 async function search(p,q,config) { await close(p); await p.click('#travelLibraryTab'); if(config)await p.evaluate(([q,c])=>window.__mock.query[q]=c,[q,config]); await p.fill('#travelSearch',q); await p.locator('#travelSearchForm button').click(); await wait(p,70); }
 async function drop(p,source,target,cancel=false) { await p.evaluate(([s,t,c])=>{const dataTransfer=new DataTransfer();const a=document.querySelector(s),b=document.querySelector(t);a.dispatchEvent(new DragEvent('dragstart',{bubbles:true,dataTransfer}));if(!c)b.dispatchEvent(new DragEvent('drop',{bubbles:true,dataTransfer}));a.dispatchEvent(new DragEvent('dragend',{bubbles:true,dataTransfer}));},[source,target,cancel]); }
 const place=(id='mock1',name='모의 장소',extra={})=>({id,name,address:'일본 도쿄 테스트 1',lat:35.1,lng:139.1,...extra});
-async function file(p,buffer,name='negative.xlsx') { await close(p); await p.setInputFiles('#fileInput',{name,mimeType:'application/octet-stream',buffer}); await wait(p,150); }
+async function file(p,buffer,name='negative.xlsx') { await close(p); await p.setInputFiles('#fileInput',{name,mimeType:'application/octet-stream',buffer}); await p.locator('#importProgress').waitFor({state:'hidden',timeout:25000}); await wait(p,50); }
 async function workbook(p,aoa,special={}) { const arr=await p.evaluate(({aoa,special})=>{const w=XLSX.utils.book_new(),s=XLSX.utils.aoa_to_sheet(aoa);Object.assign(s,special);XLSX.utils.book_append_sheet(w,s,'일정');return Array.from(new Uint8Array(XLSX.write(w,{type:'array',bookType:'xlsx'})));},{aoa,special});return Buffer.from(arr); }
 
 test(7,'정상 저장본 확보 → Storage.setItem에 QuotaExceededError/일반 쓰기 오류 주입 → 일정 수정 → 저장 상태·원본 비교',async(p,c,check)=>{

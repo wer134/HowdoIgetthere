@@ -63,7 +63,16 @@ jobs:
           node tests/browser/travel-drag.cjs
           node tests/browser/travel-safety.cjs
       - name: All 78 negative cases (8 explicitly unavailable)
-        run: node docs/testing/repro/negative-78.cjs
+        run: |
+          node docs/testing/repro/negative-78.cjs
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          import assert from 'node:assert/strict';
+          const results = JSON.parse(fs.readFileSync(process.env.NEGATIVE_OUT + '/results.json'));
+          assert.equal(results.length, 78);
+          assert.equal(results.filter(r => r.status === '통과').length, 70);
+          assert.deepEqual(results.filter(r => r.status === '검증 불가').map(r => r.id), [40,50,59,67,69,71,72,75]);
+          JS
       - name: Lighthouse lab measurement (keyless first visit)
         env:
           CHROME_PATH: ${{ env.CHROMIUM_PATH }}
