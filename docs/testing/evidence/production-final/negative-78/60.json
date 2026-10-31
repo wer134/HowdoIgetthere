@@ -1,0 +1,108 @@
+{
+  "id": 60,
+  "started": "2026-10-31T14:13:44.486Z",
+  "steps": "저장 여행 id를 다른 여행 ID로 변조 → 열어 편집; updated/records/library 타입 변조는 별도 페이지로 검사",
+  "checks": [
+    {
+      "name": "ID 불일치 여행 열기 차단",
+      "status": "통과",
+      "actual": {
+        "history": "일부 저장 데이터가 손상되어 목록에서 제외했어요. 원본은 보존했습니다.부정 테스트 B1행 · 2026. 10. 31. 오후 11:13:44열기삭제"
+      }
+    },
+    {
+      "name": "ID 변조로 다른 여행 덮어쓰기 방지",
+      "status": "통과",
+      "actual": {
+        "B": "부정 테스트 B",
+        "records": [
+          "다른 여행 장소"
+        ]
+      }
+    },
+    {
+      "name": "updated 타입 변조 안전 처리",
+      "status": "통과",
+      "actual": {
+        "errors": [],
+        "invalidDate": false,
+        "rows": []
+      }
+    },
+    {
+      "name": "records 타입 변조 안전 처리",
+      "status": "통과",
+      "actual": {
+        "errors": [],
+        "invalidDate": false,
+        "rows": []
+      }
+    },
+    {
+      "name": "cells 타입 변조 안전 처리",
+      "status": "통과",
+      "actual": {
+        "errors": [],
+        "invalidDate": false,
+        "rows": []
+      }
+    },
+    {
+      "name": "library 타입 변조 안전 처리",
+      "status": "통과",
+      "actual": {
+        "errors": [],
+        "invalidDate": false,
+        "rows": []
+      }
+    },
+    {
+      "name": "dates 타입 변조 안전 처리",
+      "status": "통과",
+      "actual": {
+        "errors": [],
+        "invalidDate": false,
+        "rows": []
+      }
+    },
+    {
+      "name": "mapping 타입 변조 안전 처리",
+      "status": "통과",
+      "actual": {
+        "errors": [],
+        "invalidDate": false,
+        "rows": []
+      }
+    }
+  ],
+  "errors": [],
+  "consoleErrors": [
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+  ],
+  "mode": "브라우저 UI + 모의 Google SDK/지도 호출 기록",
+  "screenshots": [
+    "60.png"
+  ],
+  "finalDOM": {
+    "toast": "✓되돌리기삭제 되돌리기",
+    "save": "이 기기에 여행을 자동 저장합니다.",
+    "rows": []
+  },
+  "mock": {
+    "searches": [],
+    "fields": [],
+    "routes": [],
+    "markers": {},
+    "legs": {}
+  },
+  "status": "통과",
+  "finished": "2026-10-31T14:13:49.390Z"
+}

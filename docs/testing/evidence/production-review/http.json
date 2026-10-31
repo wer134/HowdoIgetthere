@@ -1,0 +1,70 @@
+[
+  {
+    "path": "/.git/HEAD",
+    "http": 200,
+    "bytes": 21,
+    "securityHeaders": {
+      "content-security-policy": null,
+      "strict-transport-security": null,
+      "x-content-type-options": null,
+      "referrer-policy": null
+    }
+  },
+  {
+    "path": "/.git/config",
+    "http": 200,
+    "bytes": 291,
+    "securityHeaders": {
+      "content-security-policy": null,
+      "strict-transport-security": null,
+      "x-content-type-options": null,
+      "referrer-policy": null
+    }
+  },
+  {
+    "path": "/.github/workflows/smoke.yml",
+    "http": 200,
+    "bytes": 1514,
+    "securityHeaders": {
+      "content-security-policy": null,
+      "strict-transport-security": null,
+      "x-content-type-options": null,
+      "referrer-policy": null
+    }
+  },
+  {
+    "path": "/runtime-config.js",
+    "http": 200,
+    "bytes": 59,
+    "dummyGeminiKeyDelivered": true,
+    "cacheControl": "no-store",
+    "securityHeaders": {
+      "content-security-policy": null,
+      "strict-transport-security": null,
+      "x-content-type-options": null,
+      "referrer-policy": null
+    }
+  },
+  {
+    "path": "/robots.txt",
+    "http": 404,
+    "bytes": 9,
+    "securityHeaders": {
+      "content-security-policy": null,
+      "strict-transport-security": null,
+      "x-content-type-options": null,
+      "referrer-policy": null
+    }
+  },
+  {
+    "path": "/sitemap.xml",
+    "http": 404,
+    "bytes": 9,
+    "securityHeaders": {
+      "content-security-policy": null,
+      "strict-transport-security": null,
+      "x-content-type-options": null,
+      "referrer-policy": null
+    }
+  }
+]

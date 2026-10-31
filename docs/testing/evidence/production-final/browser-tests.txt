@@ -1,0 +1,37 @@
+[
+  {
+    "name": "읽기 전용 탐색에서 전체 snapshot 복제 없음",
+    "status": "통과"
+  },
+  {
+    "name": "크기 초과·취소 후 기존 여행 유지",
+    "status": "통과"
+  },
+  {
+    "name": "2,000행 실제 Worker 파싱 중 UI 타이머 실행",
+    "status": "통과",
+    "rows": 2000,
+    "ticks": 28,
+    "milliseconds": 150
+  },
+  {
+    "name": "멈춘 Worker 시간 제한·종료",
+    "status": "통과",
+    "mode": "Worker 정지 모의 주입"
+  },
+  {
+    "name": "취소 후 재시도·원본 여행과 새 여행 저장",
+    "status": "통과"
+  }
+]
+1440 PASS
+390 PASS
+1440 PASS
+390 PASS
+reorder, undo, drag, dates, multiple trips PASS
+빈 검색 → 직접 입력 지우기 → 실제 드래그 → 순서 변경 PASS
+8: 다중 탭 메모 충돌과 삭제 후 부활 차단 PASS
+9: A 삭제 undo가 B에 반영되지 않음 PASS
+60: ID 불일치 항목 제외 및 정상 B 보존 PASS
+58/60: 손상 타입 목록 배제, 원본과 정상 여행 보존 PASS
+저장 실패 시 삭제 성공으로 표시하지 않음 PASS

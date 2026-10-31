@@ -1,0 +1,40 @@
+{
+  "mode": "실제 Google Maps·Places·Routes; 새 테스트 브라우저 BYOK, 모의 응답 없음",
+  "responses": [
+    {
+      "service": "SearchText",
+      "http": 200
+    },
+    {
+      "service": "SearchText",
+      "http": 200
+    },
+    {
+      "service": "ComputeRoutes",
+      "http": 200
+    }
+  ],
+  "errors": [],
+  "check": {
+    "origin": {
+      "name": "오호리 공원",
+      "lat": 33.586206499999996,
+      "lng": 130.3764646
+    },
+    "destination": {
+      "name": "후쿠오카시 미술관",
+      "lat": 33.5841636,
+      "lng": 130.37967179999998
+    },
+    "route": {
+      "distance": 1008,
+      "duration": 811000,
+      "segments": 1
+    },
+    "cached": true,
+    "repeatedSame": true,
+    "mapRendered": true,
+    "mockPresent": false
+  },
+  "completed": true
+}

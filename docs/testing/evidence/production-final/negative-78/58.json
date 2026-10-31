@@ -1,0 +1,124 @@
+{
+  "id": 58,
+  "started": "2026-10-31T14:13:41.926Z",
+  "steps": "정상 여행 옆에 records가 null인 손상 여행 주입 → 손상 여행 열기 → 정상 저장본/오류 안내 확인",
+  "checks": [
+    {
+      "name": "손상 데이터 명확한 오류 안내",
+      "status": "통과",
+      "actual": {
+        "appError": "",
+        "history": "일부 저장 데이터가 손상되어 목록에서 제외했어요. 원본은 보존했습니다.부정 테스트 A3행 · 2026. 10. 31. 오후 11:13:43열기삭제부정 테스트 B1행 · 2026. 10. 31. 오후 11:13:41열기삭제"
+      }
+    },
+    {
+      "name": "손상 목록의 오류 안내와 정상 목록 유지",
+      "status": "통과",
+      "actual": {
+        "history": "일부 저장 데이터가 손상되어 목록에서 제외했어요. 원본은 보존했습니다.부정 테스트 A3행 · 2026. 10. 31. 오후 11:13:43열기삭제부정 테스트 B1행 · 2026. 10. 31. 오후 11:13:41열기삭제"
+      }
+    },
+    {
+      "name": "정상 여행 저장본 보존",
+      "status": "통과",
+      "actual": "저장소 비교"
+    }
+  ],
+  "errors": [],
+  "consoleErrors": [
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+  ],
+  "mode": "브라우저 UI + 모의 Google SDK/지도 호출 기록",
+  "screenshots": [
+    "58.png"
+  ],
+  "finalDOM": {
+    "toast": "✓되돌리기삭제 되돌리기",
+    "save": "이 기기에 저장됨 · 사진·리뷰 제외",
+    "rows": [
+      "첫 장소",
+      "둘째 장소",
+      "셋째 장소"
+    ]
+  },
+  "mock": {
+    "searches": [],
+    "fields": [
+      {
+        "id": "p0",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793456022679
+      },
+      {
+        "id": "p1",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793456022679
+      }
+    ],
+    "routes": [],
+    "markers": {
+      "0": {
+        "position": {
+          "lat": 35,
+          "lng": 139
+        },
+        "color": "#d93025",
+        "label": "01",
+        "title": "첫 장소",
+        "visible": true
+      },
+      "1": {
+        "position": {
+          "lat": 35.02,
+          "lng": 139.02
+        },
+        "color": "#d93025",
+        "label": "02",
+        "title": "둘째 장소",
+        "visible": true
+      },
+      "2": {
+        "position": {
+          "lat": 35.04,
+          "lng": 139.04
+        },
+        "color": "#1a73e8",
+        "label": "03",
+        "title": "셋째 장소",
+        "visible": true
+      }
+    },
+    "legs": {
+      "0>1": {
+        "segments": [
+          {
+            "kind": "straight",
+            "path": [
+              [
+                35,
+                139
+              ],
+              [
+                35.02,
+                139.02
+              ]
+            ]
+          }
+        ],
+        "color": "#d93025",
+        "visible": true
+      }
+    }
+  },
+  "status": "통과",
+  "finished": "2026-10-31T14:13:44.472Z"
+}

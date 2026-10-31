@@ -1,0 +1,53 @@
+{
+  "mode": "실제 Google 지도 + 실제 Gemini, 모의 응답 없음",
+  "responses": [
+    {
+      "service": "Gemini",
+      "http": 200,
+      "usage": {
+        "promptTokenCount": 491,
+        "candidatesTokenCount": 131,
+        "totalTokenCount": 879,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 491
+          }
+        ],
+        "thoughtsTokenCount": 257,
+        "serviceTier": "standard"
+      }
+    }
+  ],
+  "errors": [],
+  "keyMode": "운영 빌드 + 별도 테스트 브라우저 BYOK 설정",
+  "status": "변경 내용을 확인한 뒤 이 날짜에 적용하세요. 다른 날짜는 유지됩니다.",
+  "preview": "요청에 따라 새 장소 추가 없이 기존 오호리 공원 일정을 그대로 유지하고, 후쿠오카시 미술관 관람 시간을 13:00–14:00으로 조정했습니다.오호리 공원10:00–11:00기존 일정후쿠오카시 미술관13:00–14:0011:30–12:30 → 시간 변경",
+  "checks": [
+    "직접 작성한 엑셀의 지도 표시",
+    "Gemini 일별 수정안 실제 응답",
+    "적용 전 원본 유지",
+    "잠근 시간·개인 메모·추가 열·다른 날짜 보존",
+    "적용 후 새로고침·이어서 준비하기에서 유지"
+  ],
+  "records": [
+    {
+      "name": "오호리 공원",
+      "date": "2026-11-07",
+      "time": "10:00–11:00"
+    },
+    {
+      "name": "후쿠오카시 미술관",
+      "date": "2026-11-07",
+      "time": "13:00–14:00"
+    },
+    {
+      "name": "오호리 공원",
+      "date": "2026-11-08",
+      "time": "09:00"
+    }
+  ],
+  "mapRendered": true,
+  "mockPresent": false,
+  "completed": true
+}
