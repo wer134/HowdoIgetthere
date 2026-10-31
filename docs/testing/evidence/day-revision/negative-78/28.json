@@ -1,0 +1,224 @@
+{
+  "id": 28,
+  "started": "2026-10-31T13:04:31.711Z",
+  "steps": "사진 없음/요청 실패를 독립 ID로 주입 → 상세 패널 안내 비교",
+  "checks": [
+    {
+      "name": "사진 없음/실패 서로 다른 안내",
+      "status": "통과",
+      "actual": {
+        "none": "⌖Google에 공개된 사진이 없습니다Google 지도에서 사진 보기 ↗\n    \n    2026-11-01 · 1번째 장소\n    첫 장소\n    ⌖ 테스트 주소\n    ◷ 10:00–11:00\n    \n    \n    확인함구글 지도에서 보기 ↗\n    장소 정보\n    한국어 장소 설명이 제공되지 않았어요. 구글 지도에서 자세한 정보를 확인해 주세요.\n    \n    \n    \n    장소 수정 · 주변 추천가고 싶은 곳에 보관\n    \n    \n    \n    \n      \n      다시 검색\n    \n    일정 수정일정 삭제\n    \n      \n      지도에서 직접 찍기\n      구글 지도 ↗\n    \n    \n      주변 맛집\n      카페\n      주변 명소\n    \n    엑셀 2행 · 핀을 끌어서 위치를 고칠 수도 있어요\n  \n    ",
+        "error": "⌖사진 정보를 불러오지 못했어요.Google 지도에서 사진 보기 ↗\n    \n    2026-11-01 · 2번째 장소\n    둘째 장소\n    ⌖ 테스트 주소\n    ◷ 12:00–13:00\n    \n    \n    확인함구글 지도에서 보기 ↗\n    장소 정보\n    한국어 장소 설명이 제공되지 않았어요. 구글 지도에서 자세한 정보를 확인해 주세요.\n    \n    자세한 정보를 불러오지 못했어요: NETWORK_FAIL\n    \n    장소 수정 · 주변 추천가고 싶은 곳에 보관\n    \n    \n    \n    \n      \n      다시 검색\n    \n    일정 수정일정 삭제\n    \n      \n      지도에서 직접 찍기\n      구글 지도 ↗\n    \n    \n      주변 맛집\n      카페\n      주변 명소\n    \n    엑셀 3행 · 핀을 끌어서 위치를 고칠 수도 있어요\n  \n    "
+      }
+    }
+  ],
+  "errors": [],
+  "consoleErrors": [
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+  ],
+  "mode": "브라우저 UI + 모의 Google SDK/지도 호출 기록",
+  "screenshots": [
+    "28.png"
+  ],
+  "finalDOM": {
+    "toast": "✓되돌리기삭제 되돌리기",
+    "save": "이 기기에 여행을 자동 저장합니다.",
+    "rows": [
+      "첫 장소",
+      "둘째 장소",
+      "셋째 장소"
+    ]
+  },
+  "mock": {
+    "searches": [
+      {
+        "textQuery": "첫 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793451872450
+      },
+      {
+        "textQuery": "둘째 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793451872450
+      },
+      {
+        "textQuery": "셋째 장소 테스트 주소",
+        "fields": [
+          "id",
+          "displayName",
+          "formattedAddress",
+          "location",
+          "googleMapsURI"
+        ],
+        "maxResultCount": 5,
+        "language": "ko",
+        "region": "kr",
+        "at": 1793451872450
+      }
+    ],
+    "fields": [
+      {
+        "id": "p0",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793451872454
+      },
+      {
+        "id": "p1",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793451872454
+      },
+      {
+        "id": "p2",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793451872454
+      },
+      {
+        "id": "p0",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "rating",
+          "userRatingCount",
+          "regularOpeningHours",
+          "photos",
+          "reviews",
+          "reviewSummary",
+          "editorialSummary",
+          "websiteURI",
+          "nationalPhoneNumber",
+          "isReservable",
+          "hasTakeout",
+          "hasDineIn",
+          "hasDelivery",
+          "servesBreakfast",
+          "servesLunch",
+          "servesDinner",
+          "servesVegetarianFood",
+          "paymentOptions",
+          "isGoodForChildren",
+          "isGoodForGroups",
+          "hasOutdoorSeating",
+          "hasRestroom"
+        ],
+        "at": 1793451872574
+      },
+      {
+        "id": "p1",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "rating",
+          "userRatingCount",
+          "regularOpeningHours",
+          "photos",
+          "reviews",
+          "reviewSummary",
+          "editorialSummary",
+          "websiteURI",
+          "nationalPhoneNumber",
+          "isReservable",
+          "hasTakeout",
+          "hasDineIn",
+          "hasDelivery",
+          "servesBreakfast",
+          "servesLunch",
+          "servesDinner",
+          "servesVegetarianFood",
+          "paymentOptions",
+          "isGoodForChildren",
+          "isGoodForGroups",
+          "hasOutdoorSeating",
+          "hasRestroom"
+        ],
+        "at": 1793451872805
+      }
+    ],
+    "routes": [],
+    "markers": {
+      "0": {
+        "position": {
+          "lat": 35,
+          "lng": 139
+        },
+        "color": "#d93025",
+        "label": "01",
+        "title": "첫 장소",
+        "visible": true
+      },
+      "1": {
+        "position": {
+          "lat": 35.02,
+          "lng": 139.02
+        },
+        "color": "#d93025",
+        "label": "02",
+        "title": "둘째 장소",
+        "visible": true
+      },
+      "2": {
+        "position": {
+          "lat": 35.04,
+          "lng": 139.04
+        },
+        "color": "#1a73e8",
+        "label": "03",
+        "title": "셋째 장소",
+        "visible": true
+      }
+    },
+    "legs": {
+      "0>1": {
+        "segments": [
+          {
+            "kind": "straight",
+            "path": [
+              [
+                35,
+                139
+              ],
+              [
+                35.02,
+                139.02
+              ]
+            ]
+          }
+        ],
+        "color": "#d93025",
+        "visible": true
+      }
+    }
+  },
+  "status": "통과",
+  "finished": "2026-10-31T13:04:33.073Z"
+}

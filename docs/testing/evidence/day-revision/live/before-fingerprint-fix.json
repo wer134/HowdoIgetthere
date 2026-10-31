@@ -1,0 +1,9 @@
+{
+  "mode": "실제 Google 지도 + 실제 Gemini, 모의 응답 없음",
+  "responses": [],
+  "errors": [],
+  "status": "일정이 변경됐어요. 창을 닫고 현재 일정으로 다시 시작해 주세요.",
+  "preview": "",
+  "completed": false,
+  "error": "일정이 변경됐어요. 창을 닫고 현재 일정으로 다시 시작해 주세요.\n\nfalse !== true\n"
+}

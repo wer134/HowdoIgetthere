@@ -1,0 +1,45 @@
+{
+  "id": 57,
+  "started": "2026-10-31T13:02:41.254Z",
+  "steps": "현재 여행 저장본 삭제 확인 → 열린 여행 수정 → 자동 저장 → 새로고침",
+  "checks": [
+    {
+      "name": "자동 저장 부활 방지",
+      "status": "통과",
+      "actual": [
+        "negative-B"
+      ]
+    },
+    {
+      "name": "새로고침 후에도 없음",
+      "status": "통과",
+      "actual": [
+        "negative-B"
+      ]
+    }
+  ],
+  "errors": [],
+  "consoleErrors": [
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+  ],
+  "mode": "브라우저 UI + 모의 Google SDK/지도 호출 기록",
+  "screenshots": [
+    "57.png"
+  ],
+  "finalDOM": {
+    "toast": "✓되돌리기삭제 되돌리기",
+    "save": "이 기기에 여행을 자동 저장합니다.",
+    "rows": []
+  },
+  "mock": {
+    "searches": [],
+    "fields": [],
+    "routes": [],
+    "markers": {},
+    "legs": {}
+  },
+  "status": "통과",
+  "finished": "2026-10-31T13:02:45.954Z"
+}
