@@ -1,0 +1,154 @@
+{
+  "id": 51,
+  "started": "2026-10-31T14:16:25.160Z",
+  "steps": "경로 응답 지연 → 일정 삭제 → 응답 도착 후 모의 선의 대상 비교",
+  "checks": [
+    {
+      "name": "경로 계산 중 이동 처리 제한",
+      "status": "통과",
+      "actual": {
+        "toast": "✓진행 중인 검색이 끝나면 이동해 주세요.되돌리기삭제 되돌리기"
+      }
+    },
+    {
+      "name": "삭제된 일정의 늦은 경로 응답 미반영",
+      "status": "통과",
+      "actual": {
+        "names": [
+          "첫 장소",
+          "셋째 장소"
+        ],
+        "legs": {}
+      }
+    }
+  ],
+  "errors": [],
+  "consoleErrors": [
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+  ],
+  "mode": "브라우저 UI + 모의 Google SDK/지도 호출 기록",
+  "screenshots": [
+    "51.png"
+  ],
+  "finalDOM": {
+    "toast": "✓일정을 삭제했어요. 삭제 되돌리기로 복원할 수 있습니다.되돌리기삭제 되돌리기",
+    "save": "이 기기에 저장됨 · 사진·리뷰 제외",
+    "rows": [
+      "첫 장소",
+      "셋째 장소"
+    ]
+  },
+  "mock": {
+    "searches": [],
+    "fields": [
+      {
+        "id": "p0",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793456185888
+      },
+      {
+        "id": "p1",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793456185888
+      },
+      {
+        "id": "p2",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793456186406
+      },
+      {
+        "id": "p2",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "rating",
+          "userRatingCount",
+          "regularOpeningHours",
+          "photos",
+          "reviews",
+          "reviewSummary",
+          "editorialSummary",
+          "websiteURI",
+          "nationalPhoneNumber",
+          "isReservable",
+          "hasTakeout",
+          "hasDineIn",
+          "hasDelivery",
+          "servesBreakfast",
+          "servesLunch",
+          "servesDinner",
+          "servesVegetarianFood",
+          "paymentOptions",
+          "isGoodForChildren",
+          "isGoodForGroups",
+          "hasOutdoorSeating",
+          "hasRestroom"
+        ],
+        "at": 1793456186406
+      }
+    ],
+    "routes": [
+      {
+        "origin": {
+          "lat": 35,
+          "lng": 139
+        },
+        "destination": {
+          "lat": 35.02,
+          "lng": 139.02
+        },
+        "travelMode": "TRANSIT",
+        "fields": [
+          "path",
+          "legs",
+          "distanceMeters",
+          "durationMillis",
+          "localizedValues",
+          "travelAdvisory"
+        ],
+        "language": "ko",
+        "region": "kr",
+        "departureTime": "2026-11-01T02:00:00.000Z",
+        "at": 1793456186002
+      }
+    ],
+    "markers": {
+      "0": {
+        "position": {
+          "lat": 35,
+          "lng": 139
+        },
+        "color": "#d93025",
+        "label": "01",
+        "title": "첫 장소",
+        "visible": true
+      },
+      "1": {
+        "position": {
+          "lat": 35.04,
+          "lng": 139.04
+        },
+        "color": "#1a73e8",
+        "label": "02",
+        "title": "셋째 장소",
+        "visible": true
+      }
+    },
+    "legs": {}
+  },
+  "status": "통과",
+  "finished": "2026-10-31T14:16:30.003Z"
+}

@@ -1,0 +1,22 @@
+[
+  {
+    "run": "lighthouse-mobile",
+    "categories": {
+      "performance": 93,
+      "accessibility": 100,
+      "best-practices": 96,
+      "seo": 100
+    },
+    "scope": "키 없는 모바일 첫 방문; 관리 환경에서 외부 폰트 요청 실패, 시스템 폰트 fallback 사용; 실제 사용자 p75/INP 아님"
+  },
+  {
+    "run": "lighthouse-mobile-proxy",
+    "categories": {
+      "performance": 92,
+      "accessibility": 100,
+      "best-practices": 96,
+      "seo": 100
+    },
+    "scope": "키 없는 모바일 첫 방문; 관리 환경에서 외부 폰트 요청 실패, 시스템 폰트 fallback 사용; 실제 사용자 p75/INP 아님"
+  }
+]

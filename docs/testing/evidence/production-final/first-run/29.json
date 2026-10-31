@@ -1,0 +1,227 @@
+{
+  "id": 29,
+  "started": "2026-10-31T14:07:58.441Z",
+  "steps": "대표+대체 3개 사진 URL 모두 404 → 실패 상태 및 요청 수 측정",
+  "checks": [
+    {
+      "name": "사진 실패 후 유한 요청",
+      "status": "결함 확인",
+      "actual": {
+        "fields": [
+          {
+            "id": "p0",
+            "fields": [
+              "displayName",
+              "formattedAddress",
+              "photos"
+            ],
+            "at": 1793455679424
+          },
+          {
+            "id": "p0",
+            "fields": [
+              "displayName",
+              "formattedAddress",
+              "photos"
+            ],
+            "at": 1793455679832
+          },
+          {
+            "id": "p0",
+            "fields": [
+              "displayName",
+              "formattedAddress",
+              "rating",
+              "userRatingCount",
+              "regularOpeningHours",
+              "photos",
+              "reviews",
+              "reviewSummary",
+              "editorialSummary",
+              "websiteURI",
+              "nationalPhoneNumber",
+              "isReservable",
+              "hasTakeout",
+              "hasDineIn",
+              "hasDelivery",
+              "servesBreakfast",
+              "servesLunch",
+              "servesDinner",
+              "servesVegetarianFood",
+              "paymentOptions",
+              "isGoodForChildren",
+              "isGoodForGroups",
+              "hasOutdoorSeating",
+              "hasRestroom"
+            ],
+            "at": 1793455681455
+          }
+        ],
+        "urls": [
+          "http://127.0.0.1:8097/negative-photo-1",
+          "http://127.0.0.1:8097/negative-photo-2",
+          "http://127.0.0.1:8097/negative-photo-3",
+          "http://127.0.0.1:8097/negative-photo-1",
+          "http://127.0.0.1:8097/negative-photo-2",
+          "http://127.0.0.1:8097/negative-photo-3"
+        ]
+      }
+    },
+    {
+      "name": "실패 안내",
+      "status": "통과",
+      "actual": "⌖사진 이미지를 열 수 없어요. 브라우저 네트워크 또는 Google Places 사진 사용 권한을 확인해 주세요.Google 지도에서 사진 보기 ↗\n    \n    2026-11-01 · 1번째 장소\n    첫 장소\n    ⌖ 테스트 주소\n    ◷ 10:00–11:00\n    \n    \n    확인함구글 지도에서 보기 ↗\n    장소 정보\n    한국어 장소 설명이 제공되지 않았어요. 구글 지도에서 자세한 정보를 확인해 주세요.\n    \n    \n    \n    장소 수정 · 주변 추천가고 싶은 곳에 보관\n    \n    \n    \n    \n      \n      다시 검색\n    \n    일정 수정일정 삭제\n    \n      \n      지도에서 직접 찍기\n      구글 지도 ↗\n    \n    \n      주변 맛집\n      카페\n      주변 명소\n    \n    엑셀 2행 · 핀을 끌어서 위치를 고칠 수도 있어요\n  \n    "
+    }
+  ],
+  "errors": [],
+  "consoleErrors": [
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ],
+  "mode": "브라우저 UI + 모의 Google SDK/지도 호출 기록",
+  "screenshots": [
+    "29.png"
+  ],
+  "finalDOM": {
+    "toast": "✓되돌리기삭제 되돌리기",
+    "save": "이 기기에 저장됨 · 사진·리뷰 제외",
+    "rows": [
+      "첫 장소",
+      "둘째 장소",
+      "셋째 장소"
+    ]
+  },
+  "mock": {
+    "searches": [],
+    "fields": [
+      {
+        "id": "p0",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793455679424
+      },
+      {
+        "id": "p1",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793455679425
+      },
+      {
+        "id": "p0",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793455679832
+      },
+      {
+        "id": "p1",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "photos"
+        ],
+        "at": 1793455679832
+      },
+      {
+        "id": "p0",
+        "fields": [
+          "displayName",
+          "formattedAddress",
+          "rating",
+          "userRatingCount",
+          "regularOpeningHours",
+          "photos",
+          "reviews",
+          "reviewSummary",
+          "editorialSummary",
+          "websiteURI",
+          "nationalPhoneNumber",
+          "isReservable",
+          "hasTakeout",
+          "hasDineIn",
+          "hasDelivery",
+          "servesBreakfast",
+          "servesLunch",
+          "servesDinner",
+          "servesVegetarianFood",
+          "paymentOptions",
+          "isGoodForChildren",
+          "isGoodForGroups",
+          "hasOutdoorSeating",
+          "hasRestroom"
+        ],
+        "at": 1793455681455
+      }
+    ],
+    "routes": [],
+    "markers": {
+      "0": {
+        "position": {
+          "lat": 35,
+          "lng": 139
+        },
+        "color": "#d93025",
+        "label": "01",
+        "title": "첫 장소",
+        "visible": true
+      },
+      "1": {
+        "position": {
+          "lat": 35.02,
+          "lng": 139.02
+        },
+        "color": "#d93025",
+        "label": "02",
+        "title": "둘째 장소",
+        "visible": true
+      },
+      "2": {
+        "position": {
+          "lat": 35.04,
+          "lng": 139.04
+        },
+        "color": "#1a73e8",
+        "label": "03",
+        "title": "셋째 장소",
+        "visible": true
+      }
+    },
+    "legs": {
+      "0>1": {
+        "segments": [
+          {
+            "kind": "straight",
+            "path": [
+              [
+                35,
+                139
+              ],
+              [
+                35.02,
+                139.02
+              ]
+            ]
+          }
+        ],
+        "color": "#d93025",
+        "visible": true
+      }
+    }
+  },
+  "status": "결함 확인",
+  "finished": "2026-10-31T14:08:01.889Z"
+}

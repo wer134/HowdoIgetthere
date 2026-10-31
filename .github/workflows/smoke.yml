@@ -1,46 +1,91 @@
-name: Smoke test
+name: Production checks
 
 on:
   push:
-    branches: [main]
+    branches: [main, work]
   pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   app:
     runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      APP_URL: http://127.0.0.1:8097
+      NEGATIVE_OUT: /tmp/routeflow-ci/negative-78
+      REVISION_OUT: /tmp/routeflow-ci/day-revision
+      STABILITY_OUT: /tmp/routeflow-ci/stability
+      JOURNEY_OUT: /tmp/routeflow-ci/journey
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Check JavaScript syntax
+          cache: npm
+      - run: npm ci
+      - name: Scan Git history for secrets (redacted)
         run: |
-          node --check server.js
-          node --check js/app.js
-      - name: Test AI providers
-        run: npm test
-      - name: Start app and check served files
+          curl -fsSL --retry 3 https://github.com/gitleaks/gitleaks/releases/download/v8.30.0/gitleaks_8.30.0_linux_x64.tar.gz -o /tmp/gitleaks.tar.gz
+          echo '79a3ab579b53f71efd634f3aaf7e04a0fa0cf206b7ed434638d1547a2470a66e  /tmp/gitleaks.tar.gz' | sha256sum -c -
+          tar -xzf /tmp/gitleaks.tar.gz -C /tmp gitleaks
+          mkdir -p /tmp/routeflow-ci
+          /tmp/gitleaks git --redact --report-format json --report-path /tmp/routeflow-ci/secrets.json --log-opts='--all' .
+      - name: Check source, dependencies, units and release
         run: |
-          npm start -- --no-open > /tmp/routeflow-server.log 2>&1 &
+          git ls-files '*.js' '*.cjs' ':!:vendor/*' | while IFS= read -r file; do node --check "$file"; done
+          npm audit --audit-level=moderate
+          npm test
+          npm run build
+          npm run check:release
+      - name: Install isolated test browser
+        run: |
+          npx playwright install --with-deps chromium
+          node -e "console.log('CHROMIUM_PATH=' + require('playwright').chromium.executablePath())" >> "$GITHUB_ENV"
+      - name: Start production artifact
+        run: |
+          PORT=8097 HOST=127.0.0.1 npm run start:production > /tmp/routeflow-ci/server.log 2>&1 &
+          for attempt in {1..40}; do
+            if curl -fsS "$APP_URL/healthz"; then exit 0; fi
+            sleep 0.25
+          done
+          exit 1
+      - name: Browser journeys and import stability (external APIs mocked or blocked)
+        run: |
+          node tests/browser/production-stability.cjs
+          node tests/browser/day-revision.cjs
+          node tests/browser/traveler-journey.cjs
+          node tests/browser/travel-order.cjs
+          node tests/browser/travel-drag.cjs
+          node tests/browser/travel-safety.cjs
+      - name: All 78 negative cases (8 explicitly unavailable)
+        run: |
+          node docs/testing/repro/negative-78.cjs
           node --input-type=module <<'JS'
+          import fs from 'node:fs';
           import assert from 'node:assert/strict';
-          const base = 'http://127.0.0.1:8080';
-          for (let attempt = 0; attempt < 40; attempt++) {
-            try {
-              const response = await fetch(base);
-              if (response.ok) break;
-            } catch {}
-            await new Promise((resolve) => setTimeout(resolve, 250));
-          }
-          for (const [path, type] of [
-            ['/', 'text/html'],
-            ['/js/app.js', 'text/javascript'],
-            ['/vendor/xlsx.full.min.js', 'text/javascript'],
-            ['/' + encodeURIComponent('지도_양식.xlsx'), 'spreadsheetml'],
-          ]) {
-            const response = await fetch(base + path);
-            assert.equal(response.status, 200, path);
-            assert.match(response.headers.get('content-type'), new RegExp(type), path);
-            assert((await response.arrayBuffer()).byteLength > 0, path);
-          }
+          const results = JSON.parse(fs.readFileSync(process.env.NEGATIVE_OUT + '/results.json'));
+          assert.equal(results.length, 78);
+          assert.equal(results.filter(r => r.status === '통과').length, 70);
+          assert.deepEqual(results.filter(r => r.status === '검증 불가').map(r => r.id), [40,50,59,67,69,71,72,75]);
           JS
+      - name: Lighthouse lab measurement (keyless first visit)
+        env:
+          CHROME_PATH: ${{ env.CHROMIUM_PATH }}
+        run: npx lighthouse "$APP_URL" --chrome-flags='--headless --no-sandbox' --only-categories=performance,accessibility,best-practices,seo --output=json --output-path=/tmp/routeflow-ci/lighthouse.json --quiet
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: production-check-evidence
+          path: /tmp/routeflow-ci
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        with:
+          name: production-dist
+          path: dist/
+          include-hidden-files: true
+          retention-days: 14

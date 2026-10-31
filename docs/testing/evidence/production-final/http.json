@@ -1,0 +1,108 @@
+{
+  "mode": "운영 산출물 실제 HTTP, API 호출 없음",
+  "release": "c56afc3437629eed",
+  "checks": [
+    {
+      "path": "/",
+      "status": 200,
+      "bytes": 39902,
+      "cache": "no-cache",
+      "contentType": "text/html; charset=utf-8"
+    },
+    {
+      "path": "/.git/HEAD",
+      "status": 404,
+      "bytes": 9,
+      "cache": null,
+      "contentType": "text/plain; charset=utf-8"
+    },
+    {
+      "path": "/.git/config",
+      "status": 404,
+      "bytes": 9,
+      "cache": null,
+      "contentType": "text/plain; charset=utf-8"
+    },
+    {
+      "path": "/.env",
+      "status": 404,
+      "bytes": 9,
+      "cache": null,
+      "contentType": "text/plain; charset=utf-8"
+    },
+    {
+      "path": "/server.js",
+      "status": 404,
+      "bytes": 9,
+      "cache": null,
+      "contentType": "text/plain; charset=utf-8"
+    },
+    {
+      "path": "/docs/testing/production-readiness.md",
+      "status": 404,
+      "bytes": 9,
+      "cache": null,
+      "contentType": "text/plain; charset=utf-8"
+    },
+    {
+      "path": "/runtime-config.js",
+      "status": 200,
+      "bytes": 45,
+      "cache": "no-cache",
+      "contentType": "text/javascript; charset=utf-8"
+    },
+    {
+      "path": "/privacy.html",
+      "status": 200,
+      "bytes": 3412,
+      "cache": "no-cache",
+      "contentType": "text/html; charset=utf-8"
+    },
+    {
+      "path": "/terms.html",
+      "status": 200,
+      "bytes": 2884,
+      "cache": "no-cache",
+      "contentType": "text/html; charset=utf-8"
+    },
+    {
+      "path": "/robots.txt",
+      "status": 200,
+      "bytes": 84,
+      "cache": "no-cache",
+      "contentType": "text/plain; charset=utf-8"
+    },
+    {
+      "path": "/sitemap.xml",
+      "status": 200,
+      "bytes": 327,
+      "cache": "no-cache",
+      "contentType": "application/xml; charset=utf-8"
+    },
+    {
+      "path": "/assets/og-routeflow.png",
+      "status": 200,
+      "bytes": 40480,
+      "cache": "no-cache",
+      "contentType": "image/png"
+    },
+    {
+      "path": "/healthz",
+      "status": 200,
+      "bytes": 2,
+      "cache": "no-store",
+      "contentType": "text/plain"
+    },
+    {
+      "path": "versioned app.js",
+      "encoding": "br",
+      "cache": "public, max-age=31536000, immutable",
+      "security": {
+        "X-Content-Type-Options": "nosniff",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "Content-Security-Policy": "object-src 'none'; base-uri 'self'; frame-ancestors 'none'",
+        "Permissions-Policy": "camera=(), microphone=(), geolocation=()"
+      }
+    }
+  ]
+}

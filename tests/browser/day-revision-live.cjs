@@ -10,7 +10,7 @@ fs.mkdirSync(OUT, { recursive: true });
 const secrets = [process.env.googlemap, process.env.geminiapi].filter(Boolean);
 const clean = value => secrets.reduce((s, key) => s.split(key).join('[REDACTED]'), String(value));
 (async () => {
-  const b = await chromium.launch({ executablePath: '/usr/bin/chromium', proxy: { server: process.env.HTTPS_PROXY, bypass: '127.0.0.1,localhost' }, args: ['--no-sandbox', '--enable-unsafe-swiftshader'] });
+  const b = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/usr/bin/chromium', proxy: { server: process.env.HTTPS_PROXY, bypass: '127.0.0.1,localhost' }, args: ['--no-sandbox', '--enable-unsafe-swiftshader'] });
   const report = { mode: '실제 Google 지도 + 실제 Gemini, 모의 응답 없음', responses: [], errors: [] };
   try {
     const p = await b.newPage({ viewport: { width: 1440, height: 1000 }, locale: 'ko-KR' });
@@ -22,6 +22,15 @@ const clean = value => secrets.reduce((s, key) => s.split(key).join('[REDACTED]'
         const body = await r.json().catch(() => ({})); entry.usage = body.usageMetadata;
       }
     });
+    if (process.env.LIVE_BYOK === '1') {
+      assert(process.env.googlemap && process.env.geminiapi, 'Live BYOK credentials required');
+      await p.addInitScript(({ maps, gemini }) => {
+        localStorage.setItem('googleMapsApiKey', maps);
+        localStorage.setItem('geminiApiKey', gemini);
+        localStorage.setItem('plannerProvider', 'gemini');
+      }, { maps: process.env.googlemap, gemini: process.env.geminiapi });
+      report.keyMode = '운영 빌드 + 별도 테스트 브라우저 BYOK 설정';
+    }
     await p.goto(BASE);
     await p.waitForFunction(() => document.querySelector('#syncText').textContent === '지도 연결됨', null, { timeout: 30000 });
     await p.waitForTimeout(2000);

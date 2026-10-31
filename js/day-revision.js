@@ -68,6 +68,19 @@ function validTime(value) {
   return !m[3] || +m[3] * 60 + +m[4] >= +m[1] * 60 + +m[2];
 }
 
+// Explicit same-day ranges only. Overnight plans must be split at the date boundary.
+function checkTimeline(items) {
+  let previousEnd = null;
+  for (const item of items) {
+    if (!item.time.trim()) continue;
+    const m = item.time.match(/^(\d{2}):(\d{2})(?:[–-](\d{2}):(\d{2}))?$/);
+    if (!m || !validTime(item.time)) throw new Error('시간이 미정이거나 형식이 모호해요. HH:MM 또는 HH:MM–HH:MM으로 정리한 뒤 다시 요청해 주세요. 자정을 넘는 일정은 날짜별로 나눠 주세요.');
+    const start = +m[1] * 60 + +m[2], end = m[3] ? +m[3] * 60 + +m[4] : start;
+    if (previousEnd != null && start < previousEnd) throw new Error('AI 수정안의 시간이 겹치거나 순서가 뒤바뀌었어요. 잠근 예약과 이동 시간을 고려해 다시 요청해 주세요.');
+    previousEnd = end;
+  }
+}
+
 export function validateRevision(data, entries) {
   const fail = () => { throw new Error('AI 수정안이 기존 일정 또는 잠금 조건과 맞지 않아요. 요청을 바꿔 다시 시도해 주세요.'); };
   if (!data || typeof data.summary !== 'string' || data.summary.length > 5000 || !Array.isArray(data.items) || !data.items.length || data.items.length > 100) fail();
@@ -82,6 +95,7 @@ export function validateRevision(data, entries) {
     if (item.id) seen.add(item.id);
   }
   if (entries.some(e => e.locked && !seen.has(e.id))) fail();
+  checkTimeline(data.items);
   return data;
 }
 

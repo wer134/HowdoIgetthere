@@ -7,7 +7,7 @@ import { CACHE_TTL, withRetry } from './places.js';
 const ROUTE_FIELDS = ['path', 'legs', 'distanceMeters', 'durationMillis', 'localizedValues', 'travelAdvisory'];
 const DAY = 24 * 60 * 60 * 1000;
 
-const store = createStore('routesCache.v2', CACHE_TTL); // v2: 대중교통 요금을 함께 저장
+const store = createStore('routesCache.v2', CACHE_TTL, value => value === null || (value && Number.isFinite(value.distance) && Number.isFinite(value.duration) && Array.isArray(value.segments) && value.segments.every(s => s && Array.isArray(s.path) && s.path.every(p => Array.isArray(p) && p.length === 2 && p.every(Number.isFinite))))); // v2: 대중교통 요금을 함께 저장
 const inflight = new Map();
 
 export const MODES = {

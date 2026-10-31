@@ -33,15 +33,20 @@ export const storage = {
 };
 
 // localStorage에 두는 결과 보관함. ttl이 지난 것은 버리고, 공간이 모자라면 오래된 절반을 버린다
-export function createStore(key, ttl) {
+export function createStore(key, ttl, validateResult = () => true) {
   let data = null;
   let timer = null;
+  const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+  const validEntry = (entry, now) => object(entry) && Number.isFinite(entry.t)
+    && entry.t <= now && now - entry.t <= ttl && Object.hasOwn(entry, 'r') && validateResult(entry.r);
   const load = () => {
     if (!data) {
       try { data = JSON.parse(storage.get(key) || '{}'); } catch { data = {}; }
+      if (!object(data)) data = {};
+      data = Object.assign(Object.create(null), data);
       const now = Date.now();
       for (const [k, entry] of Object.entries(data)) {
-        if (!entry || now - entry.t > ttl) delete data[k];
+        if (!validEntry(entry, now)) delete data[k];
       }
     }
     return data;
@@ -53,15 +58,16 @@ export function createStore(key, ttl) {
     storage.set(key, JSON.stringify(data));
   };
   return {
-    has: (k) => Object.hasOwn(load(), k),
-    get: (k) => load()[k]?.r,
+    has: (k) => { const values = load(); if (!validEntry(values[k], Date.now())) delete values[k]; return Object.hasOwn(values, k); },
+    get: (k) => { const values = load(); if (!validEntry(values[k], Date.now())) delete values[k]; return values[k]?.r; },
     set(k, value) {
       load()[k] = { t: Date.now(), r: value };
       clearTimeout(timer);
       timer = setTimeout(save, 500);
     },
     clear() {
-      data = {};
+      clearTimeout(timer);
+      data = Object.create(null);
       storage.remove(key);
     },
   };

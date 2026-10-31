@@ -1,0 +1,22 @@
+const {chromium}=require('playwright');const assert=require('node:assert/strict');const fs=require('node:fs');
+const BASE=process.env.APP_URL||'http://127.0.0.1:8096',OUT=process.env.STABILITY_OUT||'/tmp/routeflow-production-stability';fs.mkdirSync(OUT,{recursive:true});
+(async()=>{const b=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',args:['--no-sandbox']});const results=[];
+try{const c=await b.newContext({viewport:{width:1440,height:900}});await c.route('**/*',r=>r.request().url().startsWith(BASE)?r.continue():r.abort());
+const p=await c.newPage();p.setDefaultTimeout(10000);const errors=[];p.on('pageerror',e=>errors.push(e.message));await p.goto(BASE);
+await p.click('#newTravel');await p.fill('#travelName','운영 안정성 테스트');await p.fill('#travelStart','2026-11-07');await p.click('#newTravelForm button');
+await p.click('#scheduleAdd');await p.fill('#scheduleName','보존할 장소');await p.fill('#scheduleMemo','보존할 개인 메모');await p.click('#scheduleForm button[type=submit]');await p.waitForTimeout(600);
+const get=()=>p.evaluate(()=>Object.values(JSON.parse(localStorage.getItem('routeflow.travels.v1')))[0]);const before=await get();assert.equal(before.records.length,1);
+await p.evaluate(()=>{const original=window.structuredClone;window.__snapshotClones=0;window.structuredClone=function(value,...args){if(value?.records&&value?.mapping)window.__snapshotClones++;return original.call(this,value,...args);};});
+for(let i=0;i<6;i++){await p.fill('#workspaceSearch','없음');await p.fill('#workspaceSearch','');await p.click('#travelLibraryTab');await p.click('#travelPlanTab');}
+await p.waitForTimeout(600);assert.equal(await p.evaluate(()=>__snapshotClones),0);results.push({name:'읽기 전용 탐색에서 전체 snapshot 복제 없음',status:'통과'});
+await p.setInputFiles('#fileInput',{name:'too-large.csv',mimeType:'text/csv',buffer:Buffer.alloc(20*1024*1024+1,32)});await p.waitForFunction(()=>document.querySelector('#toast').textContent.includes('20MB'));assert.deepEqual((await get()).records,before.records);
+await p.route('**/js/excel-worker.js*',async r=>{await new Promise(resolve=>setTimeout(resolve,600));await r.continue().catch(()=>{});});
+await p.setInputFiles('#fileInput',{name:'cancel.csv',mimeType:'text/csv',buffer:Buffer.from('장소,날짜\n새 장소,2026-11-08')});await p.click('#importCancel');await p.waitForFunction(()=>document.querySelector('#toast').textContent.includes('취소'));await p.waitForTimeout(800);assert.deepEqual((await get()).records,before.records);await p.unroute('**/js/excel-worker.js*');
+results.push({name:'크기 초과·취소 후 기존 여행 유지',status:'통과'});
+const worker=await p.evaluate(async()=>{const {parseWorkbookAsync}=await import('/js/excel-loader.js');const lines=['장소,날짜,시간',...Array.from({length:2000},(_,i)=>`장소 ${i},2026-11-07,10:00`)];let ticks=0;const interval=setInterval(()=>ticks++,5);const start=performance.now();const result=await parseWorkbookAsync(new File([lines.join('\n')],'many.csv'));clearInterval(interval);return{rows:result.parsedSheets[result.defaultSheet].records.length,ticks,milliseconds:Math.round(performance.now()-start)};});assert.equal(worker.rows,2000);assert(worker.ticks>0);results.push({name:'2,000행 실제 Worker 파싱 중 UI 타이머 실행',status:'통과',...worker});
+await p.route('**/js/excel-worker.js*',r=>r.fulfill({contentType:'text/javascript',body:'self.onmessage=()=>{while(true){}}'}));
+const timed=await p.evaluate(async()=>{const {parseWorkbookAsync}=await import('/js/excel-loader.js');try{await parseWorkbookAsync(new File(['장소\n공원'],'timeout.csv'),{timeout:150});return false;}catch(e){return /초과/.test(e.message);}});assert(timed);await p.unroute('**/js/excel-worker.js*');results.push({name:'멈춘 Worker 시간 제한·종료',status:'통과',mode:'Worker 정지 모의 주입'});
+await p.setInputFiles('#fileInput',{name:'valid.csv',mimeType:'text/csv',buffer:Buffer.from('장소,날짜,시간,메모\n새 일정,2026-11-08,10:00,새 메모')});await p.waitForFunction(()=>document.querySelector('#fileName').textContent==='valid.csv');await p.waitForTimeout(600);
+const stored=await p.evaluate(()=>Object.values(JSON.parse(localStorage.getItem('routeflow.travels.v1'))));assert.equal(stored.length,2);assert(stored.some(t=>t.records[0].cells.some(c=>c?.v==='새 일정')));
+await p.screenshot({path:OUT+'/imported.png',fullPage:true});assert.deepEqual(errors,[]);results.push({name:'취소 후 재시도·원본 여행과 새 여행 저장',status:'통과'});
+fs.writeFileSync(OUT+'/results.json',JSON.stringify(results,null,2));console.log(JSON.stringify(results,null,2));await c.close();}finally{await b.close();}})().catch(e=>{console.error(e);process.exitCode=1;});
