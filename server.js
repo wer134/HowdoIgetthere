@@ -1,6 +1,7 @@
 // 앱을 내 컴퓨터에서 띄우는 작은 정적 파일 서버 (설치할 패키지 없음)
 // 실행: node server.js        포트 바꾸기: PORT=9000 node server.js        브라우저 자동 열기 끄기: --no-open
 import http from 'node:http';
+import { buildRuntimeConfig } from './runtime-config-builder.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { exec } from 'node:child_process';
@@ -32,8 +33,7 @@ const server = http.createServer((req, res) => {
   }
   if (pathname.endsWith('/')) pathname += 'index.html';
   if (pathname === '/runtime-config.js') {
-    const key = process.env.googleAPI;
-    const script = key ? `window.APP_CONFIG.googleMapsApiKey = ${JSON.stringify(key)};` : '';
+    const script = buildRuntimeConfig(process.env);
     res.writeHead(200, {
       'Content-Type': 'text/javascript; charset=utf-8',
       'Cache-Control': 'no-store',

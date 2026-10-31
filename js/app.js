@@ -1430,9 +1430,9 @@ function goToLeg(key) {
 
 /* ───────────── 여행 일정 추천 ───────────── */
 
-function aiSettings(provider = storage.get('plannerProvider') || (storage.get(CLAUDE_KEY_STORAGE) ? 'claude' : 'google')) {
+function aiSettings(provider = storage.get('plannerProvider') || (storage.get(CLAUDE_KEY_STORAGE) ? 'claude' : CFG.geminiApiKey ? 'gemini' : 'google')) {
   const config = AI_PROVIDERS[provider];
-  return { provider: config ? provider : 'google', key: config ? storage.get(config.keyStorage) || '' : '', model: config ? storage.get(`plannerModel.${provider}`) || config.model : '' };
+  return { provider: config ? provider : 'google', key: config ? (storage.get(config.keyStorage) ?? CFG[config.keyStorage] ?? '') : '', model: config ? storage.get(`plannerModel.${provider}`) || config.model : '' };
 }
 function fillAISettings() {
   const selected = aiSettings(els.aiProvider.value);
@@ -1441,6 +1441,8 @@ function fillAISettings() {
   els.aiModel.disabled = els.claudeKeyInput.disabled = selected.provider === 'google';
   els.geminiModels.classList.toggle('hidden', selected.provider !== 'gemini');
   els.geminiModelList.classList.add('hidden');
+  const binding = AI_PROVIDERS[selected.provider]?.keyStorage;
+  if (binding && CFG[binding] && storage.get(binding) == null) els.claudeKeyStatus.textContent = '환경에 설정된 키를 사용합니다. 이 브라우저에서 사용을 중지하려면 키를 비우고 저장하세요.';
 }
 const PLAN_CURRENCIES = ['KRW', 'JPY', 'USD', 'EUR'];
 
@@ -3046,7 +3048,7 @@ els.claudeKeyForm.addEventListener('submit', (e) => {
   let saved = storage.set('plannerProvider', provider);
   if (config) {
     if (key) saved = storage.set(config.keyStorage, key) && saved;
-    else storage.remove(config.keyStorage);
+    else saved = storage.set(config.keyStorage, '') && saved;
     saved = storage.set(`plannerModel.${provider}`, els.aiModel.value.trim() || config.model) && saved;
   }
   els.claudeKeyStatus.textContent = !saved ? '브라우저 저장소에 저장하지 못했어요. 저장소 접근 설정을 확인해 주세요.'
