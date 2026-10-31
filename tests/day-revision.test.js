@@ -83,3 +83,17 @@ test('취소된 AI 요청은 그대로 취소돼 적용안이 생기지 않는�
   const c = new AbortController(); c.abort();
   await assert.rejects(reviseDay({ snapshot, day, instruction: '수정' }, { provider: 'gemini', apiKey: 'test', signal: c.signal }), { name: 'AbortError' });
 });
+
+test('overlap, reversed row ordering and overlap with locked reservation are rejected', () => {
+  for (const times of [['10:00–11:00','10:30–11:30'], ['12:00','09:00'], ['09:00–10:30','10:00']]) {
+    const p=structuredClone(proposal);p.items.forEach((item,i)=>item.time=times[i]);
+    assert.throws(()=>validateRevision(p,revisionEntries(snapshot,day)),/겹치|순서/);
+  }
+});
+test('adjacent slots and unspecified times pass; overnight and ambiguous old times require clarification', () => {
+  for(const times of [['09:00–10:00','10:00'], ['','10:00'],['09:00','']]) {
+    const p=structuredClone(proposal);p.items.forEach((item,i)=>item.time=times[i]);assert.doesNotThrow(()=>validateRevision(p,revisionEntries(snapshot,day)));
+  }
+  const p=structuredClone(proposal);p.items[0].time='23:00–01:00';assert.throws(()=>validateRevision(p,revisionEntries(snapshot,day)));
+  const entries=revisionEntries(snapshot,day);entries[1].time=p.items[0].time='오전 중';assert.throws(()=>validateRevision(p,entries),/모호/);
+});

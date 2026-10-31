@@ -8,7 +8,7 @@ const PLACE_FIELDS = ['id', 'displayName', 'formattedAddress', 'location', 'goog
 const MAX_RESULTS = 5;
 
 let loading = null;
-const store = createStore('placesCache.v1', CACHE_TTL);
+const store = createStore('placesCache.v1', CACHE_TTL, value => Array.isArray(value) && value.every(p => p && typeof p.name === 'string' && Number.isFinite(p.lat) && Number.isFinite(p.lng)));
 const inflight = new Map(); // 같은 검색어가 동시에 들어오면 요청은 한 번만
 
 export function loadGoogleMaps({ key, language, region }) {
