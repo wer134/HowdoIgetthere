@@ -1,5 +1,5 @@
 /* 재현: APP_URL=http://127.0.0.1:8093 node docs/testing/repro/negative-78.cjs
- * 별도 Chromium 프로세스 + 항목별 격리 BrowserContext. 실제 API 호출은 차단한다.
+ * 별도 Chromium 프로세스 + 항목별 격리 BrowserContext. 실제 API 호출과 환경 키 주입은 차단한다.
  * ONLY=7,8 로 선택 실행 가능. 기존 결과는 실행할 때 덮어쓴다.
  */
 const { chromium } = require('playwright');
@@ -219,7 +219,7 @@ async function main() {
   if(only&&!only.has(id))continue;
   const t=cases.get(id),record={id,started:new Date().toISOString(),steps:t?.steps||'',checks:[],errors:[],consoleErrors:[],mode:'브라우저 UI + 모의 Google SDK/지도 호출 기록',screenshots:[]};
   const c=await browser.newContext({viewport:{width:1440,height:900},locale:'ko-KR',...(id===15?{}:{timezoneId:'Asia/Seoul'}),acceptDownloads:true});
-  await c.route('**/*',route=>{const url=route.request().url();if(!url.startsWith(BASE)&&!url.startsWith('blob:')&&!url.startsWith('data:'))return route.abort('blockedbyclient');if(new URL(url).pathname==='/js/mapview.js')return route.fulfill({contentType:'text/javascript',body:fs.readFileSync(path.join(__dirname,'mapview-mock.js'),'utf8')});return route.continue();});
+  await c.route('**/*',route=>{const url=route.request().url();if(!url.startsWith(BASE)&&!url.startsWith('blob:')&&!url.startsWith('data:'))return route.abort('blockedbyclient');if(new URL(url).pathname==='/runtime-config.js')return route.fulfill({contentType:'text/javascript',body:'window.APP_CONFIG = window.APP_CONFIG || {};'});if(new URL(url).pathname==='/js/mapview.js')return route.fulfill({contentType:'text/javascript',body:fs.readFileSync(path.join(__dirname,'mapview-mock.js'),'utf8')});return route.continue();});
   await c.addInitScript({path:path.join(__dirname,'google-mock.js')});
   const a=trip(),b=trip('negative-B','부정 테스트 B',[['다른 여행 장소',D,'09:00']]);
   await c.addInitScript(({a,b,id,KEY})=>{if(!localStorage.getItem('negative-seeded')){localStorage.setItem(KEY,JSON.stringify({[a.id]:a,[b.id]:b}));localStorage.setItem('googleMapsApiKey','NOT_A_REAL_KEY_NEGATIVE_TEST');localStorage.setItem('negative-seeded','1');}if(id===28)__mock.details.p1={error:'NETWORK_FAIL'};if(id===29)__mock.details.p0={photos:['/negative-photo-1','/negative-photo-2','/negative-photo-3']};if(id===47||id===48)__mock.mapDelay=600;},{a,b,id,KEY});
