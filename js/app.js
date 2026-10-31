@@ -1,3 +1,5 @@
+import { BoundedMap, BoundedSet } from './memory-cache.js';
+import { parseWorkbookAsync } from './excel-loader.js';
 import { encodeTravelBackup, decodeTravelBackup, MAX_BACKUP_BYTES, itineraryContent, itineraryDocument } from './travel-portability.js';
 import { createTravelStore, validTravel } from './travel-store.js';
 import { revisionDays, revisionFingerprint } from './day-revision.js';
@@ -5,7 +7,7 @@ import { setupDayRevision } from './day-revision-ui.js';
 // 화면 흐름: API 키 → 엑셀 올리기 → 열 맞추기 → 장소 검색·지도 표시 → 동선 → 결과 확인·내보내기
 import { escapeHtml, safeUrl, downloadBlob, storage, PALETTE, STATUS, normalizeText, similarity } from './util.js';
 import {
-  FIELDS, RESULT_COLUMNS, readWorkbook, parseSheet, pickDefaultSheet, autoMap,
+  FIELDS, RESULT_COLUMNS, parseSheet, pickDefaultSheet, autoMap,
   cellText, cellNumber, downloadTemplate, buildResultWorkbook, placeUrl,
 } from './excel.js';
 import { loadGoogleMaps, searchPlaces, isCached, classifyError, clearCache, languageFor } from './places.js';
@@ -265,19 +267,37 @@ async function initMap() {
 
 /* ───────────── 엑셀 읽기 / 열 맞추기 ───────────── */
 
+let importController = null;
+let importGeneration = 0;
+document.getElementById('importCancel').onclick = () => importController?.abort();
 async function handleFile(file) {
   if (!file) return;
+  importController?.abort();
+  const controller = new AbortController(), generation = ++importGeneration;
+  importController = controller;
+  document.getElementById('importProgress').classList.remove('hidden');
+  document.getElementById('importStatus').textContent = '파일을 확인하고 일정을 읽는 중…';
   try {
-    const buffer = await file.arrayBuffer();
-    const workbook = readWorkbook(buffer, file.name);
-    await saveTravelNow(); deleteUndoAction = null; deleteUndoButton.classList.add('hidden'); undoToastAction = null; toastUndoButton.classList.add('hidden'); travelReady = true; travelId = crypto.randomUUID(); travelLibrary = []; travelDates = []; travelSearchVersion++; travelEl('travelSearchResults').replaceChildren();
+    const { buffer, workbook, parsedSheets, defaultSheet } = await parseWorkbookAsync(file, {signal:controller.signal});
+    if (generation !== importGeneration || controller.signal.aborted) return;
+    const saved = await saveTravelNow();
+    if (saved && !saved.ok) throw new Error('현재 여행을 저장하지 못했어요. 먼저 백업한 뒤 파일을 가져와 주세요.');
+    if (generation !== importGeneration || controller.signal.aborted) return;
+    state.parsedSheets = parsedSheets;
+    state.defaultSheet = defaultSheet;
+    deleteUndoAction = null; deleteUndoButton.classList.add('hidden'); undoToastAction = null; toastUndoButton.classList.add('hidden'); travelReady = true; travelId = crypto.randomUUID(); travelLibrary = []; travelDates = []; travelSearchVersion++; travelEl('travelSearchResults').replaceChildren();
     document.body.classList.remove('travel-native');
     state.workbook = workbook;
     state.fileBuffer = buffer;
   } catch (err) {
+    if (generation !== importGeneration) return;
+    const message = controller.signal.aborted ? '파일 가져오기를 취소했어요. 기존 여행은 유지됩니다.' : err?.message || String(err);
+    showToast(message);
     els.dropTitle.textContent = '파일을 읽지 못했습니다';
-    els.dropSub.textContent = err?.message || String(err);
+    els.dropSub.textContent = message;
     return;
+  } finally {
+    if (generation === importGeneration) {importController = null;els.fileInput.value = '';document.getElementById('importProgress').classList.add('hidden');}
   }
   state.fileName = file.name;
   state.fileBase = file.name.replace(/\.[^.]+$/, '');
@@ -291,7 +311,7 @@ async function handleFile(file) {
   const names = state.workbook.SheetNames;
   els.sheetSelect.innerHTML = names.map((n) => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
   els.sheetField.classList.toggle('hidden', names.length < 2);
-  loadSheet(pickDefaultSheet(state.workbook));
+  loadSheet(state.defaultSheet || pickDefaultSheet(state.workbook));
   els.columnsPanel.classList.remove('hidden');
   setColumnsOpen(state.mapping.name < 0);
   showToast(`일정 파일을 불러왔어요 · ${state.records.length}행`);
@@ -303,9 +323,10 @@ function setColumnsOpen(open) {
 }
 
 function loadSheet(name) {
+  resetMediaCaches();
   state.sheetName = name;
   els.sheetSelect.value = name;
-  const { headers, records, startCol } = parseSheet(state.workbook, name);
+  const { headers, records, startCol } = state.parsedSheets?.[name] || parseSheet(state.workbook, name);
   state.headers = headers;
   state.records = records;
   state.startCol = startCol;
@@ -328,6 +349,7 @@ function loadSheet(name) {
 function previewItinerary() {
   if (state.running || state.mapping.name < 0) return;
   state.items = buildItems().items;
+  scheduleTravelSave();
   state.selected = null;
   state.day = null;
   state.filter = "all";
@@ -518,6 +540,7 @@ function judge(name, candidates) {
 const searchOptions = (language) => ({ language, region: CFG.region });
 
 function applyCandidates(it, candidates) {
+  scheduleTravelSave();
   it.candidates = candidates;
   it.place = candidates[0] || null;
   Object.assign(it, judge(it.searchName, candidates));
@@ -585,6 +608,7 @@ async function run() {
   await Promise.all(Array.from({ length: Math.max(1, CFG.concurrency) }, worker));
 
   state.running = false;
+  scheduleTravelSave();
   if (fatal) state.alert = fatalMessage(fatal);
   buildLegs();
   drawLegs();
@@ -662,6 +686,7 @@ function select(idx, from) {
 
 // 핀을 끌어 옮기거나 지도에서 직접 찍었을 때
 function placeManually(idx, lat, lng) {
+  scheduleTravelSave();
   if (idx < 0) return;
   const it = state.items[idx];
   it.place = { id: '', name: '', address: '직접 지정한 위치', url: '', lat, lng };
@@ -1225,6 +1250,7 @@ function syncItemTimes() {
 // 칸을 바꾼다. 되돌릴 수 있게 원래 칸을 남기고, 엑셀로 저장할 때 이 목록의 칸만 원래 파일에 써 넣는다
 // changes: [{ index(records 번호), col, text } | { index, col, number }(위도·경도) | { index, col, text, minutes }(시각)]
 function applyCellEdits(changes) {
+  scheduleTravelSave();
   for (const c of changes) {
     const rec = state.records[c.index];
     const text = c.number != null ? String(c.number) : c.text;
@@ -1296,6 +1322,7 @@ function rideFlag(leg) {
 }
 
 function undoEdits() {
+  scheduleTravelSave();
   for (const e of [...state.planEdits].reverse()) state.records[e.index].cells[e.col] = e.before;
   state.planEdits = [];
   state.picks.clear();
@@ -1756,12 +1783,25 @@ function focusRec(id, from) {
 }
 
 // 장소 ID → { loading } | { data } | { error } (구글 약관상 이 페이지를 연 동안만 기억한다)
-const recDetails = new Map();
-const photoStates = new Map();
+const recDetails = new BoundedMap(200);
+const photoStates = new BoundedMap(300);
 const photoQueue = [];
 const unresolvedPhotoStates = new WeakMap();
-const failedPhotoUrls = new Set();
+const failedPhotoUrls = new BoundedSet(300);
 let activePhotoRequests = 0;
+const photoObserved = new Set();
+const photoObserver = typeof IntersectionObserver === 'undefined' ? null : new IntersectionObserver(entries => {
+  const items = entries.filter(entry => entry.isIntersecting).map(entry => state.items[Number(entry.target.dataset.idx)]).filter(Boolean);
+  if (items.length) queuePlacePhotos(items);
+}, {rootMargin:'200px'});
+function observeVisiblePhotos() {
+  for (const node of photoObserved) if (!node.isConnected) {photoObserver?.unobserve(node);photoObserved.delete(node);}
+  if (!photoObserver) {queuePlacePhotos(state.items.filter(it => it.idx === state.selected));return;}
+  for (const node of els.resultList.querySelectorAll('li.item')) if (!photoObserved.has(node)) {photoObserved.add(node);photoObserver.observe(node);}
+}
+function resetMediaCaches() {
+  photoQueue.length = 0; photoObserver?.disconnect(); photoObserved.clear(); recDetails.clear(); photoStates.clear(); failedPhotoUrls.clear();
+}
 
 const hasJapaneseText = (value) => /[\p{Script=Hiragana}\p{Script=Katakana}]/u.test(value || '');
 const hasJapaneseName = (value) => /[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}]/u.test(value || '');
@@ -1821,6 +1861,7 @@ async function loadQueuedPhoto(it) {
       }
       id = matched.id;
       Object.assign(originalPlace, { id, name: matched.name, address: matched.address, url: matched.url });
+      scheduleTravelSave();
       resolvedPlaces.set(it.cells, { id, name: matched.name, address: matched.address, url: matched.url });
       unresolvedPhotoStates.delete(it.cells);
       if (state.items[state.selected] === it) loadDetails(originalPlace);
@@ -2186,6 +2227,7 @@ function addPickedItem(index, p) {
 
 // 장소가 끼거나 빠지면 번호(idx)를 엑셀 순서대로 다시 매긴다. 구간 키·핀·목록도 새 번호로
 function renumberItems(selected) {
+  scheduleTravelSave();
   const legs = state.legs.map((leg) => [leg, state.legModes.get(leg.key), state.selectedLeg === leg.key]);
   state.items.forEach((it, i) => { it.idx = i; });
   state.legModes.clear();
@@ -2463,7 +2505,6 @@ function scheduleRender() {
 }
 
 function render() {
-  if (travelReady) scheduleTravelSave();
   rideRisks = state.items.length ? boardingRisks(state.records, timeCols(), PACES[state.pace]) : [];
   const { done, total } = state.progress;
   els.progressBar.style.width = total ? `${(done / total) * 100}%` : '100%';
@@ -2721,10 +2762,12 @@ function renderList() {
   const visible = state.items.filter((it) => (
     (group.match(it) || it.idx === state.selected) && catVisible(it.category) && (!document.getElementById('workspaceSearch').value.trim() || `${it.name} ${it.query} ${it.place?.address || ''}`.toLowerCase().includes(document.getElementById('workspaceSearch').value.trim().toLowerCase()))
   ));
-  queuePlacePhotos(visible);
+  // Photos are requested only near the viewport, not for every itinerary row.
+  if (state.selected != null) queuePlacePhotos(visible.filter(it => it.idx === state.selected));
   if (!visible.length) {
     list.innerHTML = `<li class="empty">${state.items.length ? '검색어나 날짜에 맞는 장소가 없어요. <button type="button" data-reset-filters>전체 일정 보기</button>' : '<strong>첫 일정을 만들어 볼까요?</strong><p>위의 일정 추가로 장소·시간·메모를 적어 보세요.<br>날짜를 못 정했다면 가고 싶은 곳에 먼저 보관해도 좋아요.</p>'}</li>`;
     rendered.clear();
+    observeVisiblePhotos();
     return;
   }
   const whole = state.filter === 'all';
@@ -2756,6 +2799,7 @@ function renderList() {
   nodes.forEach((node, i) => {
     if (list.children[i] !== node) list.insertBefore(node, list.children[i] || null);
   });
+  observeVisiblePhotos();
 }
 
 /* ───────────── 내보내기 ───────────── */
@@ -2903,7 +2947,7 @@ els.mappingFields.addEventListener('change', (e) => {
   previewItinerary();
 });
 
-els.commonRegion.addEventListener('input', updateSummary);
+els.commonRegion.addEventListener('input', () => {updateSummary();scheduleTravelSave();});
 els.runBtn.addEventListener('click', run);
 
 els.statusChips.addEventListener('click', (e) => {
@@ -2943,6 +2987,7 @@ function handleItineraryClick(e) {
     case 'travel-save': storeTravelPlace({...(it.place || {}),name:it.name,memo:it.memo}); showToast('보관함에 저장했어요.'); break;
     case 'delete': deleteScheduleItem(it); break;
     case 'candidate':
+      scheduleTravelSave();
       it.place = it.candidates[Number(actionEl.dataset.ci)];
       it.status = 'confirmed';
       it.note = '';
@@ -2951,6 +2996,7 @@ function handleItineraryClick(e) {
       select(it.idx, 'list');
       break;
     case 'confirm':
+      scheduleTravelSave();
       it.status = 'confirmed';
       it.note = '';
       render();
@@ -3392,6 +3438,7 @@ function openScheduleEditor(it = null) {
 }
 
 function rebuildEditedSchedule(changedRecord = null, pickedPlace = null, restored = null, preferredCells = null) {
+  scheduleTravelSave();
   state.scheduleChanged = true;
   const previousItems = state.items;
   const previous = new Map(previousItems.map((it) => [it.cells, it]));
@@ -3669,6 +3716,7 @@ async function saveTravelNow() {
   return result;
 }
 function scheduleTravelSave() {
+  if (!travelReady || !state.workbook) return;
   clearTimeout(travelSaveTimer);
   travelSaveTimer = setTimeout(saveTravelNow, 400);
 }
@@ -3698,6 +3746,8 @@ function restoreTravel(snapshot, fromStorage = false) {
   state.fileBase = snapshot.name;
   state.fileName = `${snapshot.name}.xlsx`;
   state.fileBuffer = null;
+  state.parsedSheets = null;
+  state.defaultSheet = null;
   state.fileSize = 0;
   const sheet = XLSX.utils.aoa_to_sheet([snapshot.headers, ...snapshot.records.map(r => r.cells.map(c => c?.v ?? ''))]);
   state.workbook = XLSX.utils.book_new();
@@ -3744,7 +3794,7 @@ function travelChanged(message, before) {
   renderTravelLibrary(); saveTravelNow();
   showToast(message, () => { restoreTravel(before); saveTravelNow(); showToast('변경을 되돌렸어요.'); });
 }
-function travelBusy() { if(state.running || state.routeRunning || state.planner.running) {showToast('진행 중인 작업이 끝나면 다시 시도해 주세요.');return true;} return false; }
+function travelBusy() { if(importController || state.running || state.routeRunning || state.planner.running) {showToast('진행 중인 작업이 끝나면 다시 시도해 주세요.');return true;} return false; }
 travelEl('travelImport').onclick = () => {if(!travelBusy()) els.fileInput.click();};
 travelEl('newTravel').onclick = () => {
   if (travelBusy()) return;

@@ -1304,3 +1304,5 @@ body:not(.has-itinerary) #runBtn {display:none}
 #dayRevisionStatus { white-space: pre-wrap; overflow-wrap: anywhere; }
 @media (max-width: 600px) { .revision-comparison { grid-template-columns: minmax(0, 1fr); } }
 .day-revision-dialog .text-link { border: 0; background: transparent; padding: 6px 0; color: #0756e8; cursor: pointer; text-decoration: underline; }
+
+#importProgress { padding:12px 0; font-size:13px; }

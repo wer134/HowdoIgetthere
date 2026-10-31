@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="css/style.css">
   <script src="config.js"></script>
   <script src="runtime-config.js"></script>
-  <script src="vendor/xlsx.full.min.js"></script>
+  <script src="vendor/xlsx.full.min.js" defer></script>
   <script type="module" src="js/app.js"></script>
 </head>
 <body>
@@ -101,6 +101,7 @@
               <span class="drop-arrow">↗</span>
             </label>
 
+            <div id="importProgress" class="hidden" role="status"><span id="importStatus"></span> <button type="button" id="importCancel" class="secondary-button">취소</button></div>
             <div class="import-steps" id="importSteps"><span>1<small>업로드</small></span><span>2<small>열 확인</small></span><span>3<small>장소 검색</small></span><span>4<small>지도 완성</small></span></div><div class="columns-panel hidden" id="columnsPanel">
               <button class="panel-toggle" type="button" id="columnsToggle" aria-expanded="true" aria-controls="columnsBody">
                 <span class="section-kicker">COLUMNS</span>
