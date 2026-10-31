@@ -18,6 +18,7 @@ self.onmessage = async ({ data: { buffer, fileName } }) => {
       const parsed = parseSheet(workbook,name); parsedSheets[name]=parsed;
       if(parsed.records.length) {fallback ??= name;if(autoMap(parsed.headers).name>=0)defaultSheet ??= name;}
     }
+    if (!fallback) throw new Error('이 파일에서 데이터 행을 찾지 못했어요. 기존 여행은 유지됩니다.');
     self.postMessage({ workbook, parsedSheets, defaultSheet:defaultSheet || fallback || workbook.SheetNames[0], buffer }, [buffer]);
   } catch(error) { self.postMessage({error:error.message || '파일을 읽지 못했어요.'}); }
 };

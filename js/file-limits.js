@@ -15,16 +15,35 @@ export function zipEntries(buffer) {
   const count = view.getUint16(end + 10, true), size = view.getUint32(end + 12, true);
   let at = view.getUint32(end + 16, true), total = 0;
   if (!count || count > 1024 || at + size > end || view.getUint16(end + 4,true) || view.getUint16(end + 6,true)) invalid();
+  const directoryStart = at;
+  const validExtra = (start, length) => {
+    const end = start + length;
+    for (let pos = start; pos < end;) {
+      if (pos + 4 > end) invalid();
+      const id = view.getUint16(pos, true), size = view.getUint16(pos + 2, true);
+      // SheetJS honors ZIP64 override fields even without sentinel sizes.
+      if (id === 1 || pos + 4 + size > end) invalid();
+      pos += 4 + size;
+    }
+  };
   const result = [];
   for (let i = 0; i < count; i++) {
     if (at + 46 > end || view.getUint32(at, true) !== 0x02014b50) invalid();
     const flags=view.getUint16(at+8,true), method=view.getUint16(at+10,true), compressed=view.getUint32(at+20,true), expanded=view.getUint32(at+24,true);
     const length=view.getUint16(at+28,true), extra=view.getUint16(at+30,true), comment=view.getUint16(at+32,true), local=view.getUint32(at+42,true);
-    if ((flags & 1) || ![0,8].includes(method) || at+46+length+extra+comment>end || local+30>bytes.length || view.getUint32(local,true)!==0x04034b50) invalid();
+    if ((flags & 8257) || ![0,8].includes(method) || at+46+length+extra+comment>end || local+30>bytes.length || view.getUint32(local,true)!==0x04034b50) invalid();
     const start=local+30+view.getUint16(local+26,true)+view.getUint16(local+28,true);
     if (start+compressed>bytes.length) invalid();
     total += expanded;
     if (total > MAX_EXPANDED_BYTES) throw new Error('압축을 푼 일정 파일은 64MB 이하만 가져올 수 있어요. 시트를 나눠 주세요.');
+    const localFlags = view.getUint16(local+6,true), localMethod = view.getUint16(local+8,true);
+    const localCompressed = view.getUint32(local+18,true), localExpanded = view.getUint32(local+22,true);
+    const localNameLength = view.getUint16(local+26,true), localExtraLength = view.getUint16(local+28,true);
+    if (start > directoryStart || start+compressed > directoryStart || localFlags !== flags || localMethod !== method || localNameLength !== length) invalid();
+    if (localCompressed !== compressed && !(flags & 8 && localCompressed === 0)) invalid();
+    if (localExpanded !== expanded && !(flags & 8 && localExpanded === 0)) invalid();
+    for(let n=0;n<length;n++) if(bytes[local+30+n]!==bytes[at+46+n]) invalid();
+    validExtra(local+30+localNameLength,localExtraLength); validExtra(at+46+length,extra);
     result.push({name:new TextDecoder().decode(bytes.subarray(at+46,at+46+length)),method,compressed,expanded,start});
     at += 46+length+extra+comment;
   }

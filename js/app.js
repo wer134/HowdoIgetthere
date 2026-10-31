@@ -31,6 +31,13 @@ import {
   INTERESTS, AI_PROVIDERS, listGeminiModels, planWithAI, verifyPlan, planWithGoogle, planIssues, planToWorkbook,
 } from './planner.js';
 
+// Font fetching must not block the first usable screen. System fonts remain a fallback.
+const webFonts = document.getElementById('webFonts');
+if (webFonts) {
+  webFonts.addEventListener('load', () => { webFonts.media = 'all'; }, {once:true});
+  if (webFonts.sheet) webFonts.media = 'all';
+}
+
 const CFG = {
   googleMapsApiKey: '',
   mapId: 'DEMO_MAP_ID',
@@ -1800,7 +1807,13 @@ function observeVisiblePhotos() {
   for (const node of els.resultList.querySelectorAll('li.item')) if (!photoObserved.has(node)) {photoObserved.add(node);photoObserver.observe(node);}
 }
 function resetMediaCaches() {
-  photoQueue.length = 0; photoObserver?.disconnect(); photoObserved.clear(); recDetails.clear(); photoStates.clear(); failedPhotoUrls.clear();
+  // Keep bounded completed/failed entries across travel changes to avoid re-billing
+  // for the same Place. Only discard queued requests that will never run.
+  for (const it of photoQueue) {
+    if (it.place?.id && photoStates.get(it.place.id)?.loading) photoStates.delete(it.place.id);
+    unresolvedPhotoStates.delete(it.cells);
+  }
+  photoQueue.length = 0; photoObserver?.disconnect(); photoObserved.clear();
 }
 
 const hasJapaneseText = (value) => /[\p{Script=Hiragana}\p{Script=Katakana}]/u.test(value || '');
@@ -3284,7 +3297,7 @@ function renderWorkspaceChrome() {
 // 모바일에서는 지도를 유지한 채 일정 패널을 전환한다.
 function setMobileView(view) {
   document.body.dataset.mobileView = view;
-  document.querySelectorAll('[data-mobile-view]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.mobileView === view)));
+  document.querySelectorAll('button[data-mobile-view]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.mobileView === view)));
   if (view === 'map') requestAnimationFrame(() => mapView?.fitAll());
 }
 setMobileView('itinerary');
