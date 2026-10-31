@@ -1,2 +1,12 @@
 /test
 AGENTS.md
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+/dist/
+/node_modules/
+*.log
+/playwright-report/
+/test-results/
