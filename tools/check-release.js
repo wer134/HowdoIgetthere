@@ -7,7 +7,7 @@ const release = JSON.parse(await fs.readFile(path.join(root, 'release.json')));
 const allowed = new Set([...release.assets, 'release.json', '.nojekyll']);
 async function walk(dir) { const paths = []; for (const entry of await fs.readdir(dir, { withFileTypes: true })) { assert(!entry.isSymbolicLink(), 'No symlinks in release'); const file = path.join(dir, entry.name); if (entry.isDirectory()) paths.push(...await walk(file)); else paths.push(file); } return paths; }
 for (const file of await walk(root)) {
-  const name = path.relative(root, file), base = name.replace(/\.(br|gz)$/, '');
+  const name = path.relative(root, file).split(path.sep).join('/'), base = name.replace(/\.(br|gz)$/, '');
   assert(allowed.has(base), `Unlisted release file: ${name}`);
   if (!/\.(html|js|css|json)$/.test(name)) continue;
   const text = await fs.readFile(file, 'utf8');

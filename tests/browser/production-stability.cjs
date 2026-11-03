@@ -3,7 +3,7 @@ const BASE=process.env.APP_URL||'http://127.0.0.1:8096',OUT=process.env.STABILIT
 (async()=>{const b=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',args:['--no-sandbox']});const results=[];
 try{const c=await b.newContext({viewport:{width:1440,height:900}});await c.route('**/*',r=>r.request().url().startsWith(BASE)?r.continue():r.abort());
 const p=await c.newPage();p.setDefaultTimeout(10000);const errors=[];p.on('pageerror',e=>errors.push(e.message));await p.goto(BASE);
-await p.click('#newTravel');await p.fill('#travelName','운영 안정성 테스트');await p.fill('#travelStart','2026-11-07');await p.click('#newTravelForm button');
+await p.click('#newTravel');await p.fill('#travelName','운영 안정성 테스트');await p.fill('#travelStart','2026-11-07');await p.click('#newTravelForm button');await p.click('[data-workspace-mode="map"]');
 await p.click('#scheduleAdd');await p.fill('#scheduleName','보존할 장소');await p.fill('#scheduleMemo','보존할 개인 메모');await p.click('#scheduleForm button[type=submit]');await p.waitForTimeout(600);
 const get=()=>p.evaluate(()=>Object.values(JSON.parse(localStorage.getItem('routeflow.travels.v1')))[0]);const before=await get();assert.equal(before.records.length,1);
 await p.evaluate(()=>{const original=window.structuredClone;window.__snapshotClones=0;window.structuredClone=function(value,...args){if(value?.records&&value?.mapping)window.__snapshotClones++;return original.call(this,value,...args);};});

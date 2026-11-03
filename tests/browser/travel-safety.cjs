@@ -6,7 +6,7 @@ const key='routeflow.travels.v1';
 const trip=id=>({id,name:id,updated:1,headers:['장소','날짜','시간','지역','메모','주소','위도','경도'],mapping:{name:0,date:1,category:1,time:2,region:3,memo:4,address:5,lat:6,lng:7,mode:-1},records:[{rowNumber:2,cells:[id+' 장소','2026-11-01','','','','',35,139].map(v=>({t:typeof v==='number'?'n':'s',v}))}],dates:['2026-11-01'],library:[],places:[],sheetName:'일정'});
 const pause=p=>p.waitForTimeout(650);
 const data=p=>p.evaluate(k=>JSON.parse(localStorage.getItem(k)),key);
-async function open(p,id){await p.evaluate(()=>document.querySelectorAll('dialog[open]').forEach(d=>d.close()));await p.click('#savedTravels');await p.click(`[data-travel-open="${id}"]`);await p.locator("#travelHistoryDialog").waitFor({state:"hidden"});}
+async function open(p,id){await p.evaluate(()=>document.querySelectorAll('dialog[open]').forEach(d=>d.close()));await p.click('#savedTravels');await p.click(`[data-travel-open="${id}"]`);await p.locator("#travelHistoryDialog").waitFor({state:"hidden"});await p.click('[data-workspace-mode="map"]');}
 async function memo(p,text){await p.locator('#resultList [data-action="edit"]').first().click();await p.fill('#scheduleMemo',text);await p.click('#scheduleForm button[type=submit]');await pause(p);}
 (async()=>{
  const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',args:['--no-sandbox']});const results=[];

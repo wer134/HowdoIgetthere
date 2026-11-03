@@ -1,7 +1,7 @@
 const {chromium}=require('playwright');const assert=require('node:assert/strict');const fs=require('node:fs');
 (async()=>{const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',args:['--no-sandbox']});try{
  const c=await browser.newContext({viewport:{width:1440,height:900}}),base=process.env.APP_URL||'http://127.0.0.1:8093';await c.route('**/*',r=>r.request().url().startsWith(base)?r.continue():r.abort());const p=await c.newPage();p.setDefaultTimeout(5000);await p.goto(base);
- await p.click('#newTravel');await p.fill('#travelName','검색 후 드래그');await p.fill('#travelStart','2026-11-07');await p.click('#newTravelForm button');
+ await p.click('#newTravel');await p.fill('#travelName','검색 후 드래그');await p.fill('#travelStart','2026-11-07');await p.click('#newTravelForm button');await p.click('[data-workspace-mode="map"]');
  for(const name of ['첫 장소','둘째 장소']){await p.click('#scheduleAdd');await p.fill('#scheduleName',name);await p.fill('#scheduleDate','2026-11-07');await p.click('#scheduleForm button[type=submit]');await p.click('#placePanelClose');}
  await p.fill('#workspaceSearch','없는 검색어');await p.fill('#workspaceSearch','');
  assert.deepEqual(await p.locator('#resultList > li.item').evaluateAll(es=>es.map(e=>e.draggable)),[true,true]);
