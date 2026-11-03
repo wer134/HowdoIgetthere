@@ -1,0 +1,24 @@
+export const schema = `
+PRAGMA busy_timeout=5000;
+PRAGMA journal_mode=WAL;
+PRAGMA foreign_keys=ON;
+CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY, sub TEXT UNIQUE NOT NULL, name TEXT NOT NULL, email TEXT NOT NULL, phone_hash TEXT, phone_cipher TEXT, phone_verified INTEGER, phone_changed INTEGER);
+CREATE TABLE IF NOT EXISTS sessions(hash TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id), created INTEGER NOT NULL, expires INTEGER NOT NULL);
+CREATE INDEX IF NOT EXISTS sessions_user ON sessions(user_id,created);
+CREATE TABLE IF NOT EXISTS flows(hash TEXT PRIMARY KEY, data TEXT NOT NULL, expires INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS login_attempts(network TEXT NOT NULL, created INTEGER NOT NULL);
+CREATE INDEX IF NOT EXISTS login_attempts_network ON login_attempts(network,created);
+CREATE TABLE IF NOT EXISTS travels(id TEXT PRIMARY KEY, owner TEXT NOT NULL REFERENCES users(id), version INTEGER NOT NULL, data TEXT NOT NULL, bytes INTEGER NOT NULL, name TEXT NOT NULL, updated INTEGER NOT NULL);
+CREATE INDEX IF NOT EXISTS travels_owner ON travels(owner);
+CREATE TABLE IF NOT EXISTS shares(hash TEXT PRIMARY KEY, travel_id TEXT UNIQUE NOT NULL REFERENCES travels(id) ON DELETE CASCADE, expires INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS suggestions(id TEXT PRIMARY KEY, travel_id TEXT NOT NULL REFERENCES travels(id) ON DELETE CASCADE, author TEXT NOT NULL REFERENCES users(id), place TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending', created INTEGER NOT NULL);
+CREATE INDEX IF NOT EXISTS suggestions_travel ON suggestions(travel_id,created);
+CREATE TABLE IF NOT EXISTS reservations(id TEXT PRIMARY KEY, kind TEXT NOT NULL, user_id TEXT NOT NULL, phone TEXT NOT NULL, travel TEXT NOT NULL, network TEXT NOT NULL, fingerprint TEXT NOT NULL DEFAULT '', cost INTEGER NOT NULL, created INTEGER NOT NULL, status TEXT NOT NULL, result TEXT);
+CREATE INDEX IF NOT EXISTS reservations_kind_time ON reservations(kind,created);
+CREATE INDEX IF NOT EXISTS reservations_user_time ON reservations(kind,user_id,created);
+CREATE INDEX IF NOT EXISTS reservations_phone_time ON reservations(kind,phone,created);
+CREATE INDEX IF NOT EXISTS reservations_travel_time ON reservations(kind,travel,created);
+CREATE TABLE IF NOT EXISTS phone_pending(user_id TEXT PRIMARY KEY REFERENCES users(id), phone_hash TEXT NOT NULL, cipher TEXT NOT NULL, created INTEGER NOT NULL, attempts INTEGER NOT NULL DEFAULT 0);
+CREATE TABLE IF NOT EXISTS check_attempts(user_id TEXT NOT NULL, created INTEGER NOT NULL);
+CREATE INDEX IF NOT EXISTS checks_user ON check_attempts(user_id,created);
+`;

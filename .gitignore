@@ -10,3 +10,11 @@ AGENTS.md
 *.log
 /playwright-report/
 /test-results/
+/.omo/
+/data/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.db
+*.db-wal
+*.db-shm

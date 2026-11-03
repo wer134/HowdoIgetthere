@@ -12,10 +12,11 @@ export const securityHeaders = {
   'Content-Security-Policy-Report-Only': "default-src 'self'; script-src 'self' https://maps.googleapis.com https://maps.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https://*.googleapis.com https://*.gstatic.com https://*.googleusercontent.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.googleusercontent.com https://api.anthropic.com https://api.openai.com https://api.frankfurter.dev; worker-src 'self' blob:; frame-src https://www.google.com",
   'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
 };
-export function createStaticServer({ root, production = false, runtime = null, port = 8080, assetVersion = null }) {
+export function createStaticServer({ root, production = false, runtime = null, port = 8080, assetVersion = null, api = null }) {
   const allowed = new Set(publicAssets(root));
-  return http.createServer(async (req, res) => {
+  return http.createServer({ requestTimeout: 30000, headersTimeout: 15000 }, async (req, res) => {
     for (const [key, value] of Object.entries(securityHeaders)) res.setHeader(key, value);
+    if (api && await api(req, res)) return;
     if (!['GET', 'HEAD'].includes(req.method)) { res.setHeader('Allow', 'GET, HEAD'); res.writeHead(405).end(); return; }
     let url, name;
     try { url = new URL(req.url, 'http://localhost'); name = decodeURIComponent(url.pathname).replace(/^\//, '') || 'index.html'; }
