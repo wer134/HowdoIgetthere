@@ -10,7 +10,7 @@
 기존 `--sans` (Manrope, Noto Sans KR, system-ui, Malgun Gothic), `--mono`를 유지한다. 일정 보드 본문은 14px/1.5, 제목 16px/1.5, 섹션 제목 18px/1.4, 보조 정보 12px/1.5이다. 한국어 문장은 keep-all을 사용하되 긴 장소명은 카드 제목에서 말줄임하고 title로 전체 이름을 제공한다. 입력과 버튼은 본문 크기를 상속한다.
 
 ## 4. 간격과 레이아웃
-보드 지역 토큰: `--workspace-space-1:4px`, `--workspace-space-2:8px`, `--workspace-space-3:12px`, `--workspace-space-4:16px`, `--workspace-space-6:24px`. 카드 반경은 기존 `--radius-md`, 패널 반경은 `--radius-lg`, 그림자는 `--shadow`를 재사용한다. 기본 조작 높이 40px, compact 조작 32px. PC는 후보 + 날짜 2~3열, 1100px 미만은 후보 + 2열, 760px 미만은 후보 접기와 하루 보기. 열 최소 폭은 220px이며 문서 가로 스크롤을 만들지 않는다. 짧은 화면에서는 내부 영역의 고정 높이를 강요하지 않는다.
+보드 지역 토큰: `--workspace-space-1:4px`, `--workspace-space-2:8px`, `--workspace-space-3:12px`, `--workspace-space-4:16px`, `--workspace-space-6:24px`. 카드 반경은 기존 `--radius-md`, 패널 반경은 `--radius-lg`, 그림자는 `--shadow`를 재사용한다. 기본 조작 높이 40px, compact 조작 32px. PC는 후보 + 날짜 2~3열, 1100px 미만은 후보 + 2열, 760px 미만은 후보 접기와 하루 보기. 문서 가로 스크롤을 만들지 않는다. 짧은 화면에서는 내부 영역의 고정 높이를 강요하지 않는다. 보드에는 하단 메뉴가 없으므로 되돌리기 알림은 화면 하단 16px에 두고, 마지막 카드가 알림 위로 스크롤될 수 있도록 보드 끝에 96px 여백을 확보한다.
 
 ## 5. 재사용 컴포넌트
 - 보드 도구막대: 정리/지도 전환, 검색, 날짜 선택. 텍스트 레이블과 aria-pressed로 상태를 알린다.

@@ -1,0 +1,114 @@
+const {chromium}=require('playwright');
+const assert=require('node:assert/strict');
+const fs=require('node:fs/promises');
+const path=require('node:path');
+const os=require('node:os');
+const {createHash}=require('node:crypto');
+
+(async()=>{
+  const {accountConfig}=await import('../../backend/config.js');
+  const {createAccountApi}=await import('../../backend/api.js');
+  const {createStaticServer}=await import('../../tools/http-server.js');
+  await fs.access(path.resolve('dist/release.json'));
+  const temp=await fs.mkdtemp(path.join(os.tmpdir(),'routeflow-account-browser-'));
+  const evidence=path.resolve(process.env.ACCOUNT_OUT || 'docs/testing/evidence/rebuild/account');await fs.mkdir(evidence,{recursive:true});
+  const port=Number(process.env.ACCOUNT_TEST_PORT || 8137),origin=`http://127.0.0.1:${port}`;
+  const config=accountConfig({ACCOUNT_ORIGIN:origin,ACCOUNT_SECRET:'routeflow-test-secret-not-production-123456',GOOGLE_OAUTH_CLIENT_ID:'test',GOOGLE_OAUTH_CLIENT_SECRET:'test',ACCOUNT_DB_PATH:path.join(temp,'test.sqlite')});
+  const api=createAccountApi({config,providers:{authorizationUrl:async flow=>`${origin}/api/auth/callback?state=${flow.state}&code=test`,exchange:async()=>({sub:'owner-test',name:'테스트 주인',email:'owner@example.test'})}});
+  const server=createStaticServer({root:path.resolve('dist'),production:true,api:api.handle});
+  await new Promise(resolve=>server.listen(port,'127.0.0.1',resolve));
+  const browser=await chromium.launch({...(process.env.CHROMIUM_PATH?{executablePath:process.env.CHROMIUM_PATH}:{channel:'chrome'}),headless:true});
+  const results=[],errors=[];
+  const release=JSON.parse(await fs.readFile('dist/release.json','utf8'));
+  const backendHashes=Object.fromEntries(await Promise.all((await fs.readdir('backend')).filter(name=>name.endsWith('.js')).map(async name=>[name,createHash('sha256').update(await fs.readFile(path.join('backend',name))).digest('hex')])));
+  let owner,guest,companion;
+  const openAccount=async page=>{await page.locator('[data-account-open]').first().click();await page.locator('#accountDialog').waitFor({state:'visible'});};
+  const newTrip=async(page,name,duplicate=false)=>{
+    const board=page.locator('[data-workspace-travel="new"]');
+    if(await board.isVisible())await board.click();else {if(await page.locator('[data-workspace-mode="map"]').isVisible())await page.locator('[data-workspace-mode="map"]').click();await page.locator('#newTravel').click();}
+    await page.fill('#travelName',name);await page.fill('#travelStart','2026-11-10');await page.fill('#travelDays','3');
+    if(duplicate)await page.locator('#newTravelForm').evaluate(form=>{form.requestSubmit();form.requestSubmit();});else await page.click('#newTravelForm button');
+    await page.waitForFunction(()=>!document.getElementById('travelDialog').open);
+  };
+  try {
+    owner=await browser.newContext({viewport:{width:1440,height:1000}});const page=await owner.newPage();page.on('pageerror',e=>errors.push(e.message));
+    await page.goto(origin);await newTrip(page,'기기 원본',true);
+    await page.waitForFunction(()=>Object.keys(JSON.parse(localStorage.getItem('routeflow.travels.v1') || '{}')).length===1);
+    await openAccount(page);await page.click('#accountLogin');await page.waitForURL(origin+'/');
+    await openAccount(page);await page.waitForSelector('#accountContent:not([hidden])');
+    const user=api.store.upsertUser({sub:'owner-test',name:'테스트 주인',email:'owner@example.test'});
+    assert.equal(api.store.listTravels(user.id).length,0);results.push({scenario:'Google OIDC provider-boundary mock login does not upload guest travel',pass:true});
+    await page.click('#accountClose');await page.click('#continueTravel');await openAccount(page);await page.click('#accountCopy');
+    await page.waitForFunction(()=>document.getElementById('accountMessage').textContent.includes('계정으로 복사했어요'));
+    const accountId=api.store.listTravels(user.id)[0].id;
+    const local=await page.evaluate(()=>JSON.parse(localStorage.getItem('routeflow.travels.v1')));
+    assert.equal(Object.keys(local).length,1);assert.notEqual(Object.keys(local)[0],accountId);results.push({scenario:'explicit account copy retains device original with distinct server id',pass:true});
+    for(const width of [390,768,1440]){await page.setViewportSize({width,height:1000});await page.screenshot({path:path.join(evidence,`account-${width}.png`),fullPage:true});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);}
+    await page.click('#accountClose');await page.locator('[data-workspace-add]').click();await page.fill('#manualPlaceName','동네 산책');await page.fill('#manualPlaceMemo','오후에 가기');await page.click('#manualPlaceForm button');
+    await page.waitForFunction(()=>document.getElementById('travelSaveStatus').textContent.includes('계정에 저장됨'));
+    assert.equal(api.store.getTravel(user.id,accountId).snapshot.library[0].name,'동네 산책');assert.equal(Object.keys(await page.evaluate(()=>JSON.parse(localStorage.getItem('routeflow.travels.v1')))).length,1);
+    results.push({scenario:'account edits save to HTTP SQLite without leaking into guest store',pass:true});
+    await newTrip(page,'계정 편집 후 새 기기 여행');
+    await page.waitForFunction(()=>Object.values(JSON.parse(localStorage.getItem('routeflow.travels.v1') || '{}')).some(t=>t.name==='계정 편집 후 새 기기 여행'));
+    await page.reload();assert.equal(Object.keys(await page.evaluate(()=>JSON.parse(localStorage.getItem('routeflow.travels.v1')))).length,2);results.push({scenario:'new guest travel after account editing remains durable after reload',pass:true});
+    await openAccount(page);await page.locator(`[data-account-travel="${accountId}"]`).click();
+    await openAccount(page);await page.click('#accountShareCreate');await page.waitForFunction(()=>document.getElementById('accountShareLink').value.includes('#share='));const share=await page.inputValue('#accountShareLink');await page.click('#accountClose');
+    guest=await browser.newContext({viewport:{width:390,height:844}});const shared=await guest.newPage();await shared.goto(share);await shared.waitForSelector('#sharedDialog[open]');assert.equal(await shared.locator('#sharedSuggestionForm').isVisible(),false);await shared.screenshot({path:path.join(evidence,'shared-mobile.png'),fullPage:true});
+    const friend=api.store.upsertUser({sub:'friend-test',name:'테스트 동행자',email:'friend@example.test'});companion=await browser.newContext();await companion.addCookies([{name:'routeflow_session',value:api.store.createSession(friend.id),url:origin,httpOnly:true,sameSite:'Lax'}]);const proposal=await companion.newPage();await proposal.goto(share);await proposal.waitForSelector('#sharedDialog[open]');await proposal.fill('#sharedPlaceName','동행자 카페');await proposal.fill('#sharedPlaceMemo','커피가 좋아요');await proposal.click('#sharedSuggestionForm button');await proposal.waitForFunction(()=>document.getElementById('sharedSuggestionStatus').textContent.includes('제안을 보냈어요'));
+    await openAccount(page);await page.click('#accountSuggestionsRefresh');await page.locator('[data-accept-suggestion]').click();await page.waitForFunction(()=>document.getElementById('toast').textContent.includes('후보로 수락'));
+    assert.equal(api.store.getTravel(user.id,accountId).snapshot.library.some(p=>p.name==='동행자 카페'),true);results.push({scenario:'read-only fragment sharing and authenticated suggestion owner acceptance',pass:true});
+    await page.click('#accountClose');await owner.setOffline(true);await page.locator('[data-workspace-add]').click();await page.fill('#manualPlaceName','오프라인 후보');await page.click('#manualPlaceForm button');await page.waitForFunction(()=>document.getElementById('travelSaveStatus').textContent.includes('저장 실패'));
+    assert.equal(await page.evaluate(()=>Object.keys(sessionStorage).some(k=>k.startsWith('routeflow.accountDraft.v1:'))),true);
+    await openAccount(page);await page.click('#accountLogout');assert.equal(await page.locator('#accountContent').isVisible(),true);await owner.setOffline(false);await page.click('#accountRetry');await page.waitForFunction(()=>document.getElementById('accountStatus').textContent==='계정에 저장됨');results.push({scenario:'offline draft retained, logout blocked, retry succeeds',pass:true});
+    const original=api.store.getTravel(user.id,accountId);api.store.saveTravel(user.id,accountId,{...original.snapshot,name:'다른 탭의 제목'},original.version);
+    await page.click('#accountClose');await page.locator('[data-workspace-add]').click();await page.fill('#manualPlaceName','충돌 후보');await page.click('#manualPlaceForm button');await page.waitForFunction(()=>document.getElementById('travelSaveStatus').textContent.includes('다른 곳에서'));
+    await page.reload();await page.waitForFunction(()=>document.getElementById('accountStatus').textContent.includes('다른 곳에서'));assert.equal(await page.locator('.workspace-place').filter({hasText:'충돌 후보'}).count(),1);
+    await openAccount(page);page.once('dialog',d=>d.accept());await page.click('#accountLatest');await page.waitForFunction(()=>document.getElementById('accountStatus').textContent==='계정에 저장됨');assert.equal(await page.locator('.workspace-place').filter({hasText:'충돌 후보'}).count(),0);
+    let releaseLogout;const logoutDelay=new Promise(resolve=>releaseLogout=resolve);
+    await page.route('**/api/logout',async route=>{const response=await route.fetch();await logoutDelay;await route.fulfill({response});});
+    await page.click('#accountLogout');await page.waitForFunction(()=>document.querySelector('.app-shell').inert);
+    await page.keyboard.press('Escape');assert.equal(await page.evaluate(()=>document.getElementById('accountDialog').open),true);assert.equal(await page.locator('#accountClose').isDisabled(),true);
+    releaseLogout();await page.waitForFunction(()=>document.getElementById('accountContent').hidden);assert.equal(await page.evaluate(()=>Object.keys(sessionStorage).some(k=>k.startsWith('routeflow.accountDraft.v1:'))),false);results.push({scenario:'version conflict survives refresh, explicit latest and logout clear account draft; logout freezes edits and blocks Escape until response',pass:true});
+    results.push({scenario:'duplicate new-travel submit creates exactly one device travel',pass:true});
+    const revisionContext=await browser.newContext({viewport:{width:1440,height:900}});
+    await revisionContext.addCookies([{name:'routeflow_session',value:api.store.createSession(user.id),url:origin,httpOnly:true,sameSite:'Lax'}]);
+    await revisionContext.addInitScript(()=>{localStorage.setItem('plannerProvider','gemini');localStorage.setItem('geminiApiKey','TEST_GEMINI_NOT_REAL');});
+    const revisionSnapshot={id:'revision-fixture',name:'계정 AI 검증',updated:Date.now(),headers:['장소','날짜','시간','메모'],mapping:{name:0,date:1,category:1,time:2,memo:3,region:-1,address:-1,lat:-1,lng:-1,mode:-1},records:[{rowNumber:2,cells:[{v:'공원'},{v:'2026-11-10'},{v:'09:00'},{v:'원본 메모'}]},{rowNumber:3,cells:[{v:'미술관'},{v:'2026-11-10'},{v:'11:00'},{v:'전시 메모'}]}],dates:['2026-11-10'],library:[],places:[{recordIndex:0,place:{name:'공원',lat:33.58,lng:130.37,cachedAt:Date.now()},status:'manual'},{recordIndex:1,place:{name:'미술관',lat:33.59,lng:130.38,cachedAt:Date.now()},status:'manual'}],sheetName:'일정'};
+    const revisionTravel=api.store.createTravel(user.id,revisionSnapshot);
+    await revisionContext.route('https://generativelanguage.googleapis.com/**',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({candidates:[{finishReason:'STOP',content:{parts:[{text:JSON.stringify({summary:'미술관을 오후로 이동',items:[{id:'r0',name:'공원',time:'09:00',region:'',note:''},{id:'r1',name:'미술관',time:'14:00',region:'',note:''}]})}]}}]})}));
+    const revision=await revisionContext.newPage();revision.on('pageerror',e=>errors.push(e.message));await revision.goto(origin);await openAccount(revision);await revision.locator(`[data-account-travel="${revisionTravel.id}"]`).click();
+    await revision.locator('[data-workspace-mode="map"]').click();await revision.click('#dayRevisionOpen');await revision.fill('#dayRevisionRequest','미술관을 오후 두 시로 변경');await revision.click('#dayRevisionGenerate');await revision.waitForFunction(()=>!document.getElementById('dayRevisionApply').disabled);
+    let releasePut;let holdPut=true;let putDelay=new Promise(resolve=>releasePut=resolve);
+    await revision.route(`**/api/travels/${revisionTravel.id}`,async route=>{if(route.request().method()!=='PUT')return route.continue();const response=await route.fetch();if(holdPut){holdPut=false;await putDelay;}await route.fulfill({response});});
+    const firstPut=revision.waitForRequest(req=>req.method()==='PUT' && req.url().endsWith(revisionTravel.id));await revision.click('#dayRevisionApply');await firstPut;
+    await revision.evaluate(()=>window.dispatchEvent(new Event('beforeunload',{cancelable:true})));releasePut();await revision.waitForFunction(()=>!document.getElementById('dayRevisionDialog').open && document.getElementById('accountStatus').textContent==='계정에 저장됨');
+    assert.equal(api.store.getTravel(user.id,revisionTravel.id).snapshot.records[1].cells[2].v,'14:00');assert.equal(await revision.evaluate(()=>localStorage.getItem('routeflow.travels.v1')),null);
+    holdPut=true;putDelay=new Promise(resolve=>releasePut=resolve);const undoPut=revision.waitForRequest(req=>req.method()==='PUT' && req.url().endsWith(revisionTravel.id));await revision.click('#toastUndo');await undoPut;
+    await revision.evaluate(()=>window.dispatchEvent(new Event('beforeunload',{cancelable:true})));releasePut();await revision.waitForFunction(()=>document.getElementById('accountStatus').textContent==='계정에 저장됨');
+    assert.deepEqual(api.store.getTravel(user.id,revisionTravel.id).snapshot.records,revisionTravel.snapshot.records);assert.equal(await revision.evaluate(()=>localStorage.getItem('routeflow.travels.v1')),null);
+    results.push({scenario:'BYOK day revision apply and undo retain account-only storage during delayed PUT plus beforeunload (Gemini mocked)',pass:true});
+    await revision.locator('[data-workspace-mode="board"]').click();await revision.locator('[data-workspace-action="edit"]').first().click();await revision.fill('#scheduleMemo','저장 전 편집 메모');
+    await openAccount(revision);await revision.click('#accountLogout');await revision.waitForFunction(()=>document.getElementById('toast').textContent.includes('편집창을 닫은 뒤'));
+    assert.equal(await revision.locator('#accountContent').isVisible(),true);assert.equal(await revision.inputValue('#scheduleMemo'),'저장 전 편집 메모');
+    await revision.click('#accountClose');await revision.click('#scheduleForm button[type=submit]');await revision.waitForFunction(()=>document.getElementById('accountStatus').textContent==='계정에 저장됨');
+    assert.equal(api.store.getTravel(user.id,revisionTravel.id).snapshot.records[0].cells[3].v,'저장 전 편집 메모');await openAccount(revision);await revision.click('#accountLogout');await revision.waitForFunction(()=>document.getElementById('accountContent').hidden);
+    assert.equal(await revision.evaluate(()=>Object.keys(sessionStorage).some(key=>key.startsWith('routeflow.accountEditor.v1:'))),false);await revisionContext.close();
+    results.push({scenario:'unsaved nonmodal editor blocks logout; saving retains memo and subsequent logout clears user-scoped editor drafts',pass:true});
+    const disabledApi=createAccountApi({config:accountConfig({})});
+    const disabledServer=createStaticServer({root:path.resolve('dist'),production:true,api:disabledApi.handle});
+    await new Promise(resolve=>disabledServer.listen(0,'127.0.0.1',resolve));
+    try {
+      const disabledOrigin=`http://127.0.0.1:${disabledServer.address().port}`;
+      const disabled=await browser.newContext();const home=await disabled.newPage();
+      for(const width of [390,768,1440]){
+        await home.setViewportSize({width,height:900});await home.goto(disabledOrigin);await home.locator('[data-account-open]').first().waitFor({state:'visible'});
+        await home.screenshot({path:path.join(evidence,`guest-home-${width}.png`),fullPage:true});await openAccount(home);await home.waitForSelector('#accountUnavailable:not([hidden])');
+        assert.equal(await home.locator('#accountLogin').isVisible(),false);await home.screenshot({path:path.join(evidence,`account-unavailable-${width}.png`),fullPage:true});
+      }
+      await disabled.close();results.push({scenario:'unconfigured account service keeps guest homepage and explains optional login at 390/768/1440',pass:true});
+    } finally {disabledServer.closeAllConnections();await new Promise(resolve=>disabledServer.close(resolve));disabledApi.close();}
+    assert.deepEqual(errors,[]);
+    await fs.writeFile(path.join(evidence,'results.json'),JSON.stringify({date:new Date().toISOString(),release,backendHashes,boundary:'Real local production static assets + HTTP API + SQLite; mocked Google provider only; no real OAuth SMS or AI calls.',results,errors},null,2));
+    console.log(JSON.stringify({passed:results.length,results},null,2));
+  } finally {await browser.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));api.close();await fs.rm(temp,{recursive:true,force:true});}
+})().catch(error=>{console.error(error);process.exitCode=1;});

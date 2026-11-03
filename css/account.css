@@ -1,0 +1,25 @@
+.account-dialog { width:min(720px,calc(100vw - 24px)); max-height:calc(100dvh - 24px); overflow:auto; border:1px solid var(--line-strong); border-radius:var(--radius-lg); background:var(--card); color:var(--text); padding:24px; box-shadow:var(--shadow); }
+.account-dialog::backdrop { background:color-mix(in srgb,var(--ink) 55%,transparent); }
+.account-dialog header { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.account-dialog h2 { margin:0; font-size:18px; }
+.account-dialog h3 { font-size:16px; margin:24px 0 8px; }
+.account-dialog p { overflow-wrap:anywhere; }
+.account-dialog label { display:grid; gap:4px; margin:12px 0; font-size:14px; }
+.account-dialog input,.account-dialog textarea { width:100%; min-width:0; padding:8px 12px; border:1px solid var(--line-strong); border-radius:var(--radius-md); background:var(--card-soft); color:var(--text); }
+.account-dialog button { min-height:40px; padding:8px 12px; border:1px solid var(--line-strong); border-radius:var(--radius-md); background:var(--card); color:var(--text); }
+.account-dialog button:hover { background:var(--coral-soft); }
+.account-dialog button:disabled { opacity:.5; cursor:default; }
+.account-dialog .account-primary { background:var(--coral); color:var(--card); border-color:var(--coral); }
+.account-actions { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0; }
+.account-entry { padding:12px; border:1px solid var(--line); border-radius:var(--radius-md); margin:8px 0; overflow-wrap:anywhere; }
+.account-entry strong { display:block; }
+.account-entry small { color:var(--text-soft); margin-right:12px; }
+#accountStatus { padding:12px; background:var(--card-soft); border-radius:var(--radius-md); }
+#accountStatus[data-state=error],#accountStatus[data-state=conflict],#accountDraftWarning { color:var(--warn-text); background:var(--warn-soft); }
+#accountMessage,#sharedSuggestionStatus { color:var(--text-soft); white-space:pre-wrap; }
+#accountAIResult { white-space:pre-wrap; overflow-wrap:anywhere; font:inherit; }
+.account-entrypoint { flex-shrink:0; }
+@media(max-width:1100px) { .topbar-actions .account-entrypoint { display:inline-flex !important; } }
+@media(max-width:950px) { .topbar-actions { display:flex; } .topbar-actions > :not(.account-entrypoint) { display:none !important; } }
+@media(max-width:760px) { .account-dialog { padding:16px; } .topbar-actions .account-entrypoint { font-size:12px; padding:8px; } }
+@media(max-height:500px) { .account-dialog { max-height:calc(100dvh - 16px); padding:12px; } }

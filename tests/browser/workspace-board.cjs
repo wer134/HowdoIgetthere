@@ -1,0 +1,142 @@
+const {chromium} = require('playwright');
+const assert = require('node:assert/strict');
+const fs = require('node:fs/promises');
+const path = require('node:path');
+
+const fixture = () => ({id:'board-browser-test',name:'후쿠오카 · 보드 검증 여행',updated:Date.now(),headers:['장소','날짜','시간','메모','개인 열'],mapping:{name:0,date:1,time:2,memo:3,category:-1,region:-1,address:-1,lat:-1,lng:-1,mode:-1},dates:['2026-11-01','2026-11-02','2026-11-03'],library:[{name:'동행자가 고른 카페',memo:'커피를 마시며 내일 계획 정리하기'}],records:[
+  {rowNumber:2,cells:[{v:'오호리 공원'},{v:'2026-11-01'},{v:'09:00'},{v:'천천히 산책하기'},{v:'개인 값'}]},
+  {rowNumber:3,cells:[{v:'후쿠오카시 미술관'},{v:'2026-11-01'},{v:'11:00'},{v:'전시 예약 확인'}]},
+  {rowNumber:4,cells:[{v:'하카타역'},{v:'2026-11-02'},{v:'10:00'}]},
+],places:[],sheetName:'일정'});
+
+(async()=>{
+  const {createStaticServer} = await import('../../tools/http-server.js');
+  const root = path.resolve(process.env.BOARD_ASSET_ROOT || 'dist');
+  const release = JSON.parse(await fs.readFile(path.join(root,'release.json'),'utf8'));
+  const out = path.resolve(process.env.WORKSPACE_OUT || 'docs/testing/evidence/rebuild/board');
+  await fs.mkdir(out,{recursive:true});
+  const server = createStaticServer({root,production:true});
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  const url = `http://127.0.0.1:${server.address().port}`;
+  const result = {status:'FAIL',time:new Date().toISOString(),assetRoot:root,release:{revision:release.revision,version:release.version},providerCalls:'none; static local server, guest storage only',checks:[],viewports:[],cleanup:{}};
+  let browser;
+  try {
+    browser = await chromium.launch(process.env.CHROMIUM_PATH ? {executablePath:process.env.CHROMIUM_PATH} : {channel:'chrome'});
+    const context = await browser.newContext({viewport:{width:1440,height:1000}});
+    const page = await context.newPage(), errors=[];
+    page.on('pageerror',error=>errors.push(error.message));
+    await page.addInitScript(value=>{if(!localStorage.getItem('routeflow.travels.v1'))localStorage.setItem('routeflow.travels.v1',JSON.stringify({[value.id]:value}));},fixture());
+    await page.goto(url); await page.click('#continueTravel');
+    await page.click('[data-workspace-mode=board]');
+    const names = day => page.locator(`[data-workspace-drop-day="${day}"] .workspace-place-heading strong`).allTextContents();
+    assert.deepEqual(await names('2026-11-01'),['오호리 공원','후쿠오카시 미술관']);
+    await page.screenshot({path:path.join(out,'desktop-empty-day.png'),fullPage:true});
+    await page.getByRole('button',{name:'후쿠오카시 미술관 앞으로',exact:true}).click();
+    assert.deepEqual(await names('2026-11-01'),['후쿠오카시 미술관','오호리 공원']);
+    await page.click('#toastUndo');
+    assert.deepEqual(await names('2026-11-01'),['오호리 공원','후쿠오카시 미술관']);
+    result.checks.push('earlier and existing undo restore order');
+    const dragData = await page.evaluateHandle(()=>new DataTransfer());
+    await page.locator('[data-workspace-kind=record][data-workspace-index="0"]').dispatchEvent('dragstart',{dataTransfer:dragData});
+    await page.getByRole('button',{name:'후쿠오카시 미술관 앞으로',exact:true}).click();
+    await page.locator('[data-workspace-drop-day="2026-11-03"]').dispatchEvent('drop',{dataTransfer:dragData});
+    assert.deepEqual(await names('2026-11-03'),[]);
+    assert.match(await page.locator('.workspace-status').textContent(),/변경/);
+    await page.click('#toastUndo');
+    await dragData.dispose();
+    result.checks.push('stale drag after another edit is rejected');
+    await page.getByRole('button',{name:'오호리 공원 편집',exact:true}).click();
+    await page.fill('#scheduleMemo','천천히 산책하기 · 편집 초안');
+    await page.getByRole('button',{name:'후쿠오카시 미술관 앞으로',exact:true}).click();
+    assert.deepEqual(await names('2026-11-01'),['오호리 공원','후쿠오카시 미술관']);
+    assert.equal(await page.inputValue('#scheduleMemo'),'천천히 산책하기 · 편집 초안');
+    await page.keyboard.press('Escape');
+    await page.getByRole('button',{name:'오호리 공원 편집',exact:true}).click();
+    assert.equal(await page.inputValue('#scheduleMemo'),'천천히 산책하기 · 편집 초안');
+    await page.locator('#scheduleForm button[type=submit]').click();
+    if (await page.locator('#placePanelClose').isVisible()) await page.click('#placePanelClose');
+    result.checks.push('open editor blocks reorder, Escape retains draft, reopened draft saves to original record');
+    await page.getByRole('button',{name:'오호리 공원 날짜와 위치 이동',exact:true}).click();
+    await page.selectOption('.workspace-move-dialog select[name=day]','2026-11-02');
+    await page.selectOption('.workspace-move-dialog select[name=position]','2');
+    await page.screenshot({path:path.join(out,'move-dialog.png'),fullPage:true});
+    await page.locator('.workspace-move-dialog button[type=submit]').click();
+    await page.waitForFunction(()=>document.querySelector('.workspace-place:focus')?.textContent.includes('오호리 공원'));
+    assert.deepEqual(await names('2026-11-02'),['오호리 공원','하카타역']);
+    await page.waitForFunction(()=>JSON.parse(localStorage.getItem('routeflow.travels.v1'))['board-browser-test'].records[1].cells[1].v==='2026-11-02');
+    const saved = await page.evaluate(()=>JSON.parse(localStorage.getItem('routeflow.travels.v1'))['board-browser-test']);
+    const park = saved.records.find(record=>record.cells[0].v==='오호리 공원');
+    assert.deepEqual(park.cells.slice(2).map(cell=>cell.v),['09:00','천천히 산책하기 · 편집 초안','개인 값']);
+    result.checks.push('explicit date/position move preserves time memo custom column and focus');
+    await page.locator('[data-workspace-kind=library]').dragTo(page.locator('[data-workspace-drop-day="2026-11-03"] .workspace-day-list'));
+    await page.waitForFunction(()=>document.querySelector('[data-workspace-drop-day="2026-11-03"]')?.textContent.includes('동행자가 고른 카페'));
+    assert.equal(await page.locator('[data-workspace-kind=library]').count(),1);
+    result.checks.push('real pointer drag inserts candidate and retains library original');
+    await page.getByRole('searchbox',{name:'보드 장소 검색'}).fill('산책');
+    assert.equal(await page.locator('[data-workspace-kind=record]').count(),1);
+    await page.screenshot({path:path.join(out,'search.png'),fullPage:true});
+    await page.getByRole('searchbox',{name:'보드 장소 검색'}).fill('');
+    result.checks.push('search matches memo');
+    await page.getByRole('button',{name:'오호리 공원 날짜와 위치 이동',exact:true}).click();
+    await page.keyboard.press('Escape');
+    assert.equal(await page.locator('.workspace-move-dialog').isVisible(),false);
+    result.checks.push('keyboard Escape closes move dialog');
+    for (const size of [{width:1440,height:1000},{width:1280,height:900},{width:768,height:1024},{width:390,height:844},{width:844,height:390},{width:640,height:450}]) {
+      await page.setViewportSize(size);
+      await page.locator('[data-workspace-mode=board]').click();
+      await page.locator('.page-content').evaluate(element=>{element.scrollTop=0;});
+      await page.screenshot({path:path.join(out,`${size.width}x${size.height}.png`),fullPage:true});
+      const metrics = await page.evaluate(()=>({overflow:document.documentElement.scrollWidth>innerWidth,columns:document.querySelectorAll('.workspace-day').length,login:[...document.querySelectorAll('[data-account-open]')].some(el=>{const r=el.getBoundingClientRect();return r.width>0 && r.height>0 && r.left>=0 && r.right<=innerWidth;}),toolbar:document.querySelector('.workspace-toolbar').getBoundingClientRect().width}));
+      assert.equal(metrics.overflow,false,`overflow ${size.width}`);
+      assert.equal(metrics.columns,size.width<=760?1:size.width<=1100?2:3);
+      assert.equal(metrics.login,true,`login access ${size.width}`);
+      result.viewports.push({...size,...metrics});
+      if (size.height < 500) {
+        const lastCard = page.locator('[data-workspace-kind=record]').last();
+        await lastCard.scrollIntoViewIfNeeded();
+        await page.screenshot({path:path.join(out,`${size.width}x${size.height}-scrolled.png`),fullPage:true});
+        const bounds = await lastCard.boundingBox();
+        assert.ok(bounds && bounds.y >= 64 && bounds.y+bounds.height <= size.height,`landscape card can be fully viewed ${size.width}`);
+      }
+    }
+    await page.setViewportSize({width:1440,height:1000});
+    await page.locator('[data-workspace-day="2026-11-02"]').first().click();
+    await page.locator('[data-workspace-mode=map]').click();
+    await page.waitForFunction(()=>document.querySelector('[data-workspace-mode=map]').getAttribute('aria-pressed')==='true');
+    assert.equal(await page.locator('.workspace-board').isVisible(),false);
+    assert.deepEqual(await page.locator('#resultList .item-name').allTextContents(),['오호리 공원','하카타역']);
+    await page.screenshot({path:path.join(out,'map-mode.png'),fullPage:true});
+    await page.locator('[data-workspace-mode=board]').click();
+    assert.equal(await page.locator('[data-workspace-day="2026-11-02"]').first().getAttribute('aria-pressed'),'true');
+    result.checks.push('board/map mode preserves selected day');
+    const downloadPromise = page.waitForEvent('download');
+    await page.click('#exportXlsx');
+    const downloaded = await downloadPromise;
+    const exported = await fs.readFile(await downloaded.path());
+    const rows = await page.evaluate(bytes=>{const wb=XLSX.read(Uint8Array.from(bytes),{type:'array'});return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1});},[...exported]);
+    assert.deepEqual(rows.slice(1).map(row=>row[0]),['후쿠오카시 미술관','오호리 공원','하카타역','동행자가 고른 카페']);
+    assert.deepEqual(rows.find(row=>row[0]==='오호리 공원').slice(1,5),['2026-11-02','09:00','천천히 산책하기 · 편집 초안','개인 값']);
+    result.checks.push('downloaded Excel preserves moved order, all days, time, memo, custom value');
+    await page.reload(); await page.click('#continueTravel'); await page.click('[data-workspace-mode=board]');
+    assert.deepEqual(await names('2026-11-02'),['오호리 공원','하카타역']);
+    assert.deepEqual(await names('2026-11-03'),['동행자가 고른 카페']);
+    result.checks.push('guest changes survive reload');
+    await page.click('[data-workspace-travel=new]');
+    await page.fill('#travelName','비어 있는 새 여행'); await page.fill('#travelStart','2026-12-01');
+    await page.locator('#newTravelForm button').click();
+    assert.equal(await page.locator('[data-workspace-kind=record]').count(),0);
+    assert.equal(await page.locator('.workspace-day').count(),3);
+    await page.screenshot({path:path.join(out,'empty-travel.png'),fullPage:true});
+    result.checks.push('new-travel toolbar creates empty board and retains prior guest trip');
+    assert.equal(await page.evaluate(()=>Object.keys(JSON.parse(localStorage.getItem('routeflow.travels.v1'))).length),2);
+    assert.deepEqual(errors,[]);
+    await context.close();
+    result.status='PASS';
+  } finally {
+    await browser?.close();
+    await new Promise(resolve=>server.close(resolve));
+    result.cleanup={browserClosed:true,serverClosed:true,userData:'fresh context, no existing travel accessed'};
+    await fs.writeFile(path.join(out,'results.json'),JSON.stringify(result,null,2));
+  }
+  console.log(JSON.stringify(result,null,2));
+})().catch(error=>{console.error(error);process.exitCode=1;});

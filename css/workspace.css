@@ -21,6 +21,8 @@
 .workspace-board-open .topbar { background: var(--card); border-bottom: 1px solid var(--line); }
 .workspace-board-open .topbar > .workspace-search { display: none; }
 .workspace-board-open .mobile-workspace-nav { display: none; }
+.workspace-board-open .workspace { padding-bottom: 96px; }
+.workspace-board-open .toast { bottom: 16px; }
 body:not(.workspace-board-open) #workspaceBoard:not([hidden]) { position: fixed; left: 14px; top: 78px; width: var(--panel-width); z-index: 20; margin: 0; padding: 8px; border-radius: var(--radius-lg); background: var(--card); box-shadow: var(--shadow); }
 body:not(.workspace-board-open):has(#workspaceBoard:not([hidden])) .left-column { top: 144px; }
 body:not(.workspace-board-open) #workspaceBoard .workspace-toolbar { margin: 0; }
@@ -49,7 +51,7 @@ body:not(.workspace-board-open) #workspaceBoard .workspace-status { display: non
 .workspace-day h2 { font-size: var(--workspace-title); margin: 0; }
 .workspace-day header > span { font-size: var(--workspace-caption); color: var(--text-soft); }
 .workspace-day-list, .workspace-candidate-list { padding: var(--workspace-space-3); min-height: 120px; }
-.workspace-place { min-width: 0; padding: var(--workspace-space-3); background: var(--card); border: 1px solid var(--line-strong); border-radius: var(--radius-md); box-shadow: var(--shadow); margin-bottom: var(--workspace-space-3); cursor: grab; }
+.workspace-place { min-width: 0; padding: var(--workspace-space-3); background: var(--card); border: 1px solid var(--line-strong); border-radius: var(--radius-md); box-shadow: var(--shadow); margin-bottom: var(--workspace-space-3); scroll-margin-block: var(--workspace-space-4) 96px; cursor: grab; }
 .workspace-place:last-child { margin-bottom: 0; }
 .workspace-place.is-dragging { opacity: .5; }
 .workspace-place-heading { display: flex; align-items: baseline; gap: var(--workspace-space-2); }

@@ -4,6 +4,10 @@ import { encodeTravelBackup, decodeTravelBackup, MAX_BACKUP_BYTES, itineraryCont
 import { createTravelStore, validTravel } from './travel-store.js';
 import { revisionDays, revisionFingerprint } from './day-revision.js';
 import { setupDayRevision } from './day-revision-ui.js';
+import { setupAccounts } from './account.js';
+import { initWorkspace } from './workspace.js';
+var accounts = null;
+var workspace = null;
 // 화면 흐름: API 키 → 엑셀 올리기 → 열 맞추기 → 장소 검색·지도 표시 → 동선 → 결과 확인·내보내기
 import { escapeHtml, safeUrl, downloadBlob, storage, PALETTE, STATUS, normalizeText, similarity } from './util.js';
 import {
@@ -148,7 +152,7 @@ const groupOf = (key) => GROUPS.find((g) => g.key === key) || GROUPS[0];
 // 좁은 화면에서는 지도가 위, 목록이 아래로 쌓인다
 const isNarrow = () => window.matchMedia('(max-width: 860px)').matches;
 // 날짜 탭으로 하루만 보고 있으면 다른 날의 장소·구간은 숨긴다
-const catVisible = (category) => state.day == null || category === state.day;
+const catVisible = (category, day) => state.day == null || category === state.day || day === state.day;
 
 let toastTimer = null;
 let undoToastAction = null;
@@ -279,6 +283,8 @@ let importGeneration = 0;
 document.getElementById('importCancel').onclick = () => importController?.abort();
 async function handleFile(file) {
   if (!file) return;
+  if (creatingTravel || restoringBackup) { showToast('여행을 여는 중입니다. 완료 후 가져와 주세요.'); return; }
+  if (accounts && !(await accounts.beforeLeave())) return;
   importController?.abort();
   const controller = new AbortController(), generation = ++importGeneration;
   importController = controller;
@@ -290,6 +296,7 @@ async function handleFile(file) {
     const saved = await saveTravelNow();
     if (saved && !saved.ok) throw new Error('현재 여행을 저장하지 못했어요. 먼저 백업한 뒤 파일을 가져와 주세요.');
     if (generation !== importGeneration || controller.signal.aborted) return;
+    accounts?.detach();
     state.parsedSheets = parsedSheets;
     state.defaultSheet = defaultSheet;
     deleteUndoAction = null; deleteUndoButton.classList.add('hidden'); undoToastAction = null; toastUndoButton.classList.add('hidden'); travelReady = true; travelId = crypto.randomUUID(); travelLibrary = []; travelDates = []; travelSearchVersion++; travelEl('travelSearchResults').replaceChildren();
@@ -321,6 +328,9 @@ async function handleFile(file) {
   loadSheet(state.defaultSheet || pickDefaultSheet(state.workbook));
   els.columnsPanel.classList.remove('hidden');
   setColumnsOpen(state.mapping.name < 0);
+  workspace?.setMode('map');
+  setDay(null);
+  scheduleTravelSave();
   showToast(`일정 파일을 불러왔어요 · ${state.records.length}행`);
 }
 
@@ -663,7 +673,7 @@ function placeMarker(it) {
     color: colorOf(it),
     label: placeNumber(it),
     title: it.name,
-    visible: catVisible(it.category),
+    visible: catVisible(it.category, it.day),
   });
 }
 
@@ -756,7 +766,7 @@ function infoHtml(it) {
 
 const hasRouteColumns = () => ['date', 'time', 'mode'].some((k) => state.mapping[k] >= 0);
 const latLng = (p) => ({ lat: p.lat, lng: p.lng });
-const legVisible = (leg) => catVisible(leg.from.category) && catVisible(leg.to.category);
+const legVisible = (leg) => catVisible(leg.from.category, leg.from.day) && catVisible(leg.to.category, leg.to.day);
 
 // 같은 날짜의 장소를 엑셀 순서대로 잇는다. 양 끝·이동 방법·시각이 그대로인 구간은 찾은 경로를 유지한다
 function buildLegs() {
@@ -2547,6 +2557,8 @@ function render() {
   renderList();
   renderPlacePanel();
   renderWorkspaceChrome();
+  workspace?.render();
+  accounts?.render();
   if (travelReady) {
     els.resultList.querySelectorAll('li.item').forEach(el => { el.draggable = true; });
     renderTravelLibraryPins();
@@ -2613,7 +2625,7 @@ function travelOf(legs) {
 function planSummaryText() {
   if (!state.items.length) return '';
   const cats = [...state.colors.keys()].filter(Boolean);
-  const shown = state.items.filter((it) => catVisible(it.category) && it.place).length;
+  const shown = state.items.filter((it) => catVisible(it.category, it.day) && it.place).length;
   if (state.day != null) return `${dayInfo(state.day).label} · ${shown}곳`;
   return `${shown}곳${byDate() && cats.length ? ` · ${cats.length}일 일정` : ''}`;
 }
@@ -2632,7 +2644,7 @@ function renderDayTabs() {
   const all = { top: '전체', main: byDate() ? `${cats.length}일` : 'ALL', text: false, label: '전체 일정' };
   const legs = shownLegs();
   const travel = travelOf(legs);
-  const count = state.items.filter((it) => catVisible(it.category) && it.place).length;
+  const count = state.items.filter((it) => catVisible(it.category, it.day) && it.place).length;
   const label = `<div class="day-label"><strong>${count}곳</strong>${travel ? ` · 이동 ${formatDuration(travel)}` : ''}</div>`;
   const html = tab(null, all, '') + cats.map((c, i) => tab(c, { ...dayInfo(c), top: `Day ${i + 1}`, main: dayInfo(c).label, text: false }, state.colors.get(c))).join('') + label;
   els.dayTabs.classList.remove('hidden');
@@ -2645,9 +2657,9 @@ function renderDayTabs() {
 
 function setDay(day) {
   state.day = day;
-  for (const it of state.items) mapView?.setVisible(it.idx, catVisible(it.category));
+  for (const it of state.items) mapView?.setVisible(it.idx, catVisible(it.category, it.day));
   for (const leg of state.legs) mapView?.setLegVisible(leg.key, legVisible(leg));
-  if (state.selected != null && !catVisible(state.items[state.selected]?.category)) select(null);
+  if (state.selected != null && !catVisible(state.items[state.selected]?.category, state.items[state.selected]?.day)) select(null);
   const leg = state.legs.find((l) => l.key === state.selectedLeg);
   if (leg && !legVisible(leg)) selectLeg(leg.key, 'list');
   mapView?.fitAll();
@@ -2658,7 +2670,7 @@ function renderMapMeta() {
   els.mapScope.textContent = state.day == null ? '전체 일정' : `${dayInfo(state.day).label} 일정`;
   const legs = shownLegs();
   const travel = travelOf(legs);
-  const placed = state.items.filter((it) => it.place && catVisible(it.category)).length;
+  const placed = state.items.filter((it) => it.place && catVisible(it.category, it.day)).length;
   els.mapNote.textContent = !state.items.length ? ''
     : travel ? `${legs.length}구간 · 이동 ${formatDuration(travel)}` : `장소 ${placed}곳`;
 }
@@ -2773,7 +2785,7 @@ function renderList() {
   const group = groupOf(state.filter);
   // 선택한 항목은 상태가 바뀌어 필터에서 벗어나도 계속 보여 준다 (예: '확인 필요'에서 후보를 고른 직후)
   const visible = state.items.filter((it) => (
-    (group.match(it) || it.idx === state.selected) && catVisible(it.category) && (!document.getElementById('workspaceSearch').value.trim() || `${it.name} ${it.query} ${it.place?.address || ''}`.toLowerCase().includes(document.getElementById('workspaceSearch').value.trim().toLowerCase()))
+    (group.match(it) || it.idx === state.selected) && catVisible(it.category, it.day) && (!document.getElementById('workspaceSearch').value.trim() || `${it.name} ${it.query} ${it.place?.address || ''}`.toLowerCase().includes(document.getElementById('workspaceSearch').value.trim().toLowerCase()))
   ));
   // Photos are requested only near the viewport, not for every itinerary row.
   if (state.selected != null) queuePlacePhotos(visible.filter(it => it.idx === state.selected));
@@ -3288,7 +3300,7 @@ function renderWorkspaceChrome() {
   const legs = shownLegs();
   const distance = legs.reduce((n, leg) => n + (leg.route?.distance || 0), 0);
   const duration = travelOf(legs);
-  summary.innerHTML = `<strong>${state.day ? escapeHtml(dayInfo(state.day).label) : '전체 일정'} 이동 경로</strong><div class="journey-metrics"><div><small>총 이동 거리</small><b>${distance ? formatDistance(distance) : '경로 검색 전'}</b></div><div><small>이동 시간</small><b>${duration ? formatDuration(duration) : '미정'}</b></div><div><small>방문 장소</small><b>${state.items.filter(it => catVisible(it.category)).length}곳</b></div></div>`;
+  summary.innerHTML = `<strong>${state.day ? escapeHtml(dayInfo(state.day).label) : '전체 일정'} 이동 경로</strong><div class="journey-metrics"><div><small>총 이동 거리</small><b>${distance ? formatDistance(distance) : '경로 검색 전'}</b></div><div><small>이동 시간</small><b>${duration ? formatDuration(duration) : '미정'}</b></div><div><small>방문 장소</small><b>${state.items.filter(it => catVisible(it.category, it.day)).length}곳</b></div></div>`;
   const done = state.items.length && state.items.every(it => it.place);
   document.querySelectorAll('#importSteps > span').forEach((step, i) => step.classList.toggle('done', i < 2 ? !!state.records.length : i === 2 ? !!state.items.length && !state.running && done : !!done));
   document.body.classList.toggle('has-itinerary', !!state.items.length);
@@ -3394,22 +3406,33 @@ function showSchedulePlacePreview(place) {
 const EDITOR_DRAFTS = 'routeflow.editorDrafts.v1';
 let activeDraftKey = null;
 let activeDraftBaseline = '';
+let activeDraftInitialFields = '';
 function loadEditorDrafts() {
-  const drafts = loadJson(EDITOR_DRAFTS, {});
+  let drafts;
+  try { drafts = accounts?.editorKey() ? JSON.parse(sessionStorage.getItem(accounts.editorKey()) || '{}') : loadJson(EDITOR_DRAFTS, {}); } catch { drafts = {}; }
   return drafts && typeof drafts === 'object' && !Array.isArray(drafts) ? drafts : {};
+}
+function saveEditorDrafts(drafts) {
+  if (!accounts?.editorKey()) return storage.set(EDITOR_DRAFTS, JSON.stringify(drafts));
+  try { sessionStorage.setItem(accounts.editorKey(), JSON.stringify(drafts)); return true; } catch { return false; }
 }
 function draftFields() { return Object.fromEntries(Object.entries(scheduleFields).map(([key,input]) => [key,input.value])); }
 function persistEditorDraft() {
   if (!scheduleDialog.open || !activeDraftKey) return;
   const drafts = loadEditorDrafts();
   drafts[activeDraftKey] = { fields:draftFields(), baseline:activeDraftBaseline };
-  if (!storage.set(EDITOR_DRAFTS, JSON.stringify(drafts))) showToast('미저장 초안을 보관할 수 없어요. 입력을 복사해 보관해 주세요.');
+  if (!saveEditorDrafts(drafts)) showToast('미저장 초안을 보관할 수 없어요. 입력을 복사해 보관해 주세요.');
 }
 function removeEditorDraft() {
   const drafts = loadEditorDrafts(); delete drafts[activeDraftKey];
-  storage.set(EDITOR_DRAFTS, JSON.stringify(drafts));
+  saveEditorDrafts(drafts);
 }
 for (const field of Object.values(scheduleFields)) field.addEventListener('input', persistEditorDraft);
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && !event.isComposing && event.keyCode !== 229 && scheduleDialog.open) {
+    event.preventDefault(); persistEditorDraft(); scheduleDialog.close();
+  }
+});
 function openScheduleEditor(it = null) {
   const switchingDraft = scheduleDialog.open && activeDraftKey;
   if (switchingDraft) persistEditorDraft();
@@ -3436,6 +3459,7 @@ function openScheduleEditor(it = null) {
   scheduleFields.time.value = it?.timeText || '';
   scheduleFields.region.value = it && state.mapping.region >= 0 ? cellText(it.cells[state.mapping.region]) : '';
   scheduleFields.memo.value = it?.memo || '';
+  activeDraftInitialFields = JSON.stringify(draftFields());
   document.getElementById('scheduleContext').textContent = it ? `${it.day || '전체 일정'} · ${it.idx + 1}번째 장소` : `${state.day || '현재 일정'}에 새 장소를 추가해요`;
   if (!scheduleDialog.open) scheduleDialog.show();
   document.body.classList.add('schedule-editing');
@@ -3478,7 +3502,7 @@ function rebuildEditedSchedule(changedRecord = null, pickedPlace = null, restore
   state.items = nextItems;
   state.items.forEach((it, i) => { it.idx = i; });
   assignColors();
-  if (state.day != null && !state.colors.has(state.day)) state.day = null;
+  if (state.day != null && !state.colors.has(state.day) && !state.items.some(item=>item.day===state.day)) state.day = null;
   const changed = state.items.find((it) => it.cells === changedRecord);
   const target = changed || state.items.find((it) => it.cells === preferredCells) || (selected && state.items.includes(selected) ? selected : null);
   if (structureChanged) {
@@ -3715,6 +3739,7 @@ async function saveTravelNow() {
   if (!travelReady || !state.workbook) return;
   const id = travelId;
   const snapshot = structuredClone(travelSnapshot());
+  if (accounts?.active()?.id === snapshot.id) return accounts.save(snapshot);
   const result = await travelStore.save(snapshot);
   if (result.ok) {
     const notes = loadLibraryNotes();
@@ -3730,6 +3755,7 @@ async function saveTravelNow() {
 }
 function scheduleTravelSave() {
   if (!travelReady || !state.workbook) return;
+  accounts?.changed();
   clearTimeout(travelSaveTimer);
   travelSaveTimer = setTimeout(saveTravelNow, 400);
 }
@@ -3807,7 +3833,7 @@ function travelChanged(message, before) {
   renderTravelLibrary(); saveTravelNow();
   showToast(message, () => { restoreTravel(before); saveTravelNow(); showToast('변경을 되돌렸어요.'); });
 }
-function travelBusy() { if(importController || state.running || state.routeRunning || state.planner.running) {showToast('진행 중인 작업이 끝나면 다시 시도해 주세요.');return true;} return false; }
+function travelBusy() { if(importController || creatingTravel || restoringBackup || state.running || state.routeRunning || state.planner.running) {showToast('진행 중인 작업이 끝나면 다시 시도해 주세요.');return true;} return false; }
 travelEl('travelImport').onclick = () => {if(!travelBusy()) els.fileInput.click();};
 travelEl('newTravel').onclick = () => {
   if (travelBusy()) return;
@@ -3817,16 +3843,22 @@ travelEl('newTravel').onclick = () => {
   }
   travelEl('travelDialog').showModal();
 };
-travelEl('newTravelForm').onsubmit = (event) => {
+let creatingTravel = false;
+travelEl('newTravelForm').onsubmit = async (event) => {
   event.preventDefault();
-  if (!travelEl('travelDialog').open) return;
+  if (!travelEl('travelDialog').open || creatingTravel) return;
   const name = travelEl('travelName').value.trim();
   const days = Number(travelEl('travelDays').value);
   const start = travelEl('travelStart').value;
   if (!name || !Number.isInteger(days) || days < 1 || days > 60 || !/^\d{4}-\d{2}-\d{2}$/.test(start) || !Number.isFinite(+new Date(`${start}T12:00:00`))) {
     showToast('여행 이름과 출발일, 1~60 사이의 정수 여행 일수를 확인해 주세요.'); return;
   }
-  saveTravelNow();
+  creatingTravel = true;
+  try {
+  if (accounts && !(await accounts.beforeLeave())) return;
+  const saved = await saveTravelNow();
+  if (saved && !saved.ok) { showToast(travelSaveMessage(saved)); return; }
+  accounts?.detach();
   const dates = Array.from({length: Number(travelEl('travelDays').value)}, (_, i) => {
     const d = new Date(`${start}T12:00:00`); d.setDate(d.getDate() + i);
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -3834,8 +3866,9 @@ travelEl('newTravelForm').onsubmit = (event) => {
   const headers = ['장소','날짜','시간','지역','메모','주소','위도','경도'];
   restoreTravel({id: crypto.randomUUID(), name: travelEl('travelName').value.trim(), updated: Date.now(), headers,
     records: [], mapping: autoMap(headers), dates, library: [], places: [], sheetName: '일정'});
-  travelEl('travelDialog').close(); setTravelTab(mapState === 'ready'); saveTravelNow();
+  travelEl('travelDialog').close(); setTravelTab(mapState === 'ready'); workspace?.setMode('board'); saveTravelNow();
   showToast('여행을 만들었어요. 첫 일정이나 가고 싶은 곳을 추가해 보세요.');
+  } finally { creatingTravel = false; }
 };
 function setTravelTab(library) {
   document.body.classList.toggle('travel-library-open', library);
@@ -3847,6 +3880,7 @@ function setTravelTab(library) {
 travelEl('travelPlanTab').onclick = () => setTravelTab(false);
 travelEl('travelLibraryTab').onclick = () => setTravelTab(true);
 function renderTravelLibrary() {
+  workspace?.render();
   travelEl('travelConnectionHint').textContent = mapState === 'ready' ? '직접 적거나 Google 지도에서 장소를 검색해 보세요.' : '지도 없이 이름과 메모를 보관하세요. 검색하려면 설정에서 지도를 연결해 주세요.';
   travelEl('travelLibraryList').innerHTML = travelLibrary.length ? travelLibrary.map((p, i) => `<article class="travel-place" draggable="true" data-library="${i}"><strong>${escapeHtml(p.name)}</strong><p>${escapeHtml(p.address || '')}</p><p class="muted">보관한 정보입니다. 폐업·이전·이름 변경 여부는 방문 전에 확인하세요.</p><label class="travel-note">메모<input data-travel-note="${i}" aria-label="${escapeHtml(p.name)} 메모" value="${escapeHtml(p.memo || '')}" placeholder="가고 싶은 이유, 먹고 싶은 메뉴"></label><button type="button" data-travel-add="${i}">일정에 넣기</button><button type="button" data-travel-remove="${i}">보관함에서 삭제</button></article>`).join('') : '<p>맛집, 숙소, 산책할 곳을 먼저 모아 보세요. 위의 직접 장소 보관으로 시작할 수 있어요.</p>';
   const days = [...new Set([...travelDates, ...state.items.map(it => it.day).filter(Boolean)])];
@@ -3967,9 +4001,11 @@ travelEl('travelHistoryList').onclick=async event=>{
   b.disabled=true;
   try {
     if(b.dataset.travelOpen) {
-      await saveTravelNow();
+      if(accounts && !(await accounts.beforeLeave())) return;
+      const saved=await saveTravelNow();if(saved && !saved.ok){showToast(travelSaveMessage(saved));return;}
       const snapshot=travelStore.list().entries.find(([id])=>id===b.dataset.travelOpen)?.[1];
       if(!snapshot) {showToast('이 여행이 다른 탭에서 삭제되었거나 손상됐어요. 목록을 다시 열어 주세요.');return;}
+      accounts?.detach();
       if(restoreTravel(snapshot,true)) {setTravelTab(false);travelEl('travelHistoryDialog').close();}
     }
     if(b.dataset.travelDelete && confirm('이 기기에 저장한 여행을 삭제할까요?')) {
@@ -4009,10 +4045,10 @@ document.addEventListener('dragend',()=>{travelDragged=null;});
 
 // This recovery journal belongs to this tab, so it cannot replay another tab's stale edit.
 function loadLibraryNotes() {
-  try { const notes = JSON.parse(sessionStorage.getItem('routeflow.libraryNotes.v1') || '{}'); return notes && typeof notes === 'object' && !Array.isArray(notes) ? notes : {}; } catch { return {}; }
+  try { const notes = JSON.parse(sessionStorage.getItem(accounts?.editorKey() ? `${accounts.editorKey()}:notes` : 'routeflow.libraryNotes.v1') || '{}'); return notes && typeof notes === 'object' && !Array.isArray(notes) ? notes : {}; } catch { return {}; }
 }
 function storeLibraryNotes(notes) {
-  try { sessionStorage.setItem('routeflow.libraryNotes.v1', JSON.stringify(notes)); return true; } catch { return false; }
+  try { sessionStorage.setItem(accounts?.editorKey() ? `${accounts.editorKey()}:notes` : 'routeflow.libraryNotes.v1', JSON.stringify(notes)); return true; } catch { return false; }
 }
 travelEl('travelLibraryList').addEventListener('input', event => {
   const index = event.target.dataset.travelNote;
@@ -4073,6 +4109,7 @@ travelEl('travelBackupInput').onchange = async event => {
   restoringBackup = true;
   const sourceTravel = travelId;
   try {
+    if(accounts && !(await accounts.beforeLeave())) return;
     if (file.size > MAX_BACKUP_BYTES) throw new Error('백업 파일은 20MB 이하로 선택해 주세요.');
     const snapshot = decodeTravelBackup(await file.text(), {id:crypto.randomUUID()});
     if (sourceTravel !== travelId) throw new Error('여행이 바뀌어 복원을 중단했어요. 백업을 다시 선택해 주세요.');
@@ -4081,6 +4118,7 @@ travelEl('travelBackupInput').onchange = async event => {
     // 새 여행 저장에 성공한 뒤에만 화면을 전환한다.
     const result = await travelStore.save(snapshot);
     if (!result.ok) throw new Error(travelSaveMessage(result));
+    accounts?.detach();
     restoreTravel(snapshot,true); setTravelTab(false); setMobileView('itinerary');
     showToast('백업을 새 여행으로 복원했어요. 기존 여행도 그대로 남아 있습니다.');
   } catch (error) { showToast(error.message); }
@@ -4104,9 +4142,11 @@ const recentTravel = travelStore.list().entries.map(([,snapshot]) => snapshot).s
 if (recentTravel) {
   travelEl('continueTravel').textContent = `${recentTravel.name} · 이어서 준비하기`;
   travelEl('continueTravel').classList.remove('hidden');
-  travelEl('continueTravel').onclick = () => {
+  travelEl('continueTravel').onclick = async () => {
+    if(accounts && !(await accounts.beforeLeave())) return;
     const latest = travelStore.list().entries.find(([id]) => id === recentTravel.id)?.[1];
     if (!latest) { showToast('이 여행은 삭제되었거나 열 수 없어요. 저장한 여행 목록을 확인해 주세요.'); return; }
+    accounts?.detach();
     if (restoreTravel(latest,true)) {setTravelTab(false);setMobileView('itinerary');}
   };
 }
@@ -4115,7 +4155,7 @@ setupDayRevision({
   snapshot: travelSnapshot,
   currentDay: () => state.day,
   settings: aiSettings,
-  ready: () => !travelBusy() && state.items.some(item => item.place),
+  ready: () => !travelBusy() && !scheduleDialog.open && state.items.some(item => item.place),
   openSettings: () => { els.aiProvider.value = aiSettings().provider; fillAISettings(); els.settingsDialog.showModal(); },
   apply: async (before, next, day) => {
     const unchanged = () => revisionFingerprint(travelSnapshot()) === revisionFingerprint(before);
@@ -4123,20 +4163,88 @@ setupDayRevision({
     const saved = await saveTravelNow();
     if (!saved?.ok) throw new Error(travelSaveMessage(saved || {}));
     if (!unchanged()) throw new Error('일정이 변경됐어요. 현재 일정으로 다시 요청해 주세요.');
-    const result = await travelStore.save(next);
+    const accountEditing = !!accounts?.active();
+    if(accountEditing) {restoreTravel(next);state.scheduleChanged=true;}
+    const result = accountEditing ? await saveTravelNow() : await travelStore.save(next);
     if (!result.ok) throw new Error(travelSaveMessage(result));
-    restoreTravel(next, true);
+    if(!accountEditing) restoreTravel(next, true);
     state.scheduleChanged = true;
     setDay(state.colors.has(day) ? day : null);
     const applied = revisionFingerprint(travelSnapshot());
     showToast(`${day} 수정안을 적용했어요. 경로 찾기로 이동 시간을 다시 확인하세요.`, async () => {
       if (revisionFingerprint(travelSnapshot()) !== applied) { showToast('이후 일정이 변경됐어요. 현재 내용을 보존하기 위해 자동 되돌리기를 중단했어요.'); return; }
       clearTimeout(travelSaveTimer);
-      const result = await travelStore.save(before);
+      const accountUndo = !!accounts?.active();
+      if(accountUndo) {restoreTravel(before);state.scheduleChanged=true;}
+      const result = accountUndo ? await saveTravelNow() : await travelStore.save(before);
       if (!result.ok) { showToast(travelSaveMessage(result)); return; }
-      restoreTravel(before, true);
+      if(!accountUndo) restoreTravel(before, true);
       setDay(state.colors.has(day) ? day : null);
       showToast('AI 수정 전 일정으로 되돌렸어요.');
     });
   },
+});
+
+function applyWorkspaceSnapshot(next) {
+  if(scheduleDialog.open)throw new Error('열려 있는 일정 편집을 저장하거나 닫은 뒤 이동해 주세요.');
+  state.records=structuredClone(next.records);
+  state.headers=structuredClone(next.headers);
+  state.mapping=structuredClone(next.mapping);
+  travelDates=structuredClone(next.dates || []);
+  travelLibrary=structuredClone(next.library || []);
+  state.items=buildItems().items;
+  for(const entry of next.places || []) {
+    const item=state.items.find(value=>value.recordIndex===entry.recordIndex);
+    if(item){item.place=structuredClone(entry.place);item.status=entry.status;}
+  }
+  state.scheduleChanged=true;
+  state.selected=null;
+  state.routesRequested=false;
+  state.legs=[];
+  assignColors();mapView?.clear();state.items.forEach(placeMarker);buildLegs();drawLegs();
+  els.fileMeta.textContent=`내 여행 · ${travelDates.length || new Set(state.items.map(item=>item.day)).size}일 · ${state.items.length}곳`;
+  updateSummary();
+  render();renderTravelLibrary();
+}
+function undoWorkspaceSnapshot(before) {
+  if(scheduleDialog.open) {showToast('열려 있는 일정 편집을 저장하거나 닫은 뒤 되돌려 주세요.',()=>undoWorkspaceSnapshot(before));return;}
+  applyWorkspaceSnapshot(before);saveTravelNow();showToast('이동을 되돌렸어요.');
+}
+workspace=initWorkspace({
+  host:travelEl('workspaceBoard'),
+  getSnapshot:()=>state.workbook?travelSnapshot():null,
+  getItems:()=>state.items,
+  getSelectedDay:()=>state.day,
+  onSelectDay:day=>setDay(day),
+  onApplySnapshot:async(next,{before,message})=>{
+    if(travelBusy())throw new Error('진행 중인 작업이 끝나면 이동해 주세요.');
+    applyWorkspaceSnapshot(next);
+    const saved=await saveTravelNow();
+    showToast(saved?.ok?message:'이동했지만 저장하지 못했어요. 전체 백업으로 보관하세요.',()=>undoWorkspaceSnapshot(before));
+    if(!saved?.ok)throw new Error('이동했지만 저장하지 못했어요. 현재 편집을 전체 백업으로 보관하세요.');
+  },
+  onEditItem:recordIndex=>openScheduleEditor(state.items.find(item=>item.recordIndex===recordIndex)),
+  onAddPlace:()=>travelEl('manualPlaceDialog').showModal(),
+  onNewTravel:()=>travelEl('newTravel').click(),
+  onOpenSaved:()=>travelEl('savedTravels').click(),
+  onImport:()=>travelEl('travelImport').click(),
+  onBackup:downloadTravelBackup,
+  onShowMap:map=>{document.body.classList.toggle('workspace-board-open',!map);if(map){setTravelTab(false);setMobileView('map');}else setMobileView('itinerary');},
+  isBusy:travelBusy,notify:showToast,
+});
+accounts=setupAccounts({
+  snapshot:travelSnapshot,ready:()=>!!state.workbook,
+  saveGuest:saveTravelNow,
+  restore:value=>{restoreTravel(value);workspace.setMode('board');},
+  reset:()=>{
+    clearTimeout(travelSaveTimer);scheduleDialog.close();activeDraftKey=null;activeDraftBaseline='';activeDraftInitialFields='';
+    undoToastAction=null;deleteUndoAction=null;toastUndoButton.classList.add('hidden');deleteUndoButton.classList.add('hidden');
+    state.workbook=null;state.fileBuffer=null;state.items=[];state.records=[];state.headers=[];state.mapping={};state.fileBase='';state.fileName='';state.legs=[];state.selected=null;state.day=null;state.planEdits=[];
+    travelId=crypto.randomUUID();travelLibrary=[];travelDates=[];state.colors=new Map();mapView?.clear();
+    sessionStorage.removeItem('routeflow.libraryNotes.v1');
+    travelEl('uploadedFile').classList.add('hidden');travelEl('planCard').classList.add('hidden');document.body.classList.remove('travel-native','has-itinerary','workspace-board-open');
+    render();renderTravelLibrary();
+  },
+  busy:travelBusy,canLeave:()=>!scheduleDialog.open || JSON.stringify(draftFields())===activeDraftInitialFields,
+  notify:showToast,backup:downloadTravelBackup,
 });
