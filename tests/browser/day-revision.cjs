@@ -96,6 +96,7 @@ const proposal = { summary: '예약은 유지하고 미술관 시간을 늦춘 �
     assert.deepEqual((await latest(p)).records, original.records); await p.evaluate(() => __restoreWrite());
     // A second tab changes the same travel after preview; CAS refuses overwrite.
     const q = await c.newPage(); await q.goto(BASE); await q.evaluate(id => { const k = 'routeflow.travels.v1'; const data=JSON.parse(localStorage.getItem(k)); data[id].name = '다른 탭에서 변경'; localStorage.setItem(k, JSON.stringify(data)); }, original.id);
+    await p.bringToFront();
     await p.click('#dayRevisionApply'); await p.waitForFunction(() => document.querySelector('#dayRevisionStatus').textContent.includes('다른 탭'));
     assert.equal((await latest(p)).name, '다른 탭에서 변경');
     await q.close();

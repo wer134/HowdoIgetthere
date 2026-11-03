@@ -22,7 +22,7 @@ const {createHash}=require('node:crypto');
   const release=JSON.parse(await fs.readFile('dist/release.json','utf8'));
   const backendHashes=Object.fromEntries(await Promise.all((await fs.readdir('backend')).filter(name=>name.endsWith('.js')).map(async name=>[name,createHash('sha256').update(await fs.readFile(path.join('backend',name))).digest('hex')])));
   let owner,guest,companion;
-  const openAccount=async page=>{await page.locator('[data-account-open]').first().click();await page.locator('#accountDialog').waitFor({state:'visible'});};
+  const openAccount=async page=>{await page.locator('[data-account-open]').first().click();await page.locator('#accountDialog').waitFor({state:'visible'});await page.waitForFunction(()=>!document.getElementById('accountClose').disabled);};
   const newTrip=async(page,name,duplicate=false)=>{
     const board=page.locator('[data-workspace-travel="new"]');
     if(await board.isVisible())await board.click();else {if(await page.locator('[data-workspace-mode="map"]').isVisible())await page.locator('[data-workspace-mode="map"]').click();await page.locator('#newTravel').click();}

@@ -1,9 +1,25 @@
-.account-dialog { width:min(720px,calc(100vw - 24px)); max-height:calc(100dvh - 24px); overflow:auto; border:1px solid var(--line-strong); border-radius:var(--radius-lg); background:var(--card); color:var(--text); padding:24px; box-shadow:var(--shadow); }
+.account-dialog { width:min(720px,calc(100vw - 24px)); max-height:calc(100dvh - 24px); overflow:auto; border:1px solid var(--line-strong); border-radius:var(--radius-lg); background:var(--card); color:var(--text); padding:24px; box-shadow:var(--shadow); word-break:keep-all; overflow-wrap:break-word; }
 .account-dialog::backdrop { background:color-mix(in srgb,var(--ink) 55%,transparent); }
-.account-dialog header { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.account-dialog > header { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.account-dialog > header h2 { min-width:0; overflow-wrap:anywhere; }
+.account-dialog > header button { flex-shrink:0; }
+#sharedItinerary > header { display:block; }
+#sharedItinerary { display:grid; gap:16px; }
+#sharedItinerary h1 { margin:8px 0; font-size:18px; }
+#sharedItinerary .itinerary-day h2 { display:flex; flex-wrap:wrap; align-items:baseline; gap:8px 12px; padding-bottom:8px; border-bottom:1px solid var(--line-strong); }
+#sharedItinerary .itinerary-day h2 span { font-size:14px; font-weight:400; color:var(--text-soft); }
+#sharedItinerary ol,#sharedItinerary ul { list-style:none; margin:0; padding:0; }
+#sharedItinerary li { display:flex; gap:12px; padding:12px 0; border-bottom:1px solid var(--line); }
+#sharedItinerary li > div { min-width:0; }
+#sharedItinerary .itinerary-time { flex:none; width:96px; font-size:12px; color:var(--text-soft); }
+#sharedItinerary h3 { margin:0 0 4px; }
+#sharedItinerary p { margin:4px 0; }
+#sharedItinerary .itinerary-memo { white-space:pre-wrap; }
+#sharedItinerary footer { padding-top:12px; border-top:1px solid var(--line); font-size:12px; color:var(--text-soft); }
 .account-dialog h2 { margin:0; font-size:18px; }
 .account-dialog h3 { font-size:16px; margin:24px 0 8px; }
-.account-dialog p { overflow-wrap:anywhere; }
+.account-dialog p { word-break:keep-all; overflow-wrap:break-word; }
+#accountIdentity { overflow-wrap:anywhere; }
 .account-dialog label { display:grid; gap:4px; margin:12px 0; font-size:14px; }
 .account-dialog input,.account-dialog textarea { width:100%; min-width:0; padding:8px 12px; border:1px solid var(--line-strong); border-radius:var(--radius-md); background:var(--card-soft); color:var(--text); }
 .account-dialog button { min-height:40px; padding:8px 12px; border:1px solid var(--line-strong); border-radius:var(--radius-md); background:var(--card); color:var(--text); }
@@ -11,7 +27,7 @@
 .account-dialog button:disabled { opacity:.5; cursor:default; }
 .account-dialog .account-primary { background:var(--coral); color:var(--card); border-color:var(--coral); }
 .account-actions { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0; }
-.account-entry { padding:12px; border:1px solid var(--line); border-radius:var(--radius-md); margin:8px 0; overflow-wrap:anywhere; }
+.account-entry { padding:12px; border:1px solid var(--line); border-radius:var(--radius-md); margin:8px 0; overflow-wrap:break-word; }
 .account-entry strong { display:block; }
 .account-entry small { color:var(--text-soft); margin-right:12px; }
 #accountStatus { padding:12px; background:var(--card-soft); border-radius:var(--radius-md); }
@@ -21,5 +37,5 @@
 .account-entrypoint { flex-shrink:0; }
 @media(max-width:1100px) { .topbar-actions .account-entrypoint { display:inline-flex !important; } }
 @media(max-width:950px) { .topbar-actions { display:flex; } .topbar-actions > :not(.account-entrypoint) { display:none !important; } }
-@media(max-width:760px) { .account-dialog { padding:16px; } .topbar-actions .account-entrypoint { font-size:12px; padding:8px; } }
+@media(max-width:760px) { .account-dialog { padding:16px; } .topbar-actions .account-entrypoint { font-size:12px; padding:8px; } #sharedItinerary li { flex-direction:column; gap:4px; } #sharedItinerary .itinerary-time { width:auto; } }
 @media(max-height:500px) { .account-dialog { max-height:calc(100dvh - 16px); padding:12px; } }

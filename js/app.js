@@ -6,6 +6,7 @@ import { revisionDays, revisionFingerprint } from './day-revision.js';
 import { setupDayRevision } from './day-revision-ui.js';
 import { setupAccounts } from './account.js';
 import { initWorkspace } from './workspace.js';
+import { workspaceFingerprint } from './workspace-model.js';
 var accounts = null;
 var workspace = null;
 // 화면 흐름: API 키 → 엑셀 올리기 → 열 맞추기 → 장소 검색·지도 표시 → 동선 → 결과 확인·내보내기
@@ -4206,8 +4207,9 @@ function applyWorkspaceSnapshot(next) {
   updateSummary();
   render();renderTravelLibrary();
 }
-function undoWorkspaceSnapshot(before) {
-  if(scheduleDialog.open) {showToast('열려 있는 일정 편집을 저장하거나 닫은 뒤 되돌려 주세요.',()=>undoWorkspaceSnapshot(before));return;}
+function undoWorkspaceSnapshot(before, applied) {
+  if(workspaceFingerprint(travelSnapshot())!==applied) {showToast('이동 이후 일정이 변경됐어요. 현재 내용을 보존하기 위해 되돌리기를 중단했어요.');return;}
+  if(scheduleDialog.open) {showToast('열려 있는 일정 편집을 저장하거나 닫은 뒤 되돌려 주세요.',()=>undoWorkspaceSnapshot(before,applied));return;}
   applyWorkspaceSnapshot(before);saveTravelNow();showToast('이동을 되돌렸어요.');
 }
 workspace=initWorkspace({
@@ -4219,8 +4221,9 @@ workspace=initWorkspace({
   onApplySnapshot:async(next,{before,message})=>{
     if(travelBusy())throw new Error('진행 중인 작업이 끝나면 이동해 주세요.');
     applyWorkspaceSnapshot(next);
+    const applied=workspaceFingerprint(travelSnapshot());
     const saved=await saveTravelNow();
-    showToast(saved?.ok?message:'이동했지만 저장하지 못했어요. 전체 백업으로 보관하세요.',()=>undoWorkspaceSnapshot(before));
+    showToast(saved?.ok?message:'이동했지만 저장하지 못했어요. 전체 백업으로 보관하세요.',()=>undoWorkspaceSnapshot(before,applied));
     if(!saved?.ok)throw new Error('이동했지만 저장하지 못했어요. 현재 편집을 전체 백업으로 보관하세요.');
   },
   onEditItem:recordIndex=>openScheduleEditor(state.items.find(item=>item.recordIndex===recordIndex)),
