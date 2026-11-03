@@ -1,0 +1,114 @@
+{
+  "date": "2026-11-03T15:35:58.520Z",
+  "release": {
+    "version": "a395c9c2f2118a82",
+    "revision": "b5cc77b67f18e69e9cb63ce94bbd17aae174729c",
+    "site": "https://wer134.github.io/HowdoIgetthere/",
+    "assets": [
+      "index.html",
+      "config.js",
+      "runtime-config.js",
+      "지도_양식.xlsx",
+      "privacy.html",
+      "terms.html",
+      "robots.txt",
+      "sitemap.xml",
+      "THIRD_PARTY_NOTICES.md",
+      "COPYRIGHT.md",
+      "js/app.js",
+      "js/budget.js",
+      "js/day-revision-ui.js",
+      "js/day-revision.js",
+      "js/excel-loader.js",
+      "js/excel-worker.js",
+      "js/excel.js",
+      "js/file-limits.js",
+      "js/kml.js",
+      "js/mapview.js",
+      "js/memory-cache.js",
+      "js/nearby.js",
+      "js/places.js",
+      "js/plan.js",
+      "js/planner.js",
+      "js/routes.js",
+      "js/travel-portability.js",
+      "js/travel-store.js",
+      "js/util.js",
+      "js/xlsxedit.js",
+      "js/account-sync.js",
+      "js/workspace-model.js",
+      "js/account.js",
+      "js/workspace.js",
+      "css/legal.css",
+      "css/style.css",
+      "css/account.css",
+      "css/workspace.css",
+      "assets/favicon.svg",
+      "assets/og-routeflow.png",
+      "assets/og-routeflow.svg",
+      "vendor/xlsx.full.min.js",
+      "vendor/anthropic-sdk-0.131.0.min.js",
+      "vendor/SheetJS-APACHE-2.0.txt",
+      "vendor/anthropic-sdk-LICENSE.txt"
+    ]
+  },
+  "backendHashes": {
+    "errors.js": "9d6c98a4ab1bf4ce17cf97fc7ccc84a4bdfd3d61daedea7611d6fff168d11db8",
+    "config.js": "ec64778cd52953befd763c09c62bbb1650fa71af6da665f29c1d839b3db2fba7",
+    "snapshot.js": "d9720730f717419018df671d6c4b8f4d34c3e17f92b1480321d1880f2126a906",
+    "schema.js": "912c94a1cd86e8d595b8c69b73aa7306782bd55af601f2dbbd3e042d1b2e9284",
+    "store.js": "83e67c15e8e4278b4bb40aadaaab32e4d3d44209b552dcff8a642bd43b67c46c",
+    "usage.js": "51922859f51ef5451024f0627e2f3ede9758770fdb3485d82185f41c5dc30439",
+    "providers.js": "9e992cd2e790ab9af06716265211ac78a04af495dc62340f5dac1faf7ede53be",
+    "api.js": "6a9bf751d08fb9b7311bdfb71ae09206242f983abe4823a2a579461f69062ce0",
+    "network.js": "a34e5f24e88a1151b0709bf13d912a1024e95f6bb57000d65ad15a2b6770d52a"
+  },
+  "boundary": "Real local production static assets + HTTP API + SQLite; mocked Google provider only; no real OAuth SMS or AI calls.",
+  "results": [
+    {
+      "scenario": "Google OIDC provider-boundary mock login does not upload guest travel",
+      "pass": true
+    },
+    {
+      "scenario": "explicit account copy retains device original with distinct server id",
+      "pass": true
+    },
+    {
+      "scenario": "account edits save to HTTP SQLite without leaking into guest store",
+      "pass": true
+    },
+    {
+      "scenario": "new guest travel after account editing remains durable after reload",
+      "pass": true
+    },
+    {
+      "scenario": "read-only fragment sharing and authenticated suggestion owner acceptance",
+      "pass": true
+    },
+    {
+      "scenario": "offline draft retained, logout blocked, retry succeeds",
+      "pass": true
+    },
+    {
+      "scenario": "version conflict survives refresh, explicit latest and logout clear account draft; logout freezes edits and blocks Escape until response",
+      "pass": true
+    },
+    {
+      "scenario": "duplicate new-travel submit creates exactly one device travel",
+      "pass": true
+    },
+    {
+      "scenario": "BYOK day revision apply and undo retain account-only storage during delayed PUT plus beforeunload (Gemini mocked)",
+      "pass": true
+    },
+    {
+      "scenario": "unsaved nonmodal editor blocks logout; saving retains memo and subsequent logout clears user-scoped editor drafts",
+      "pass": true
+    },
+    {
+      "scenario": "unconfigured account service keeps guest homepage and explains optional login at 390/768/1440",
+      "pass": true
+    }
+  ],
+  "errors": []
+}

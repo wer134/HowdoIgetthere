@@ -1,0 +1,10 @@
+{
+  "scope": "Git tracked and non-ignored untracked working-tree files; NUL-delimited UTF-8 path list",
+  "head": "b5cc77b67f18e69e9cb63ce94bbd17aae174729c",
+  "files": 1338,
+  "exitCode": 0,
+  "findings": 0,
+  "toolVersion": "8.30.0",
+  "redacted": true,
+  "timestamp": "2026-11-03T15:30:17.613Z"
+}

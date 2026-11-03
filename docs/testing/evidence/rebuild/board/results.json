@@ -1,0 +1,78 @@
+{
+  "status": "PASS",
+  "time": "2026-11-03T15:35:18.492Z",
+  "assetRoot": "E:\\HowdoIgetthere\\dist",
+  "release": {
+    "revision": "b5cc77b67f18e69e9cb63ce94bbd17aae174729c",
+    "version": "a395c9c2f2118a82"
+  },
+  "providerCalls": "none; static local server, guest storage only",
+  "checks": [
+    "earlier and existing undo restore order",
+    "stale drag after another edit is rejected",
+    "open editor blocks reorder, Escape retains draft, reopened draft saves to original record",
+    "explicit date/position move preserves time memo custom column and focus",
+    "real pointer drag inserts candidate and retains library original",
+    "search matches memo",
+    "keyboard Escape closes move dialog",
+    "board/map mode preserves selected day",
+    "downloaded Excel preserves moved order, all days, time, memo, custom value",
+    "guest changes survive reload",
+    "new-travel toolbar creates empty board and retains prior guest trip"
+  ],
+  "viewports": [
+    {
+      "width": 1440,
+      "height": 1000,
+      "overflow": false,
+      "columns": 3,
+      "login": true,
+      "toolbar": 1392
+    },
+    {
+      "width": 1280,
+      "height": 900,
+      "overflow": false,
+      "columns": 3,
+      "login": true,
+      "toolbar": 1232
+    },
+    {
+      "width": 768,
+      "height": 1024,
+      "overflow": false,
+      "columns": 2,
+      "login": true,
+      "toolbar": 720
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "overflow": false,
+      "columns": 1,
+      "login": true,
+      "toolbar": 366
+    },
+    {
+      "width": 844,
+      "height": 390,
+      "overflow": false,
+      "columns": 2,
+      "login": true,
+      "toolbar": 796
+    },
+    {
+      "width": 640,
+      "height": 450,
+      "overflow": false,
+      "columns": 1,
+      "login": true,
+      "toolbar": 616
+    }
+  ],
+  "cleanup": {
+    "browserClosed": true,
+    "serverClosed": true,
+    "userData": "fresh context, no existing travel accessed"
+  }
+}

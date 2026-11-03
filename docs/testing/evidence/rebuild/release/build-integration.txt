@@ -1,0 +1,9 @@
+node.exe : npm notice run excel-map-maker@0.1.0 build
+위치 줄:1 문자:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Users\dongsu\AppData\Roaming ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (npm notice run ...ker@0.1.0 build:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+npm notice run node tools/build.js
+Built 46 public assets (607a0efaf89c79c7); private runtime credentials excluded.

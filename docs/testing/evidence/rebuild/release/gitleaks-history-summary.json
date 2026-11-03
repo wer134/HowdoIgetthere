@@ -1,0 +1,9 @@
+{
+  "redacted": true,
+  "scope": "git log --all",
+  "exitCode": 0,
+  "timestamp": "2026-11-04T00:29:54.2256512+09:00",
+  "findings": 0,
+  "head": "b5cc77b67f18e69e9cb63ce94bbd17aae174729c",
+  "toolVersion": "8.30.0"
+}

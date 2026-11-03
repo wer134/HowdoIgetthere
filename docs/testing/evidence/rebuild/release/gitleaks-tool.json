@@ -1,0 +1,7 @@
+{
+  "checksumVerified": true,
+  "platform": "windows_x64",
+  "version": "8.30.0",
+  "source": "https://github.com/gitleaks/gitleaks/releases/tag/v8.30.0",
+  "sha256": "54fe94f644b832dd08e8c3a5915efb3bfa862386d59fb27ca0792cb687a83573"
+}

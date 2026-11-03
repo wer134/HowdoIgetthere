@@ -1,0 +1,7 @@
+{
+  "version": "a395c9c2f2118a82",
+  "revision": "b5cc77b67f18e69e9cb63ce94bbd17aae174729c",
+  "workingTreeIncludesUncommittedChanges": true,
+  "assetCount": 45,
+  "notes": "Three later frontend guard changes are not in this artifact; final commit build and delta validation required."
+}

@@ -1,0 +1,9 @@
+node.exe : npm notice run excel-map-maker@0.1.0 check:release
+위치 줄:1 문자:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Users\dongsu\AppData\Roaming ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (npm notice run ...0 check:release:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+npm notice run node tools/check-release.js
+Release checks passed: 45 assets, revision d48d89fe772668676c7625d4bf95910e16510576

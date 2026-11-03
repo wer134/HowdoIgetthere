@@ -2,7 +2,7 @@ name: Production checks
 
 on:
   push:
-    branches: [main, work]
+    branches: [main, work, 'rebuild/**']
   pull_request:
   workflow_dispatch:
 
@@ -19,6 +19,8 @@ jobs:
       REVISION_OUT: /tmp/routeflow-ci/day-revision
       STABILITY_OUT: /tmp/routeflow-ci/stability
       JOURNEY_OUT: /tmp/routeflow-ci/journey
+      WORKSPACE_OUT: /tmp/routeflow-ci/workspace
+      ACCOUNT_OUT: /tmp/routeflow-ci/accounts
     steps:
       - uses: actions/checkout@v4
         with:
@@ -62,7 +64,9 @@ jobs:
           node tests/browser/travel-order.cjs
           node tests/browser/travel-drag.cjs
           node tests/browser/travel-safety.cjs
-      - name: All 78 negative cases (8 explicitly unavailable)
+          node tests/browser/workspace-board.cjs
+          node tests/browser/account-workspace.cjs
+      - name: All 78 negative cases (9 explicitly unavailable in this harness)
         run: |
           node docs/testing/repro/negative-78.cjs
           node --input-type=module <<'JS'
@@ -70,8 +74,10 @@ jobs:
           import assert from 'node:assert/strict';
           const results = JSON.parse(fs.readFileSync(process.env.NEGATIVE_OUT + '/results.json'));
           assert.equal(results.length, 78);
-          assert.equal(results.filter(r => r.status === '통과').length, 70);
-          assert.deepEqual(results.filter(r => r.status === '검증 불가').map(r => r.id), [40,50,59,67,69,71,72,75]);
+          assert.equal(results.filter(r => r.status === '결함 확인').length, 0);
+          assert.equal(results.filter(r => r.harnessError).length, 0);
+          assert(results.every(r => ['통과', '검증 불가'].includes(r.status)));
+          assert.deepEqual(results.filter(r => r.status === '검증 불가').map(r => r.id), [5,40,50,59,67,69,71,72,75]);
           JS
       - name: Lighthouse lab measurement (keyless first visit)
         env:
