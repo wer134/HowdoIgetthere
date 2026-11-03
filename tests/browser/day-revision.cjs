@@ -50,6 +50,7 @@ const proposal = { summary: '예약은 유지하고 미술관 시간을 늦춘 �
       ['다음날 장소', '2026-11-08', '09:00', '다음날 메모', '후쿠오카', 33.59, 130.39, '다른 날짜 보존'],
     ]), '내 일정');
     await p.setInputFiles('#fileInput', { name: '내가_작성한_계획.xlsx', mimeType: 'application/octet-stream', buffer: Buffer.from(new Uint8Array(XLSX.write(wb, { type: 'array', bookType: 'xlsx' }))) });
+    await p.waitForFunction(() => document.querySelector('#fileName').textContent === '내가_작성한_계획.xlsx');
     if(width<950)await p.click('[data-mobile-view="itinerary"]');
     await p.click('#runBtn');
     await p.waitForFunction(() => document.querySelectorAll('#resultList .item-name').length === 3);
