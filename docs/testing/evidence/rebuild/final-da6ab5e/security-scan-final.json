@@ -1,0 +1,44 @@
+{
+  "scannedHead": "02bd98b08ca941dd113d3299606eb963dc7f2263",
+  "date": "2026-11-04T09:00:21.804Z",
+  "tool": "Gitleaks v8.30.0 previously checksum-verified official binary",
+  "source": {
+    "exitCode": 1,
+    "rawFindings": 3
+  },
+  "history": {
+    "exitCode": 1,
+    "rawFindings": 1
+  },
+  "confirmedSecrets": 0,
+  "classification": "All reported generic-api-key matches are verified api.js SHA256 metadata; no allowlist or scan suppression used.",
+  "classifications": [
+    {
+      "file": "docs/testing/evidence/rebuild/account/results.json",
+      "field": "backendHashes.api.js",
+      "classification": "SHA256 file digest, not a credential",
+      "verifiedAgainst": "root backend/api.js bytes"
+    },
+    {
+      "file": "docs/testing/evidence/rebuild/final-da6ab5e/account/results.json",
+      "field": "backendHashes.api.js",
+      "classification": "SHA256 file digest, not a credential",
+      "verifiedAgainst": "review backend/api.js bytes"
+    },
+    {
+      "file": "docs/testing/evidence/rebuild/final-da6ab5e/extra/results.json",
+      "field": "backendHashes.api.js",
+      "classification": "SHA256 file digest, not a credential",
+      "verifiedAgainst": "review backend/api.js bytes"
+    }
+  ],
+  "npmAudit": {
+    "info": 0,
+    "low": 0,
+    "moderate": 0,
+    "high": 0,
+    "critical": 0,
+    "total": 0
+  },
+  "temporaryScanCopyRemoved": true
+}

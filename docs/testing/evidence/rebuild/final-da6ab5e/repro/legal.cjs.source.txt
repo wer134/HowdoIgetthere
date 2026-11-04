@@ -1,0 +1,13 @@
+const {chromium}=require('playwright');
+const fs=require('node:fs/promises');
+const path=require('node:path');
+const assert=require('node:assert/strict');
+(async()=>{
+ const {createStaticServer}=await import('../../../tools/http-server.js');
+ const out=path.resolve('.omo/evidence/final-da6ab5e/legal');await fs.mkdir(out,{recursive:true});
+ const server=createStaticServer({root:path.resolve('dist'),production:true});await new Promise(r=>server.listen(0,'127.0.0.1',r));
+ let browser;const result={sha:JSON.parse(await fs.readFile('dist/release.json','utf8')),checks:[],cleanup:{}};
+ try{browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH});const context=await browser.newContext();const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ for(const width of [390,768,1440])for(const document of ['privacy','terms']){await page.setViewportSize({width,height:1000});const response=await page.goto(`http://127.0.0.1:${server.address().port}/${document}.html`);assert.equal(response.status(),200);await page.screenshot({path:path.join(out,`${document}-${width}.png`),fullPage:true});const data=await page.evaluate(()=>({title:document.title,overflow:document.documentElement.scrollWidth>innerWidth,heading:document.querySelector('h1').textContent,links:[...document.querySelectorAll('a')].map(a=>a.getAttribute('href'))}));assert.equal(data.overflow,false);assert.ok(data.heading);result.checks.push({document,width,...data});}assert.deepEqual(errors,[]);result.errors=errors;result.status='PASS';
+ }finally{await browser?.close();server.closeAllConnections();await new Promise(r=>server.close(r));result.cleanup={browserClosed:true,serverClosed:true};await fs.writeFile(path.join(out,'results.json'),JSON.stringify(result,null,2));}console.log(JSON.stringify(result,null,2));
+})().catch(e=>{console.error(e);process.exitCode=1;});

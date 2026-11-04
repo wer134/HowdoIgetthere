@@ -1,0 +1,9 @@
+{
+  "exitCode": 1,
+  "expectedFindings": 2,
+  "actualFindings": 2,
+  "allowedExactDigestAtApprovedPath": true,
+  "unapprovedDigestStillDetected": true,
+  "approvedDigestAtUnapprovedPathStillDetected": true,
+  "syntheticOnly": true
+}

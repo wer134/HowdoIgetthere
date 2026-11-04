@@ -1,0 +1,133 @@
+{
+  "release": {
+    "version": "c59f564a0c63efe6",
+    "revision": "da6ab5eac497b278f73d9e728282cbf99d37337c",
+    "site": "https://wer134.github.io/HowdoIgetthere/",
+    "assets": [
+      "index.html",
+      "config.js",
+      "runtime-config.js",
+      "지도_양식.xlsx",
+      "privacy.html",
+      "terms.html",
+      "robots.txt",
+      "sitemap.xml",
+      "THIRD_PARTY_NOTICES.md",
+      "COPYRIGHT.md",
+      "js/account-sync.js",
+      "js/account.js",
+      "js/budget.js",
+      "js/day-revision-ui.js",
+      "js/day-revision.js",
+      "js/excel-loader.js",
+      "js/excel-worker.js",
+      "js/excel.js",
+      "js/file-limits.js",
+      "js/kml.js",
+      "js/mapview.js",
+      "js/memory-cache.js",
+      "js/nearby.js",
+      "js/places.js",
+      "js/plan.js",
+      "js/planner.js",
+      "js/routes.js",
+      "js/travel-portability.js",
+      "js/travel-store.js",
+      "js/util.js",
+      "js/workspace-model.js",
+      "js/workspace.js",
+      "js/xlsxedit.js",
+      "js/app.js",
+      "css/workspace.css",
+      "css/account.css",
+      "css/legal.css",
+      "css/style.css",
+      "assets/favicon.svg",
+      "assets/og-routeflow.png",
+      "assets/og-routeflow.svg",
+      "vendor/xlsx.full.min.js",
+      "vendor/anthropic-sdk-0.131.0.min.js",
+      "vendor/SheetJS-APACHE-2.0.txt",
+      "vendor/anthropic-sdk-LICENSE.txt"
+    ]
+  },
+  "environment": "Windows local loopback production static dist, isolated Chromium via Lighthouse Node API, default simulated throttling; shared host scheduling can affect timing; no real Google APIs or production network",
+  "records": [
+    {
+      "form": "mobile",
+      "fetchTime": "2026-11-03T16:04:50.148Z",
+      "lighthouseVersion": "13.5.0",
+      "scores": {
+        "performance": 0.54,
+        "accessibility": 1,
+        "best-practices": 0.96,
+        "seo": 1
+      },
+      "metrics": {
+        "first-contentful-paint": {
+          "value": 2029.2365,
+          "display": "2.0 s"
+        },
+        "largest-contentful-paint": {
+          "value": 4961.392,
+          "display": "5.0 s"
+        },
+        "total-blocking-time": {
+          "value": 1253.4999999999986,
+          "display": "1,250 ms"
+        },
+        "cumulative-layout-shift": {
+          "value": 0.0675042446496043,
+          "display": "0.068"
+        },
+        "speed-index": {
+          "value": 2570.232282179223,
+          "display": "2.6 s"
+        }
+      },
+      "warnings": [],
+      "actualFormFactor": "mobile"
+    },
+    {
+      "form": "mobile-repeat",
+      "fetchTime": "2026-11-03T16:05:08.321Z",
+      "lighthouseVersion": "13.5.0",
+      "scores": {
+        "performance": 0.48,
+        "accessibility": 1,
+        "best-practices": 0.96,
+        "seo": 1
+      },
+      "metrics": {
+        "first-contentful-paint": {
+          "value": 5236.0474,
+          "display": "5.2 s"
+        },
+        "largest-contentful-paint": {
+          "value": 7014.458,
+          "display": "7.0 s"
+        },
+        "total-blocking-time": {
+          "value": 576,
+          "display": "580 ms"
+        },
+        "cumulative-layout-shift": {
+          "value": 0.06759196786199911,
+          "display": "0.068"
+        },
+        "speed-index": {
+          "value": 5236.0474,
+          "display": "5.2 s"
+        }
+      },
+      "warnings": [],
+      "note": "Initially mislabeled desktop: Node API ignored preset flag. Actual configSettings mobile; not desktop evidence.",
+      "actualFormFactor": "mobile"
+    }
+  ],
+  "cleanup": {
+    "chromeClosed": true,
+    "serverClosed": true
+  },
+  "desktopStatus": "PENDING corrected desktop-config third argument"
+}

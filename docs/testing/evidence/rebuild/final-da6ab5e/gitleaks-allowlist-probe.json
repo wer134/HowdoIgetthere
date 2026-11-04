@@ -1,0 +1,42 @@
+[
+ {
+  "RuleID": "generic-api-key",
+  "Description": "Detected a Generic API Key, potentially exposing access to various services and sensitive operations.",
+  "StartLine": 2,
+  "EndLine": 2,
+  "StartColumn": 5,
+  "EndColumn": 79,
+  "Match": "api.js\": \"REDACTED\"",
+  "Secret": "REDACTED",
+  "File": "C:/Users/dongsu/AppData/Local/Temp/routeflow-allowlist-boundary-Fek85z/other/results.json",
+  "SymlinkFile": "",
+  "Commit": "",
+  "Entropy": 3.8812957,
+  "Author": "",
+  "Email": "",
+  "Date": "",
+  "Message": "",
+  "Tags": [],
+  "Fingerprint": "C:/Users/dongsu/AppData/Local/Temp/routeflow-allowlist-boundary-Fek85z/other/results.json:generic-api-key:2"
+ },
+ {
+  "RuleID": "generic-api-key",
+  "Description": "Detected a Generic API Key, potentially exposing access to various services and sensitive operations.",
+  "StartLine": 2,
+  "EndLine": 2,
+  "StartColumn": 5,
+  "EndColumn": 79,
+  "Match": "api.js\": \"REDACTED\"",
+  "Secret": "REDACTED",
+  "File": "C:/Users/dongsu/AppData/Local/Temp/routeflow-allowlist-boundary-Fek85z/docs/testing/evidence/rebuild/final-da6ab5e/extra/results.json",
+  "SymlinkFile": "",
+  "Commit": "",
+  "Entropy": 3.8767567,
+  "Author": "",
+  "Email": "",
+  "Date": "",
+  "Message": "",
+  "Tags": [],
+  "Fingerprint": "C:/Users/dongsu/AppData/Local/Temp/routeflow-allowlist-boundary-Fek85z/docs/testing/evidence/rebuild/final-da6ab5e/extra/results.json:generic-api-key:2"
+ }
+]

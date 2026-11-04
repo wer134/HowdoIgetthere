@@ -1,0 +1,191 @@
+{
+  "release": {
+    "version": "c59f564a0c63efe6",
+    "revision": "da6ab5eac497b278f73d9e728282cbf99d37337c",
+    "site": "https://wer134.github.io/HowdoIgetthere/",
+    "assets": [
+      "index.html",
+      "config.js",
+      "runtime-config.js",
+      "지도_양식.xlsx",
+      "privacy.html",
+      "terms.html",
+      "robots.txt",
+      "sitemap.xml",
+      "THIRD_PARTY_NOTICES.md",
+      "COPYRIGHT.md",
+      "js/account-sync.js",
+      "js/account.js",
+      "js/budget.js",
+      "js/day-revision-ui.js",
+      "js/day-revision.js",
+      "js/excel-loader.js",
+      "js/excel-worker.js",
+      "js/excel.js",
+      "js/file-limits.js",
+      "js/kml.js",
+      "js/mapview.js",
+      "js/memory-cache.js",
+      "js/nearby.js",
+      "js/places.js",
+      "js/plan.js",
+      "js/planner.js",
+      "js/routes.js",
+      "js/travel-portability.js",
+      "js/travel-store.js",
+      "js/util.js",
+      "js/workspace-model.js",
+      "js/workspace.js",
+      "js/xlsxedit.js",
+      "js/app.js",
+      "css/workspace.css",
+      "css/account.css",
+      "css/legal.css",
+      "css/style.css",
+      "assets/favicon.svg",
+      "assets/og-routeflow.png",
+      "assets/og-routeflow.svg",
+      "vendor/xlsx.full.min.js",
+      "vendor/anthropic-sdk-0.131.0.min.js",
+      "vendor/SheetJS-APACHE-2.0.txt",
+      "vendor/anthropic-sdk-LICENSE.txt"
+    ]
+  },
+  "environment": "Windows local loopback production static dist, isolated Chromium via Lighthouse Node API, default simulated throttling; shared host scheduling can affect timing; no real Google APIs or production network",
+  "records": [
+    {
+      "form": "mobile",
+      "fetchTime": "2026-11-03T16:04:50.148Z",
+      "lighthouseVersion": "13.5.0",
+      "scores": {
+        "performance": 0.54,
+        "accessibility": 1,
+        "best-practices": 0.96,
+        "seo": 1
+      },
+      "metrics": {
+        "first-contentful-paint": {
+          "value": 2029.2365,
+          "display": "2.0 s"
+        },
+        "largest-contentful-paint": {
+          "value": 4961.392,
+          "display": "5.0 s"
+        },
+        "total-blocking-time": {
+          "value": 1253.4999999999986,
+          "display": "1,250 ms"
+        },
+        "cumulative-layout-shift": {
+          "value": 0.0675042446496043,
+          "display": "0.068"
+        },
+        "speed-index": {
+          "value": 2570.232282179223,
+          "display": "2.6 s"
+        }
+      },
+      "warnings": [],
+      "actualFormFactor": "mobile"
+    },
+    {
+      "form": "desktop",
+      "configSettings": {
+        "output": [
+          "json",
+          "html"
+        ],
+        "maxWaitForFcp": 30000,
+        "maxWaitForLoad": 45000,
+        "pauseAfterFcpMs": 1000,
+        "pauseAfterLoadMs": 1000,
+        "networkQuietThresholdMs": 1000,
+        "cpuQuietThresholdMs": 1000,
+        "formFactor": "desktop",
+        "throttling": {
+          "rttMs": 40,
+          "throughputKbps": 10240,
+          "requestLatencyMs": 0,
+          "downloadThroughputKbps": 0,
+          "uploadThroughputKbps": 0,
+          "cpuSlowdownMultiplier": 1
+        },
+        "throttlingMethod": "simulate",
+        "screenEmulation": {
+          "mobile": false,
+          "width": 1350,
+          "height": 940,
+          "deviceScaleFactor": 1,
+          "disabled": false
+        },
+        "emulatedUserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
+        "auditMode": false,
+        "gatherMode": false,
+        "clearStorageTypes": [
+          "file_systems",
+          "shader_cache",
+          "service_workers",
+          "cache_storage"
+        ],
+        "disableStorageReset": false,
+        "debugNavigation": false,
+        "channel": "node",
+        "usePassiveGathering": false,
+        "disableFullPageScreenshot": false,
+        "skipAboutBlank": false,
+        "blankPage": "about:blank",
+        "ignoreStatusCode": false,
+        "locale": "en-US",
+        "blockedUrlPatterns": null,
+        "additionalTraceCategories": null,
+        "extraHeaders": null,
+        "precomputedLanternData": null,
+        "onlyAudits": null,
+        "onlyCategories": [
+          "performance",
+          "accessibility",
+          "best-practices",
+          "seo"
+        ],
+        "skipAudits": null
+      },
+      "fetchTime": "2026-11-03T16:14:09.762Z",
+      "lighthouseVersion": "13.5.0",
+      "scores": {
+        "performance": 0.89,
+        "accessibility": 1,
+        "best-practices": 0.96,
+        "seo": 1
+      },
+      "metrics": {
+        "first-contentful-paint": {
+          "value": 493.604,
+          "display": "0.5 s"
+        },
+        "largest-contentful-paint": {
+          "value": 1808.191,
+          "display": "1.8 s"
+        },
+        "total-blocking-time": {
+          "value": 140,
+          "display": "140 ms"
+        },
+        "cumulative-layout-shift": {
+          "value": 0.023302744067945018,
+          "display": "0.023"
+        },
+        "speed-index": {
+          "value": 912.1674295563499,
+          "display": "0.9 s"
+        }
+      },
+      "warnings": []
+    }
+  ],
+  "cleanup": {
+    "chromeClosed": true,
+    "serverClosed": true
+  },
+  "desktopStatus": "VERIFIED formFactor desktop,1350x940,CPU1x",
+  "supplemental": "mobile-repeat.json/html retains discarded desktop-intended mobile48 run, excluded from primary scores"
+}

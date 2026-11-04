@@ -1,0 +1,19 @@
+locator.click: Timeout 5000ms exceeded.
+Call log:
+[2m  - waiting for locator('#resultList [data-action="edit"]').first()[22m
+[2m    - locator resolved to <button type="button" data-action="edit" aria-label="A 장소 수정">수정</button>[22m
+[2m  - attempting click action[22m
+[2m    - waiting for element to be visible, enabled and stable[22m
+
+    at memo (E:\HowdoIgetthere-review\tests\browser\travel-safety.cjs:10:89)
+    at E:\HowdoIgetthere-review\tests\browser\travel-safety.cjs:15:123
+    at async run (E:\HowdoIgetthere-review\tests\browser\travel-safety.cjs:14:505)
+    at async E:\HowdoIgetthere-review\tests\browser\travel-safety.cjs:15:3 {
+  log: [
+    `  - waiting for locator('#resultList [data-action="edit"]').first()`,
+    '    - locator resolved to <button type="button" data-action="edit" aria-label="A 장소 수정">수정</button>',
+    '  - attempting click action',
+    '    - waiting for element to be visible, enabled and stable'
+  ],
+  name: 'TimeoutError'
+}

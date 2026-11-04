@@ -1,0 +1,79 @@
+{
+  "status": "PASS",
+  "time": "2026-11-03T15:50:00.641Z",
+  "assetRoot": "E:\\HowdoIgetthere-review\\dist",
+  "release": {
+    "revision": "da6ab5eac497b278f73d9e728282cbf99d37337c",
+    "version": "c59f564a0c63efe6"
+  },
+  "providerCalls": "none; static local server, guest storage only",
+  "checks": [
+    "stale board undo rejects whole-snapshot replacement after a later candidate memo save",
+    "earlier and existing undo restore order; open editor blocks undo until closed",
+    "stale drag after another edit is rejected",
+    "open editor blocks reorder, Escape retains draft, reopened draft saves to original record",
+    "explicit date/position move preserves time memo custom column and focus",
+    "real pointer drag inserts candidate and retains library original",
+    "search matches memo",
+    "keyboard Escape closes move dialog",
+    "board/map mode preserves selected day",
+    "downloaded Excel preserves moved order, all days, time, memo, custom value",
+    "guest changes survive reload",
+    "new-travel toolbar creates empty board and retains prior guest trip"
+  ],
+  "viewports": [
+    {
+      "width": 1440,
+      "height": 1000,
+      "overflow": false,
+      "columns": 3,
+      "login": true,
+      "toolbar": 1392
+    },
+    {
+      "width": 1280,
+      "height": 900,
+      "overflow": false,
+      "columns": 3,
+      "login": true,
+      "toolbar": 1232
+    },
+    {
+      "width": 768,
+      "height": 1024,
+      "overflow": false,
+      "columns": 2,
+      "login": true,
+      "toolbar": 720
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "overflow": false,
+      "columns": 1,
+      "login": true,
+      "toolbar": 366
+    },
+    {
+      "width": 844,
+      "height": 390,
+      "overflow": false,
+      "columns": 2,
+      "login": true,
+      "toolbar": 796
+    },
+    {
+      "width": 640,
+      "height": 450,
+      "overflow": false,
+      "columns": 1,
+      "login": true,
+      "toolbar": 616
+    }
+  ],
+  "cleanup": {
+    "browserClosed": true,
+    "serverClosed": true,
+    "userData": "fresh context, no existing travel accessed"
+  }
+}

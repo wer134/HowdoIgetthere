@@ -1,0 +1,140 @@
+{
+  "sha": {
+    "version": "c59f564a0c63efe6",
+    "revision": "da6ab5eac497b278f73d9e728282cbf99d37337c",
+    "site": "https://wer134.github.io/HowdoIgetthere/",
+    "assets": [
+      "index.html",
+      "config.js",
+      "runtime-config.js",
+      "지도_양식.xlsx",
+      "privacy.html",
+      "terms.html",
+      "robots.txt",
+      "sitemap.xml",
+      "THIRD_PARTY_NOTICES.md",
+      "COPYRIGHT.md",
+      "js/account-sync.js",
+      "js/account.js",
+      "js/budget.js",
+      "js/day-revision-ui.js",
+      "js/day-revision.js",
+      "js/excel-loader.js",
+      "js/excel-worker.js",
+      "js/excel.js",
+      "js/file-limits.js",
+      "js/kml.js",
+      "js/mapview.js",
+      "js/memory-cache.js",
+      "js/nearby.js",
+      "js/places.js",
+      "js/plan.js",
+      "js/planner.js",
+      "js/routes.js",
+      "js/travel-portability.js",
+      "js/travel-store.js",
+      "js/util.js",
+      "js/workspace-model.js",
+      "js/workspace.js",
+      "js/xlsxedit.js",
+      "js/app.js",
+      "css/workspace.css",
+      "css/account.css",
+      "css/legal.css",
+      "css/style.css",
+      "assets/favicon.svg",
+      "assets/og-routeflow.png",
+      "assets/og-routeflow.svg",
+      "vendor/xlsx.full.min.js",
+      "vendor/anthropic-sdk-0.131.0.min.js",
+      "vendor/SheetJS-APACHE-2.0.txt",
+      "vendor/anthropic-sdk-LICENSE.txt"
+    ]
+  },
+  "checks": [
+    {
+      "document": "privacy",
+      "width": 390,
+      "title": "데이터 처리 안내 · RouteFlow",
+      "overflow": false,
+      "heading": "데이터 처리 안내",
+      "links": [
+        "index.html",
+        "terms.html",
+        "https://github.com/wer134/HowdoIgetthere/issues"
+      ]
+    },
+    {
+      "document": "terms",
+      "width": 390,
+      "title": "이용 안내 · RouteFlow",
+      "overflow": false,
+      "heading": "RouteFlow 이용 안내",
+      "links": [
+        "index.html",
+        "privacy.html",
+        "COPYRIGHT.md",
+        "THIRD_PARTY_NOTICES.md",
+        "https://github.com/wer134/HowdoIgetthere/issues"
+      ]
+    },
+    {
+      "document": "privacy",
+      "width": 768,
+      "title": "데이터 처리 안내 · RouteFlow",
+      "overflow": false,
+      "heading": "데이터 처리 안내",
+      "links": [
+        "index.html",
+        "terms.html",
+        "https://github.com/wer134/HowdoIgetthere/issues"
+      ]
+    },
+    {
+      "document": "terms",
+      "width": 768,
+      "title": "이용 안내 · RouteFlow",
+      "overflow": false,
+      "heading": "RouteFlow 이용 안내",
+      "links": [
+        "index.html",
+        "privacy.html",
+        "COPYRIGHT.md",
+        "THIRD_PARTY_NOTICES.md",
+        "https://github.com/wer134/HowdoIgetthere/issues"
+      ]
+    },
+    {
+      "document": "privacy",
+      "width": 1440,
+      "title": "데이터 처리 안내 · RouteFlow",
+      "overflow": false,
+      "heading": "데이터 처리 안내",
+      "links": [
+        "index.html",
+        "terms.html",
+        "https://github.com/wer134/HowdoIgetthere/issues"
+      ]
+    },
+    {
+      "document": "terms",
+      "width": 1440,
+      "title": "이용 안내 · RouteFlow",
+      "overflow": false,
+      "heading": "RouteFlow 이용 안내",
+      "links": [
+        "index.html",
+        "privacy.html",
+        "COPYRIGHT.md",
+        "THIRD_PARTY_NOTICES.md",
+        "https://github.com/wer134/HowdoIgetthere/issues"
+      ]
+    }
+  ],
+  "cleanup": {
+    "browserClosed": true,
+    "serverClosed": true
+  },
+  "errors": [],
+  "status": "PASS"
+}

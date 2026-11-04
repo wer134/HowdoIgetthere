@@ -1,0 +1,23 @@
+[
+ {
+  "RuleID": "generic-api-key",
+  "Description": "Detected a Generic API Key, potentially exposing access to various services and sensitive operations.",
+  "StartLine": 63,
+  "EndLine": 63,
+  "StartColumn": 7,
+  "EndColumn": 81,
+  "Match": "api.js\": \"REDACTED\"",
+  "Secret": "REDACTED",
+  "File": "docs/testing/evidence/rebuild/account/results.json",
+  "SymlinkFile": "",
+  "Commit": "0d7d5e328299795de11596abafc6b897eb95f54a",
+  "Link": "https://github.com/wer134/HowdoIgetthere/blob/0d7d5e328299795de11596abafc6b897eb95f54a/docs/testing/evidence/rebuild/account/results.json#L63",
+  "Entropy": 3.8812957,
+  "Author": "wer134",
+  "Email": "87606833+wer134@users.noreply.github.com",
+  "Date": "2026-11-03T15:37:16Z",
+  "Message": "docs(P3): document account setup and fresh rebuild evidence",
+  "Tags": [],
+  "Fingerprint": "0d7d5e328299795de11596abafc6b897eb95f54a:docs/testing/evidence/rebuild/account/results.json:generic-api-key:63"
+ }
+]

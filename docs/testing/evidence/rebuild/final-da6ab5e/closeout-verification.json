@@ -1,0 +1,33 @@
+{
+  "verifiedAt": "2026-11-04T08:58:14.132Z",
+  "testedSource": "da6ab5eac497b278f73d9e728282cbf99d37337c",
+  "artifactVersion": "c59f564a0c63efe6",
+  "unitTests": 124,
+  "board": 12,
+  "account": 11,
+  "extra": 14,
+  "legal": 6,
+  "negative": {
+    "ok": true,
+    "total": 78,
+    "passed": 69,
+    "unavailable": [
+      5,
+      40,
+      50,
+      59,
+      67,
+      69,
+      71,
+      72,
+      75
+    ]
+  },
+  "initialFailuresRetained": true,
+  "productSourceChangedBetweenRuns": false,
+  "finalAdapterFiles": [
+    "docs/testing/repro/negative-78.cjs",
+    "tests/browser/travel-safety.cjs"
+  ],
+  "rawAccountBoundaryNote": "Top-level Google-only shorthand is incomplete; the BYOK scenario also mocks Gemini. Raw results are preserved unchanged."
+}

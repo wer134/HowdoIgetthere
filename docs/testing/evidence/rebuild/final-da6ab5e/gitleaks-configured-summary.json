@@ -1,0 +1,22 @@
+{
+  "head": "02bd98b08ca941dd113d3299606eb963dc7f2263",
+  "config": ".gitleaks.toml",
+  "results": [
+    {
+      "scan": "source",
+      "exitCode": 0,
+      "findings": 0
+    },
+    {
+      "scan": "history",
+      "exitCode": 0,
+      "findings": 0
+    }
+  ],
+  "defaultRulesExtended": true,
+  "allowance": "generic-api-key rule only: exact two verified backend/api.js SHA256 metadata lines AND three approved evidence paths",
+  "boundaryProbe": "gitleaks-allowlist-probe-summary.json",
+  "sourceFiles": 1714,
+  "tempCopiesRemoved": true,
+  "documentation": "https://github.com/gitleaks/gitleaks/blob/v8.30.0/README.md#configuration"
+}

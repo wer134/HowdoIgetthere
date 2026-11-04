@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>&lt;&amp;테스트&gt;</name>
+    <Style id="s0">
+      <IconStyle>
+        <color>ff563412</color>
+        <Icon><href>https://maps.google.com/mapfiles/kml/paddle/wht-blank.png</href></Icon>
+      </IconStyle>
+      <LineStyle>
+        <color>ff563412</color>
+        <width>4</width>
+      </LineStyle>
+    </Style>
+    <Folder>
+      <name>2026-11-01</name>
+      <Placemark>
+        <name>&lt;img src=x onerror=&quot;alert(1)&quot;&gt;&amp;</name>
+        <description>&lt;script&gt;bad()&lt;/script&gt;
+A&amp;B</description>
+        <styleUrl>#s0</styleUrl>
+        <ExtendedData>
+          <Data name="URL"><value>javascript:alert(1)</value></Data>
+          <Data name="HTML"><value>&lt;script&gt;bad()&lt;/script&gt;</value></Data>
+        </ExtendedData>
+        <Point><coordinates>139,35,0</coordinates></Point>
+      </Placemark>
+    </Folder>
+  </Document>
+</kml>

@@ -1,0 +1,352 @@
+{
+  "revision": "da6ab5eac497b278f73d9e728282cbf99d37337c",
+  "version": "c59f564a0c63efe6",
+  "time": "2026-11-03T15:55:28.807Z",
+  "count": 43,
+  "files": [
+    {
+      "group": "board",
+      "name": "stale-board-undo-rejected.png",
+      "width": 1440,
+      "height": 1000,
+      "sha256": "c3b06c1fef59865cab6c6a0e54842d2c9d2c5e8399c03e939dce2b47afddae35",
+      "bytes": 149202
+    },
+    {
+      "group": "board",
+      "name": "desktop-empty-day.png",
+      "width": 1440,
+      "height": 1000,
+      "sha256": "67e3366a77725389223da588bbbc78fcb18435ae868af5886a4ea5a17ad38956",
+      "bytes": 46081
+    },
+    {
+      "group": "board",
+      "name": "move-dialog.png",
+      "width": 1440,
+      "height": 1000,
+      "sha256": "3ba8106240725d81d8b502dbb5d528b24ecaf03e18571582d05b007111d55ff4",
+      "bytes": 54967
+    },
+    {
+      "group": "board",
+      "name": "search.png",
+      "width": 1440,
+      "height": 1000,
+      "sha256": "11a1a99ae195d2abafa81e6b57cf7f71801358ab495389945364e2912f15ddc2",
+      "bytes": 41725
+    },
+    {
+      "group": "board",
+      "name": "1440x1000.png",
+      "width": 1440,
+      "height": 1000,
+      "sha256": "0852bbeb7ba362966fd4b8199fc093fc132a4db8878ece73bd89cf068bbcc3aa",
+      "bytes": 51204
+    },
+    {
+      "group": "board",
+      "name": "1280x900.png",
+      "width": 1280,
+      "height": 900,
+      "sha256": "bec06db19b8a4b3ff4e8c499757625c05c5ffbd0c5d88f45f210fca75c3c556b",
+      "bytes": 49478
+    },
+    {
+      "group": "board",
+      "name": "768x1024.png",
+      "width": 768,
+      "height": 1024,
+      "sha256": "f5941b13ca773afa4e8d1907cf8880b0bc36059bcf5c33c11c33c5e956dadeb8",
+      "bytes": 37809
+    },
+    {
+      "group": "board",
+      "name": "390x844.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "8e0116a1f3abbcd142c5a40d2ffb6993c5e1979b3baba0f662c1a3abdd0e1273",
+      "bytes": 24037
+    },
+    {
+      "group": "board",
+      "name": "844x390.png",
+      "width": 844,
+      "height": 390,
+      "sha256": "c33c0d792fee7515701f8b8c2686afc28377475df65491d83c8349b78c7d960a",
+      "bytes": 17125
+    },
+    {
+      "group": "board",
+      "name": "844x390-scrolled.png",
+      "width": 844,
+      "height": 390,
+      "sha256": "eb2099d55cbc1d8e6a69ad756a37e8a36ce35abe5cdf5ac5967b2e23f664b7ab",
+      "bytes": 20506
+    },
+    {
+      "group": "board",
+      "name": "640x450.png",
+      "width": 640,
+      "height": 450,
+      "sha256": "57f3399ae0b7853f1b5ce33ee5b564c520130477650f549d2bc64addcf50cb75",
+      "bytes": 16123
+    },
+    {
+      "group": "board",
+      "name": "640x450-scrolled.png",
+      "width": 640,
+      "height": 450,
+      "sha256": "457181539ef8333e4232b1df24b5fa1349754765ed93af9bb510ffb14ebdeae7",
+      "bytes": 14512
+    },
+    {
+      "group": "board",
+      "name": "map-mode.png",
+      "width": 1440,
+      "height": 1000,
+      "sha256": "3bd90243860f40b21a72fad7e78e2102c8165f4b9bdcddb4e7a0f7207804eb48",
+      "bytes": 149447
+    },
+    {
+      "group": "board",
+      "name": "empty-travel.png",
+      "width": 1440,
+      "height": 1000,
+      "sha256": "041578d0e42ddf9c2cda098a96609a8453a6db51322d199736e1a993e086026a",
+      "bytes": 35377
+    },
+    {
+      "group": "account",
+      "name": "account-390.png",
+      "width": 390,
+      "height": 1000,
+      "sha256": "5e738553a28961355ea0e5b0f49c785b2bfaea9d9379ffc40a354eb66462f415",
+      "bytes": 26964
+    },
+    {
+      "group": "account",
+      "name": "account-768.png",
+      "width": 768,
+      "height": 1000,
+      "sha256": "a410cb54ec5826ce15821dd5d8bf5a600923a0fd3fb574f6cd14d5c447f3f472",
+      "bytes": 27387
+    },
+    {
+      "group": "account",
+      "name": "account-1440.png",
+      "width": 1440,
+      "height": 1000,
+      "sha256": "bdd8813ef711b6727c69e244648a698c6047b0a9e7022d9a0e4a22e2926e8403",
+      "bytes": 50226
+    },
+    {
+      "group": "account",
+      "name": "shared-mobile.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "e4f099c3935abbe9ad6c446a93f0f6b1d945fec2eb4e3e56d41f65e1091009d6",
+      "bytes": 18677
+    },
+    {
+      "group": "account",
+      "name": "guest-home-390.png",
+      "width": 390,
+      "height": 900,
+      "sha256": "723770a0021609953620c6bca41b5ca0646215a869744a21325d05dc6ca66621",
+      "bytes": 20809
+    },
+    {
+      "group": "account",
+      "name": "account-unavailable-390.png",
+      "width": 390,
+      "height": 900,
+      "sha256": "1cae5c4d7e731d1e96cc14ac989324e21c147203d528fcdad5e5239a8d6cfb17",
+      "bytes": 22013
+    },
+    {
+      "group": "account",
+      "name": "guest-home-768.png",
+      "width": 768,
+      "height": 900,
+      "sha256": "0497a3eb216e4cd88a092f10928d92297b7541e8d0241403d9751c9c7de85305",
+      "bytes": 23544
+    },
+    {
+      "group": "account",
+      "name": "account-unavailable-768.png",
+      "width": 768,
+      "height": 900,
+      "sha256": "8836419c14379a3d00f10536a7203289acc84d5517b6130c5a960eab4c881a7b",
+      "bytes": 23629
+    },
+    {
+      "group": "account",
+      "name": "guest-home-1440.png",
+      "width": 1440,
+      "height": 900,
+      "sha256": "3ee8522b0c33dd200f319f0ff45caf953e0193d43cfb37830464d1ce3b1dbaa9",
+      "bytes": 120687
+    },
+    {
+      "group": "account",
+      "name": "account-unavailable-1440.png",
+      "width": 1440,
+      "height": 900,
+      "sha256": "a92a6038c147de1faf6efd6d851eb4e8a147d40cc52766f5c46e7e0b68d614b4",
+      "bytes": 110001
+    },
+    {
+      "group": "legal",
+      "name": "privacy-390.png",
+      "width": 390,
+      "height": 3609,
+      "sha256": "94939436c8f2563b03424f90dc0616cbf8920d1c1d9a3cf39df98fa2d38b4ee3",
+      "bytes": 71067
+    },
+    {
+      "group": "legal",
+      "name": "terms-390.png",
+      "width": 390,
+      "height": 2137,
+      "sha256": "9410af05c115cdbc6cecb530e79c56ecef58afd2db63a35aa68b5e9b22495808",
+      "bytes": 41814
+    },
+    {
+      "group": "legal",
+      "name": "privacy-768.png",
+      "width": 768,
+      "height": 2212,
+      "sha256": "3b60eaf3dbe8a6f703f7921d00c3134d7e7502a045fe0a8fb3ddb0eb5e8fec92",
+      "bytes": 65455
+    },
+    {
+      "group": "legal",
+      "name": "terms-768.png",
+      "width": 768,
+      "height": 1489,
+      "sha256": "40e9ffa5e559affb2494a36826f831000525b17ceb8752a47d5e63c84c69dc34",
+      "bytes": 39858
+    },
+    {
+      "group": "legal",
+      "name": "privacy-1440.png",
+      "width": 1440,
+      "height": 2155,
+      "sha256": "eb9a12b83cb37e79da523406638ea744515ff435f676f6df7760e5f17e1951ba",
+      "bytes": 71132
+    },
+    {
+      "group": "legal",
+      "name": "terms-1440.png",
+      "width": 1440,
+      "height": 1460,
+      "sha256": "96f8913e42a11b90ba5cc6a45e67823427cb462b2be7255ba1df0ef26f5dc123",
+      "bytes": 43602
+    },
+    {
+      "group": "extra",
+      "name": "account-390.png",
+      "width": 390,
+      "height": 1000,
+      "sha256": "5e738553a28961355ea0e5b0f49c785b2bfaea9d9379ffc40a354eb66462f415",
+      "bytes": 26964
+    },
+    {
+      "group": "extra",
+      "name": "account-768.png",
+      "width": 768,
+      "height": 1000,
+      "sha256": "a410cb54ec5826ce15821dd5d8bf5a600923a0fd3fb574f6cd14d5c447f3f472",
+      "bytes": 27387
+    },
+    {
+      "group": "extra",
+      "name": "account-1440.png",
+      "width": 1440,
+      "height": 1000,
+      "sha256": "bdd8813ef711b6727c69e244648a698c6047b0a9e7022d9a0e4a22e2926e8403",
+      "bytes": 50226
+    },
+    {
+      "group": "extra",
+      "name": "shared-mobile.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "e4f099c3935abbe9ad6c446a93f0f6b1d945fec2eb4e3e56d41f65e1091009d6",
+      "bytes": 18677
+    },
+    {
+      "group": "extra",
+      "name": "unsaved-account-backup.png",
+      "width": 1440,
+      "height": 1000,
+      "sha256": "2d51e7892e6af3e707b2d4f23a54b17c7af94a56c101616c620e9a4e2efeb4a7",
+      "bytes": 61069
+    },
+    {
+      "group": "extra",
+      "name": "byok-editor-guard.png",
+      "width": 1440,
+      "height": 900,
+      "sha256": "6ac1445736e4b7512fc7e4158c4217e935be75544da64c80215ee483d353f868",
+      "bytes": 157910
+    },
+    {
+      "group": "extra",
+      "name": "latest-editor-guard.png",
+      "width": 1440,
+      "height": 900,
+      "sha256": "b600ab3e5f9fd0e3585d7cd1fe2e6ed6a79739bc02c99ddaa468c956c35dfb99",
+      "bytes": 84729
+    },
+    {
+      "group": "extra",
+      "name": "guest-home-390.png",
+      "width": 390,
+      "height": 900,
+      "sha256": "723770a0021609953620c6bca41b5ca0646215a869744a21325d05dc6ca66621",
+      "bytes": 20809
+    },
+    {
+      "group": "extra",
+      "name": "account-unavailable-390.png",
+      "width": 390,
+      "height": 900,
+      "sha256": "1cae5c4d7e731d1e96cc14ac989324e21c147203d528fcdad5e5239a8d6cfb17",
+      "bytes": 22013
+    },
+    {
+      "group": "extra",
+      "name": "guest-home-768.png",
+      "width": 768,
+      "height": 900,
+      "sha256": "0497a3eb216e4cd88a092f10928d92297b7541e8d0241403d9751c9c7de85305",
+      "bytes": 23544
+    },
+    {
+      "group": "extra",
+      "name": "account-unavailable-768.png",
+      "width": 768,
+      "height": 900,
+      "sha256": "8836419c14379a3d00f10536a7203289acc84d5517b6130c5a960eab4c881a7b",
+      "bytes": 23629
+    },
+    {
+      "group": "extra",
+      "name": "guest-home-1440.png",
+      "width": 1440,
+      "height": 900,
+      "sha256": "3ee8522b0c33dd200f319f0ff45caf953e0193d43cfb37830464d1ce3b1dbaa9",
+      "bytes": 120687
+    },
+    {
+      "group": "extra",
+      "name": "account-unavailable-1440.png",
+      "width": 1440,
+      "height": 900,
+      "sha256": "a92a6038c147de1faf6efd6d851eb4e8a147d40cc52766f5c46e7e0b68d614b4",
+      "bytes": 110001
+    }
+  ]
+}

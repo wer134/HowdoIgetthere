@@ -9,7 +9,44 @@
 - 기존 여행 데이터 형식, 게스트 localStorage 저장과 파일 백업을 유지한다. main 병합과 운영 배포는 범위에 포함하지 않는다.
 - 이전 보고서의 통과 결과·실제 API 응답·Lighthouse 수치를 이번 코드의 통과 근거로 사용하지 않는다.
 
-## 새로 실행한 검사
+## 최종 검증 결과
+
+실제로 검사한 제품 소스는 `da6ab5eac497b278f73d9e728282cbf99d37337c`, production 자산 버전은 `c59f564a0c63efe6`이다. 별도 검토 작업 폴더에서 빌드한 같은 산출물을 사용했다. 이후 `02bd98b08ca941dd113d3299606eb963dc7f2263`은 두 브라우저 검사에서 원래 탭을 다시 활성화하는 테스트 보정만 추가했으며 제품 코드는 바꾸지 않았다. 이 기록은 원래 미푸시 구현의 복구 또는 과거 결과의 재사용을 뜻하지 않는다.
+
+| 최종 검사 | 실제 결과 | 증거 |
+|---|---|---|
+| `npm test` | 124/124 통과 | [원시 로그](evidence/rebuild/final-da6ab5e/release/npm-test.txt) |
+| build / check:release | 각각 exit 0, 공개 allowlist 45개 + manifest | [종료 코드](evidence/rebuild/final-da6ab5e/release/exits.json), [검사 로그](evidence/rebuild/final-da6ab5e/release/check-release.txt) |
+| 일정 보드 | 동작 12개, 6개 뷰포트 통과 | [결과](evidence/rebuild/final-da6ab5e/board/results.json) |
+| 계정 흐름 | 11개 시나리오 통과 | [결과](evidence/rebuild/final-da6ab5e/account/results.json) |
+| 추가 보호 경로 | 기존 11개 + 추가 3개, 총 14개 통과 | [결과](evidence/rebuild/final-da6ab5e/extra/results.json) |
+| 개인정보·이용 안내 | 390/768/1440에서 두 문서, 총 6개 검사 통과 | [결과](evidence/rebuild/final-da6ab5e/legal/results.json) |
+| 기존 브라우저 회귀 | journey/order/drag/day-revision/stability 통과, safety는 탭 보정 후 5개 통과 | [최초 실행](evidence/rebuild/final-da6ab5e/regressions/run-summary.json), [보정 후 실행](evidence/rebuild/final-da6ab5e/clean-tab-activation/run-summary.json) |
+| 전체 78개 부정 검사 | 69 통과 / 0 결함 / 9 검증 불가 | [전체 결과](evidence/rebuild/final-da6ab5e/clean-tab-activation/negative-78/results.json), [결과 검증](evidence/rebuild/final-da6ab5e/closeout-verification.json) |
+| 독립 검토 | 요구사항·코드·보안·문맥 검토 및 Visual A/B에서 차단 사항 없음 | [요구사항](evidence/rebuild/final-da6ab5e/goal-review.md), [코드·Visual A](evidence/rebuild/final-da6ab5e/code-review.md), [보안](evidence/rebuild/final-da6ab5e/security-review.md), [문맥·Visual B](evidence/rebuild/final-da6ab5e/context-review.md) |
+| 새 `npm audit` | 취약점 0 | [원시 결과](evidence/rebuild/final-da6ab5e/npm-audit-final.json) |
+| 최종 Gitleaks 원시 검사 | 소스 3건 / 이력 1건, 모두 파일 SHA256 메타데이터 오탐으로 확인 | [분류 근거](evidence/rebuild/final-da6ab5e/security-scan-final.json) |
+
+검증 불가 번호는 `5, 40, 50, 59, 67, 69, 71, 72, 75`이다. 기존 8개는 통과로 바꾸지 않았다. 추가된 5번은 로그인 세션을 구성하지 않는 게스트·모의 지도 검사 범위의 한계이며, 계정 세션·만료·로그아웃은 별도 실제 HTTP/SQLite 검사에서 다뤘다.
+
+최초 전체 회귀 실행에서는 비활성 탭의 클릭이 타임아웃돼 safety와 부정 검사 한 항목이 실패했다. DOM과 열려 있는 편집창이 유지된 상태를 확인했고 실제 사용자의 탭 복귀에 해당하는 `bringToFront()`만 검사에 추가한 뒤 동일 산출물로 다시 실행했다. 최초 실패 결과와 보정 diff·정상 재실행을 모두 보존했다. 성공 로그만 보고 통과로 판단하지 않고 전체 78개 번호, 하위 검사, 실행 오류, 검증 불가 목록을 결과 검증기로 다시 확인했다.
+
+보드 stale undo는 후속 후보 메모를 덮어쓰는 실패를 재현한 뒤, 이동 직후 fingerprint와 현재 스냅샷이 같을 때만 되돌리도록 수정해 통과했다. 추가 검사에서는 열린 편집창이 있을 때 최신본 열기·BYOK 시작을 막는 동작과 미전송 계정 변경의 JSON 백업 포함 여부를 확인했다. JSON 백업 복원 경로의 보호 조건은 소스에 구현돼 있으나 이 추가 검사에서 복원까지 실행했다고 주장하지 않는다. 독립 시각 검토는 이 제품 소스에서 새로 만든 기본 화면 30개와 추가 보호 상태 3개를 직접 확인했다.
+
+계정 결과 JSON의 최상위 경계 설명 중 Google만 언급한 표현은 축약이 불완전하다. 실제 계정 브라우저 검사는 Google OIDC와 BYOK Gemini를 모의로 사용했으며, 백엔드 문자·AI 통합 검사의 외부 제공업체도 모의다. 로컬 HTTP와 SQLite만 실제로 실행했다. 원시 JSON은 변경하지 않고 이 범위를 명시한다.
+
+Gitleaks 원시 exit code는 오탐 때문에 1이었으므로 이를 “원시 발견 0 / exit 0”으로 보고하지 않는다. 검출된 값은 `backendHashes.api.js`의 파일 SHA256이며 root 또는 검토 작업 폴더의 실제 `backend/api.js` 바이트로 재계산해 일치를 확인했다. root와 검토 폴더의 줄바꿈 차이로 두 digest가 기록돼 있다. 확인된 비밀 노출은 0건이며 전체 원시 결과는 마스킹해 보존했다. 이후 `.gitleaks.toml`은 기본 규칙을 유지하면서 `generic-api-key` 규칙에서 확인된 두 SHA256 메타데이터 행과 세 증거 경로가 동시에 일치할 때만 허용한다. 같은 경로의 다른 digest와 다른 경로의 같은 digest는 실제 합성 검사에서 계속 탐지됐다. 이 설정으로 다시 실행한 소스·전체 이력 검사는 각각 발견 0, exit 0이다. [설정 적용 결과](evidence/rebuild/final-da6ab5e/gitleaks-configured-summary.json), [허용 경계 검사](evidence/rebuild/final-da6ab5e/gitleaks-allowlist-probe-summary.json).
+
+## 최종 Lighthouse 측정과 성능 한계
+
+| 프로필 | Performance | Accessibility | Best Practices | SEO | LCP | TBT | CLS |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| 모바일, 412×823 / CPU 4배 | 54 | 100 | 96 | 100 | 4.96초 | 1253ms | 0.0675 |
+| 데스크톱, 1350×940 / CPU 1배 | 89 | 100 | 96 | 100 | 1.81초 | 140ms | 0.0233 |
+
+[측정 설정·결과](evidence/rebuild/final-da6ab5e/lighthouse/results.json), [실행 보고서](evidence/rebuild/final-da6ab5e/qa-report.md). Lighthouse 13.5.0 Node API를 실제 격리 Chromium에 연결해 Windows 로컬 production 정적 산출물을 측정했다. 운영 필드 데이터나 여러 회차 중앙값이 아니다. 모바일 성능 100은 달성하지 못했고 관측된 성능 한계로 남는다. 이 재구현을 성능 점검까지 모두 완료된 운영 출시 승인으로 해석하면 안 된다. 정적 서버의 `/api/session` 404가 Best Practices 점수에 영향을 줬다. 최초 데스크톱 의도 실행이 실제로는 모바일 설정이었던 결과도 보존했으며, 데스크톱 수치에서는 제외했다.
+
+## 초기·중간 검사 기록
 
 | 검사 | 결과 | 범위와 증거 |
 |---|---|---|
@@ -27,9 +64,9 @@
 | Gitleaks v8.30.0 소스 검사 | 발견 0, exit 0 | 추적 파일과 Git ignore 대상이 아닌 새 파일 1,338개를 격리 복사해 검사. [요약](evidence/rebuild/release/gitleaks-source-summary.json) |
 | Gitleaks v8.30.0 전체 Git 이력 | 발견 0, exit 0 | `--all`, 실행 시 HEAD `b5cc77b`. [요약](evidence/rebuild/release/gitleaks-history-summary.json). 공식 Windows 패키지와 게시 체크섬 [검증 기록](evidence/rebuild/release/gitleaks-tool.json) |
 
-최종 구현 검사 결과는 각 기능의 새 증거가 생성된 뒤 이 문서에 추가한다. 위 시작 검사는 새 계정·보드 기능의 통과를 뜻하지 않는다. 첫 통합 산출물의 `revision`은 아직 커밋 전 HEAD인 `d48d89f`를 표시하므로 해당 SHA의 원본 코드와 동일한 산출물이라고 해석하지 않는다. 최종 커밋 후 다시 빌드한 결과로 출시 여부를 판단한다.
+이 표는 초기·중간 실행의 시간순 기록이다. 첫 통합 산출물의 `revision=d48d89f`는 커밋 전 HEAD 표시이며 원본 코드와 동일하다는 뜻이 아니다. 최종 판정의 근거는 위 최종 검증 결과와 제품 소스 `da6ab5e`의 새 증거다.
 
-`a395c9c2f2118a82` 이후 추가한 편집창 보호 세 경로(계정 최신본 열기, JSON 백업 복원, BYOK 준비)는 해당 빌드에 포함되지 않았다. 마지막 빌드와 추가 회귀 확인 결과를 별도로 기록해야 한다.
+중간 빌드 `a395c9c2f2118a82`에는 이후 추가한 편집창 보호 조건이 포함되지 않았다. 최종 `c59f564a0c63efe6`에는 해당 소스가 반영돼 있으며, 실제 추가 검사 범위는 위 최종 결과에 명시했다.
 
 ## 검증 구분
 
@@ -37,7 +74,7 @@
 
 기존 78개 부정 테스트의 과거 결과는 재사용하지 않는다. 새로 실행했다면 해당 빌드와 결과 파일을 함께 기록한다. 항목 40, 50, 59, 67, 69, 71, 72, 75의 기존 검증 불가 수용은 통과로 바꾸지 않는다. 실행하지 않은 검사는 미실행으로 남긴다.
 
-재구현에서는 계정이 추가되어 기존 5번의 “계정 기능 없음” 판정은 더 이상 유효하지 않다. 게스트·모의 지도 전용 78개 검사에서는 인증 세션을 구성하지 않으므로 5번을 검증 불가로 표시하고, 계정 동작은 별도 HTTP/SQLite·브라우저 검사로 검증한다. CI는 이 9개 검증 불가와 나머지 항목의 오류 없음을 요구한다. 이는 전체 78개를 이미 실행해 통과했다는 기록이 아니며 최종 실행 결과는 별도 증거로 확정한다.
+재구현에서는 계정이 추가되어 기존 5번의 “계정 기능 없음” 판정은 더 이상 유효하지 않다. 게스트·모의 지도 전용 78개 검사에서는 인증 세션을 구성하지 않으므로 5번을 검증 불가로 표시하고, 계정 동작은 별도 HTTP/SQLite·브라우저 검사로 검증한다. CI는 이 9개 검증 불가와 나머지 항목의 오류 없음을 요구한다. 최종 전체 재실행은 위의 별도 원시 결과에 기록된 69 통과·9 검증 불가다. 모든 항목을 통과했다고 해석하지 않는다.
 
 ## 실제 운영 전에 남은 검증
 
