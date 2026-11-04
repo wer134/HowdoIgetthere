@@ -84,6 +84,10 @@ async function saved(page, count) {
       const pick = async (place, day, time, memo) => {
         await search(place, day);
         assert.equal(await page.locator('[data-schedule-pick="0"]').isEnabled(), true, `Existing ${place.name} must remain selectable for a new visit on ${day}`);
+        if (await page.locator('#toastUndo').isVisible()) assert.equal(await page.locator('#toastUndo').evaluate(button => {
+          const text = document.createRange(); text.selectNodeContents(button);
+          return [...text.getClientRects()].filter(rect => rect.width && rect.height).length;
+        }), 1, 'Undo action label stays on one readable line');
         await page.screenshot({ path: path.join(OUT, `${PHASE}-${width}-${place.id}-${day}-search.png`), fullPage: true });
         if (place === C) assert.doesNotMatch(await page.locator('.schedule-recommend-rating').textContent(), /일정에 있음/, 'Different IDs within 15 m must not share an existing-visit hint');
         await page.click('[data-schedule-pick="0"]');

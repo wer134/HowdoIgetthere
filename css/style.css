@@ -972,7 +972,7 @@ body.schedule-editing .place-panel {visibility:hidden;pointer-events:none}
 }
 .toast span { display: grid; place-items: center; flex: none; width: 18px; height: 18px; border-radius: 50%; background: #ddf5e9; color: #32a274; font-size: 11px; }
 .toast.is-visible { opacity: 1; transform: translateY(0); pointer-events:auto; }
-.toast button {margin-left:8px;padding:4px 7px;border:0;border-radius:6px;background:#ddf5e9;color:#176b4b;font:inherit;font-weight:700;cursor:pointer}
+.toast button {flex:none;white-space:nowrap;margin-left:8px;padding:4px 7px;border:0;border-radius:6px;background:#ddf5e9;color:#176b4b;font:inherit;font-weight:700;cursor:pointer}
 @media (prefers-color-scheme: dark) { .toast { border-color: var(--line-strong); background: var(--card); color: var(--text); } }
 
 /* ── 반응형 ── */
