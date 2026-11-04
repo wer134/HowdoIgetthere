@@ -1,0 +1,195 @@
+{
+  "status": "FAIL",
+  "time": "2026-11-04T13:47:28.087Z",
+  "assetRoot": "E:\\HowdoIgetthere",
+  "release": null,
+  "providers": "none; local guest storage and generated XLSX only",
+  "checks": [
+    {
+      "label": "saved travel continue without extra board click",
+      "mode": "board",
+      "bodyBoard": false,
+      "boardPressed": "true",
+      "mapPressed": "false",
+      "board": {
+        "left": 22,
+        "top": 200,
+        "right": 436,
+        "bottom": 2907,
+        "width": 414,
+        "height": 2707,
+        "visible": true
+      },
+      "search": {
+        "left": 213,
+        "top": 86,
+        "right": 436,
+        "bottom": 148,
+        "width": 223,
+        "height": 62,
+        "visible": true
+      },
+      "mapGrid": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "width": 0,
+        "height": 0,
+        "visible": false
+      },
+      "host": {
+        "left": 14,
+        "top": 78,
+        "right": 444,
+        "bottom": 2915,
+        "width": 430,
+        "height": 2837,
+        "visible": true
+      },
+      "overflow": false,
+      "days": [
+        {
+          "left": 214,
+          "right": 280,
+          "width": 66
+        },
+        {
+          "left": 292,
+          "right": 358,
+          "width": 66
+        },
+        {
+          "left": 370,
+          "right": 436,
+          "width": 66
+        }
+      ],
+      "cards": [
+        {
+          "left": 227,
+          "right": 267,
+          "width": 40
+        },
+        {
+          "left": 227,
+          "right": 267,
+          "width": 40
+        },
+        {
+          "left": 227,
+          "right": 267,
+          "width": 40
+        },
+        {
+          "left": 227,
+          "right": 267,
+          "width": 40
+        },
+        {
+          "left": 227,
+          "right": 267,
+          "width": 40
+        },
+        {
+          "left": 227,
+          "right": 267,
+          "width": 40
+        },
+        {
+          "left": 227,
+          "right": 267,
+          "width": 40
+        },
+        {
+          "left": 227,
+          "right": 267,
+          "width": 40
+        },
+        {
+          "left": 305,
+          "right": 345,
+          "width": 40
+        },
+        {
+          "left": 305,
+          "right": 345,
+          "width": 40
+        },
+        {
+          "left": 305,
+          "right": 345,
+          "width": 40
+        },
+        {
+          "left": 305,
+          "right": 345,
+          "width": 40
+        },
+        {
+          "left": 305,
+          "right": 345,
+          "width": 40
+        },
+        {
+          "left": 305,
+          "right": 345,
+          "width": 40
+        },
+        {
+          "left": 305,
+          "right": 345,
+          "width": 40
+        },
+        {
+          "left": 305,
+          "right": 345,
+          "width": 40
+        },
+        {
+          "left": 383,
+          "right": 423,
+          "width": 40
+        },
+        {
+          "left": 383,
+          "right": 423,
+          "width": 40
+        },
+        {
+          "left": 383,
+          "right": 423,
+          "width": 40
+        },
+        {
+          "left": 383,
+          "right": 423,
+          "width": 40
+        },
+        {
+          "left": 383,
+          "right": 423,
+          "width": 40
+        },
+        {
+          "left": 383,
+          "right": 423,
+          "width": 40
+        },
+        {
+          "left": 383,
+          "right": 423,
+          "width": 40
+        },
+        {
+          "left": 383,
+          "right": 423,
+          "width": 40
+        }
+      ]
+    }
+  ],
+  "viewports": [],
+  "error": "AssertionError [ERR_ASSERTION]: saved travel continue without extra board click: body layout agrees with selected mode\n\nfalse !== true\n\n    at checkMode (E:\\HowdoIgetthere\\tests\\browser\\workspace-layout.cjs:33:14)\n    at async E:\\HowdoIgetthere\\tests\\browser\\workspace-layout.cjs:40:5",
+  "cleanup": "fresh browser context and local server closed"
+}

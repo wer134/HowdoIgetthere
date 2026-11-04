@@ -326,10 +326,10 @@ async function handleFile(file) {
   const names = state.workbook.SheetNames;
   els.sheetSelect.innerHTML = names.map((n) => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
   els.sheetField.classList.toggle('hidden', names.length < 2);
+  workspace?.setMode('map');
   loadSheet(state.defaultSheet || pickDefaultSheet(state.workbook));
   els.columnsPanel.classList.remove('hidden');
   setColumnsOpen(state.mapping.name < 0);
-  workspace?.setMode('map');
   setDay(null);
   scheduleTravelSave();
   showToast(`일정 파일을 불러왔어요 · ${state.records.length}행`);

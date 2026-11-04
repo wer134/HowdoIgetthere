@@ -4,7 +4,7 @@ const escape = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&
 const dayLabel = day => day || '날짜 미정';
 
 export function initWorkspace({host,getSnapshot,getItems,getSelectedDay,onSelectDay,onApplySnapshot,onEditItem,onAddPlace,onShowMap,onNewTravel,onOpenSaved,onImport,onBackup,isBusy,notify}) {
-  let mode = 'board', query = '', pending = null, dragged = null, applying = false;
+  let mode = 'board', appliedMode = null, query = '', pending = null, dragged = null, applying = false;
   host.classList.add('workspace');
   host.innerHTML = `<div class="workspace-toolbar">
     <div class="workspace-view" role="group" aria-label="작업 화면"><button type="button" data-workspace-mode="board" aria-pressed="true">일정 정리</button><button type="button" data-workspace-mode="map" aria-pressed="false">지도 · 목록</button></div>
@@ -38,11 +38,16 @@ export function initWorkspace({host,getSnapshot,getItems,getSelectedDay,onSelect
   }
   function setMode(value) {
     mode = value === 'map' ? 'map' : 'board';
+    render();
+  }
+  function syncMode() {
     board.hidden = mode === 'map';
     host.querySelector('.workspace-board-search').hidden = mode === 'map';
     for (const button of host.querySelectorAll('[data-workspace-mode]')) button.setAttribute('aria-pressed',String(button.dataset.workspaceMode === mode));
+    if (appliedMode === mode) return;
+    // The application callback may render this workspace again.
+    appliedMode = mode;
     onShowMap?.(mode === 'map');
-    if (mode === 'board') render();
   }
   function cardMarkup(item, kind, index, order, total) {
     const name = item.name || '이름 없는 장소';
@@ -55,8 +60,9 @@ export function initWorkspace({host,getSnapshot,getItems,getSelectedDay,onSelect
   }
   function render() {
     const snapshot = getSnapshot();
-    if (!snapshot) { host.hidden = true; return; }
+    if (!snapshot) { host.hidden = true; appliedMode = null; return; }
     host.hidden = false;
+    syncMode();
     host.querySelector('.workspace-travel-name').textContent = snapshot.name;
     host.querySelector('.workspace-travel-name').title = snapshot.name;
     const items = getItems();
