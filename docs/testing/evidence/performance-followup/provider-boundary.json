@@ -1,0 +1,98 @@
+[
+  {
+    "phase": "baseline",
+    "form": "mobile",
+    "run": 1,
+    "paidProviderRequests": 0,
+    "runtimeError": null,
+    "warnings": []
+  },
+  {
+    "phase": "baseline",
+    "form": "mobile",
+    "run": 2,
+    "paidProviderRequests": 0,
+    "runtimeError": null,
+    "warnings": []
+  },
+  {
+    "phase": "baseline",
+    "form": "mobile",
+    "run": 3,
+    "paidProviderRequests": 0,
+    "runtimeError": null,
+    "warnings": []
+  },
+  {
+    "phase": "baseline",
+    "form": "desktop",
+    "run": 1,
+    "paidProviderRequests": 0,
+    "runtimeError": null,
+    "warnings": []
+  },
+  {
+    "phase": "baseline",
+    "form": "desktop",
+    "run": 2,
+    "paidProviderRequests": 0,
+    "runtimeError": null,
+    "warnings": []
+  },
+  {
+    "phase": "baseline",
+    "form": "desktop",
+    "run": 3,
+    "paidProviderRequests": 0,
+    "runtimeError": null,
+    "warnings": []
+  },
+  {
+    "phase": "after",
+    "form": "mobile",
+    "run": 1,
+    "paidProviderRequests": 0,
+    "runtimeError": null,
+    "warnings": []
+  },
+  {
+    "phase": "after",
+    "form": "mobile",
+    "run": 2,
+    "paidProviderRequests": 0,
+    "runtimeError": null,
+    "warnings": []
+  },
+  {
+    "phase": "after",
+    "form": "mobile",
+    "run": 3,
+    "paidProviderRequests": 0,
+    "runtimeError": null,
+    "warnings": []
+  },
+  {
+    "phase": "after",
+    "form": "desktop",
+    "run": 1,
+    "paidProviderRequests": 0,
+    "runtimeError": null,
+    "warnings": []
+  },
+  {
+    "phase": "after",
+    "form": "desktop",
+    "run": 2,
+    "paidProviderRequests": 0,
+    "runtimeError": null,
+    "warnings": []
+  },
+  {
+    "phase": "after",
+    "form": "desktop",
+    "run": 3,
+    "paidProviderRequests": 0,
+    "runtimeError": null,
+    "warnings": []
+  }
+]

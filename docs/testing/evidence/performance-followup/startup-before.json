@@ -1,0 +1,20 @@
+[
+  {
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "beforeTop": 184,
+    "afterTop": 124,
+    "delta": -60
+  },
+  {
+    "viewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "beforeTop": 144,
+    "afterTop": 78,
+    "delta": -66
+  }
+]

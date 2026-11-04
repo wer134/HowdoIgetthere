@@ -1,0 +1,233 @@
+{
+  "rows": [
+    {
+      "mode": "loaded",
+      "width": 390,
+      "overflow": false,
+      "fonts": [
+        {
+          "family": "DM Mono",
+          "weight": "500"
+        },
+        {
+          "family": "Manrope",
+          "weight": "400 800"
+        },
+        {
+          "family": "Noto Sans KR",
+          "weight": "400 800"
+        },
+        {
+          "family": "Noto Sans KR",
+          "weight": "400 800"
+        },
+        {
+          "family": "Noto Sans KR",
+          "weight": "400 800"
+        },
+        {
+          "family": "Noto Sans KR",
+          "weight": "400 800"
+        },
+        {
+          "family": "Noto Sans KR",
+          "weight": "400 800"
+        },
+        {
+          "family": "Noto Sans KR",
+          "weight": "400 800"
+        },
+        {
+          "family": "Noto Sans KR",
+          "weight": "400 800"
+        },
+        {
+          "family": "Noto Sans KR",
+          "weight": "400 800"
+        },
+        {
+          "family": "Noto Sans KR",
+          "weight": "400 800"
+        },
+        {
+          "family": "Noto Sans KR",
+          "weight": "400 800"
+        },
+        {
+          "family": "Noto Sans KR",
+          "weight": "400 800"
+        },
+        {
+          "family": "Noto Sans KR",
+          "weight": "400 800"
+        }
+      ],
+      "bodyFont": "Manrope, \"Noto Sans KR\", system-ui, -apple-system, \"Malgun Gothic\", sans-serif",
+      "text": "나만의 여행 준비가고 싶은 곳부터,하루의 순서까지.장소와 메모를 모으고 날짜별로 정리하세요. 지도 없이도 시작할 수 있어요.",
+      "errors": []
+    },
+    {
+      "mode": "loaded",
+      "width": 768,
+      "overflow": false,
+      "fonts": [
+        {
+          "family": "DM Mono",
+          "weight": "500"
+        },
+        {
+          "family": "Manrope",
+          "weight": "400 800"
+        },
+        {
+          "family": "Noto Sans KR",
+          "weight": "400 800"
+        },
+        {
+          "family": "Noto Sans KR",
+          "weight": "400 800"
+        },
+        {
+          "family": "Noto Sans KR",
+          "weight": "400 800"
+        },
+        {
+          "family": "Noto Sans KR",
+          "weight": "400 800"
+        },
+        {
+          "family": "Noto Sans KR",
+          "weight": "400 800"
+        },
+        {
+          "family": "Noto Sans KR",
+          "weight": "400 800"
+        },
+        {
+          "family": "Noto Sans KR",
+          "weight": "400 800"
+        },
+        {
+          "family": "Noto Sans KR",
+          "weight": "400 800"
+        },
+        {
+          "family": "Noto Sans KR",
+          "weight": "400 800"
+        },
+        {
+          "family": "Noto Sans KR",
+          "weight": "400 800"
+        },
+        {
+          "family": "Noto Sans KR",
+          "weight": "400 800"
+        },
+        {
+          "family": "Noto Sans KR",
+          "weight": "400 800"
+        }
+      ],
+      "bodyFont": "Manrope, \"Noto Sans KR\", system-ui, -apple-system, \"Malgun Gothic\", sans-serif",
+      "text": "나만의 여행 준비가고 싶은 곳부터,하루의 순서까지.장소와 메모를 모으고 날짜별로 정리하세요. 지도 없이도 시작할 수 있어요.",
+      "errors": []
+    },
+    {
+      "mode": "loaded",
+      "width": 1440,
+      "overflow": false,
+      "fonts": [
+        {
+          "family": "DM Mono",
+          "weight": "500"
+        },
+        {
+          "family": "Manrope",
+          "weight": "400 800"
+        },
+        {
+          "family": "Noto Sans KR",
+          "weight": "400 800"
+        },
+        {
+          "family": "Noto Sans KR",
+          "weight": "400 800"
+        },
+        {
+          "family": "Noto Sans KR",
+          "weight": "400 800"
+        },
+        {
+          "family": "Noto Sans KR",
+          "weight": "400 800"
+        },
+        {
+          "family": "Noto Sans KR",
+          "weight": "400 800"
+        },
+        {
+          "family": "Noto Sans KR",
+          "weight": "400 800"
+        },
+        {
+          "family": "Noto Sans KR",
+          "weight": "400 800"
+        },
+        {
+          "family": "Noto Sans KR",
+          "weight": "400 800"
+        },
+        {
+          "family": "Noto Sans KR",
+          "weight": "400 800"
+        },
+        {
+          "family": "Noto Sans KR",
+          "weight": "400 800"
+        },
+        {
+          "family": "Noto Sans KR",
+          "weight": "400 800"
+        },
+        {
+          "family": "Noto Sans KR",
+          "weight": "400 800"
+        }
+      ],
+      "bodyFont": "Manrope, \"Noto Sans KR\", system-ui, -apple-system, \"Malgun Gothic\", sans-serif",
+      "text": "나만의 여행 준비가고 싶은 곳부터,하루의 순서까지.장소와 메모를 모으고 날짜별로 정리하세요. 지도 없이도 시작할 수 있어요.",
+      "errors": []
+    },
+    {
+      "mode": "blocked",
+      "width": 390,
+      "overflow": false,
+      "fonts": [],
+      "bodyFont": "Manrope, \"Noto Sans KR\", system-ui, -apple-system, \"Malgun Gothic\", sans-serif",
+      "text": "나만의 여행 준비가고 싶은 곳부터,하루의 순서까지.장소와 메모를 모으고 날짜별로 정리하세요. 지도 없이도 시작할 수 있어요.",
+      "errors": []
+    },
+    {
+      "mode": "blocked",
+      "width": 768,
+      "overflow": false,
+      "fonts": [],
+      "bodyFont": "Manrope, \"Noto Sans KR\", system-ui, -apple-system, \"Malgun Gothic\", sans-serif",
+      "text": "나만의 여행 준비가고 싶은 곳부터,하루의 순서까지.장소와 메모를 모으고 날짜별로 정리하세요. 지도 없이도 시작할 수 있어요.",
+      "errors": []
+    },
+    {
+      "mode": "blocked",
+      "width": 1440,
+      "overflow": false,
+      "fonts": [],
+      "bodyFont": "Manrope, \"Noto Sans KR\", system-ui, -apple-system, \"Malgun Gothic\", sans-serif",
+      "text": "나만의 여행 준비가고 싶은 곳부터,하루의 순서까지.장소와 메모를 모으고 날짜별로 정리하세요. 지도 없이도 시작할 수 있어요.",
+      "errors": []
+    }
+  ],
+  "cleanup": {
+    "browserClosed": true,
+    "serverClosed": true
+  }
+}

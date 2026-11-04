@@ -1,0 +1,175 @@
+{
+  "release": {
+    "version": "c2636c87b9ed6416",
+    "revision": "4219994cdb65f5f611c92cced91f4f573261ddc4",
+    "site": "https://wer134.github.io/HowdoIgetthere/",
+    "assets": [
+      "index.html",
+      "config.js",
+      "runtime-config.js",
+      "지도_양식.xlsx",
+      "privacy.html",
+      "terms.html",
+      "robots.txt",
+      "sitemap.xml",
+      "THIRD_PARTY_NOTICES.md",
+      "COPYRIGHT.md",
+      "js/app.js",
+      "js/budget.js",
+      "js/day-revision-ui.js",
+      "js/day-revision.js",
+      "js/excel-loader.js",
+      "js/excel-worker.js",
+      "js/excel.js",
+      "js/file-limits.js",
+      "js/kml.js",
+      "js/mapview.js",
+      "js/memory-cache.js",
+      "js/nearby.js",
+      "js/places.js",
+      "js/plan.js",
+      "js/planner.js",
+      "js/routes.js",
+      "js/travel-portability.js",
+      "js/travel-store.js",
+      "js/util.js",
+      "js/xlsxedit.js",
+      "js/account-sync.js",
+      "js/workspace-model.js",
+      "js/account.js",
+      "js/workspace.js",
+      "css/legal.css",
+      "css/style.css",
+      "css/account.css",
+      "css/workspace.css",
+      "assets/favicon.svg",
+      "assets/og-routeflow.png",
+      "assets/og-routeflow.svg",
+      "vendor/xlsx.full.min.js",
+      "vendor/anthropic-sdk-0.131.0.min.js",
+      "vendor/SheetJS-APACHE-2.0.txt",
+      "vendor/anthropic-sdk-LICENSE.txt"
+    ]
+  },
+  "environment": "Windows Chrome stable via Playwright, Lighthouse Node API, actual production-server.js with disabled account service, sequential cold visits and default mobile/desktop throttling",
+  "rows": [
+    {
+      "form": "mobile",
+      "run": 1,
+      "fetchTime": "2026-11-04T09:19:05.564Z",
+      "scores": {
+        "performance": 78,
+        "accessibility": 100,
+        "best-practices": 100,
+        "seo": 100
+      },
+      "metrics": {
+        "first-contentful-paint": 2223.4750000000004,
+        "largest-contentful-paint": 3910.250000000001,
+        "total-blocking-time": 344,
+        "cumulative-layout-shift": 0.004094215762149804,
+        "speed-index": 2223.4750000000004
+      },
+      "warnings": []
+    },
+    {
+      "form": "mobile",
+      "run": 2,
+      "fetchTime": "2026-11-04T09:19:19.820Z",
+      "scores": {
+        "performance": 64,
+        "accessibility": 100,
+        "best-practices": 100,
+        "seo": 100
+      },
+      "metrics": {
+        "first-contentful-paint": 1447.5079,
+        "largest-contentful-paint": 4539.261849999999,
+        "total-blocking-time": 812.2460499999995,
+        "cumulative-layout-shift": 0.0029838936025224265,
+        "speed-index": 1447.5079
+      },
+      "warnings": []
+    },
+    {
+      "form": "mobile",
+      "run": 3,
+      "fetchTime": "2026-11-04T09:19:30.490Z",
+      "scores": {
+        "performance": 63,
+        "accessibility": 100,
+        "best-practices": 100,
+        "seo": 100
+      },
+      "metrics": {
+        "first-contentful-paint": 1531.45425,
+        "largest-contentful-paint": 4673.234350000001,
+        "total-blocking-time": 830.0000000000005,
+        "cumulative-layout-shift": 0.003359189845745754,
+        "speed-index": 1531.45425
+      },
+      "warnings": []
+    },
+    {
+      "form": "desktop",
+      "run": 1,
+      "fetchTime": "2026-11-04T09:19:41.389Z",
+      "scores": {
+        "performance": 86,
+        "accessibility": 100,
+        "best-practices": 100,
+        "seo": 100
+      },
+      "metrics": {
+        "first-contentful-paint": 435.41655,
+        "largest-contentful-paint": 1449.6593999999998,
+        "total-blocking-time": 250.9999999999999,
+        "cumulative-layout-shift": 0.022247236377433387,
+        "speed-index": 811.6551138756465
+      },
+      "warnings": []
+    },
+    {
+      "form": "desktop",
+      "run": 2,
+      "fetchTime": "2026-11-04T09:19:54.045Z",
+      "scores": {
+        "performance": 92,
+        "accessibility": 100,
+        "best-practices": 100,
+        "seo": 100
+      },
+      "metrics": {
+        "first-contentful-paint": 424.8553999999999,
+        "largest-contentful-paint": 1130.7830999999996,
+        "total-blocking-time": 197.9999999999999,
+        "cumulative-layout-shift": 0.022395409041823546,
+        "speed-index": 640.8868883254793
+      },
+      "warnings": []
+    },
+    {
+      "form": "desktop",
+      "run": 3,
+      "fetchTime": "2026-11-04T09:20:06.193Z",
+      "scores": {
+        "performance": 91,
+        "accessibility": 100,
+        "best-practices": 100,
+        "seo": 100
+      },
+      "metrics": {
+        "first-contentful-paint": 420.9671000000001,
+        "largest-contentful-paint": 1113.9506500000002,
+        "total-blocking-time": 214.0000000000001,
+        "cumulative-layout-shift": 0.02285356156787205,
+        "speed-index": 632.5178584824837
+      },
+      "warnings": []
+    }
+  ],
+  "cleanup": {
+    "browserClosed": true,
+    "serverClosed": true
+  }
+}

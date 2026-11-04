@@ -1,0 +1,2 @@
+Error: Initial layout moved
+    at E:\HowdoIgetthere\.omo\performance-startup.cjs:2:1496

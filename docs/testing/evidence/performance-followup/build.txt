@@ -1,0 +1,3 @@
+npm notice run excel-map-maker@0.1.0 build
+npm notice run node tools/build.js
+Built 46 public assets (286694c310f337c8); private runtime credentials excluded.

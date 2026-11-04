@@ -1,0 +1,88 @@
+{
+  "unit": {
+    "passed": 124,
+    "failed": 0
+  },
+  "board": {
+    "status": "PASS",
+    "checks": 12,
+    "viewports": [
+      {
+        "width": 1440,
+        "height": 1000,
+        "overflow": false,
+        "columns": 3,
+        "login": true,
+        "toolbar": 1392
+      },
+      {
+        "width": 1280,
+        "height": 900,
+        "overflow": false,
+        "columns": 3,
+        "login": true,
+        "toolbar": 1232
+      },
+      {
+        "width": 768,
+        "height": 1024,
+        "overflow": false,
+        "columns": 2,
+        "login": true,
+        "toolbar": 720
+      },
+      {
+        "width": 390,
+        "height": 844,
+        "overflow": false,
+        "columns": 1,
+        "login": true,
+        "toolbar": 366
+      },
+      {
+        "width": 844,
+        "height": 390,
+        "overflow": false,
+        "columns": 2,
+        "login": true,
+        "toolbar": 796
+      },
+      {
+        "width": 640,
+        "height": 450,
+        "overflow": false,
+        "columns": 1,
+        "login": true,
+        "toolbar": 616
+      }
+    ],
+    "cleanup": {
+      "browserClosed": true,
+      "serverClosed": true,
+      "userData": "fresh context, no existing travel accessed"
+    }
+  },
+  "account": {
+    "passed": 11,
+    "errors": [],
+    "boundary": "Real local HTTP/SQLite; mock Google OIDC and BYOK Gemini",
+    "cleanup": "test helper completed and no owned processes remain"
+  },
+  "importSuites": [
+    {
+      "name": "traveler-journey",
+      "script": "tests/browser/traveler-journey.cjs",
+      "started": "2026-11-04T09:28:57.679Z",
+      "finished": "2026-11-04T09:29:11.962Z",
+      "exitCode": 0
+    },
+    {
+      "name": "production-stability",
+      "script": "tests/browser/production-stability.cjs",
+      "started": "2026-11-04T09:29:11.978Z",
+      "finished": "2026-11-04T09:29:24.414Z",
+      "exitCode": 0
+    }
+  ],
+  "artifactUnchanged": true
+}

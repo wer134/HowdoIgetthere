@@ -1,0 +1,26 @@
+{
+  "enumerated": {
+    "status": 200,
+    "bytes": 484425,
+    "brotliBytes": 14654,
+    "faces": 654,
+    "weights": [
+      "400",
+      "500",
+      "600",
+      "700",
+      "800"
+    ]
+  },
+  "variable": {
+    "status": 200,
+    "bytes": 98749,
+    "brotliBytes": 13982,
+    "faces": 134,
+    "weights": [
+      "400",
+      "500",
+      "400 800"
+    ]
+  }
+}
