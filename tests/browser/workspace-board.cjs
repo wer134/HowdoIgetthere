@@ -148,6 +148,7 @@ const fixture = () => ({id:'board-browser-test',name:'후쿠오카 · 보드 검
     await page.click('[data-workspace-travel=new]');
     await page.fill('#travelName','비어 있는 새 여행'); await page.fill('#travelStart','2026-12-01');
     await page.locator('#newTravelForm button').click();
+    await page.waitForFunction(()=>!document.querySelector('#travelDialog').open && document.querySelector('.workspace-travel-name').textContent==='비어 있는 새 여행');
     assert.equal(await page.locator('[data-workspace-kind=record]').count(),0);
     assert.equal(await page.locator('.workspace-day').count(),3);
     await page.screenshot({path:path.join(out,'empty-travel.png'),fullPage:true});
