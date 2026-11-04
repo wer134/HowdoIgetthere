@@ -25,7 +25,7 @@ const wait = (p,ms=650)=>p.waitForTimeout(ms);
 async function store(p) { await wait(p); return p.evaluate(k=>JSON.parse(localStorage.getItem(k)||'{}'),KEY); }
 async function snap(p,id='negative-A') { return (await store(p))[id]; }
 const names = s => s?.records?.map(r=>r.cells?.[0]?.v);
-async function close(p) { await p.evaluate(()=>document.querySelectorAll('dialog[open]').forEach(d=>d.close())); await wait(p,30); }
+async function close(p) { await p.bringToFront(); await p.evaluate(()=>document.querySelectorAll('dialog[open]').forEach(d=>d.close())); await wait(p,30); }
 async function openTrip(p,id='negative-A') { await close(p); await p.click('#savedTravels');await p.locator('#travelHistoryDialog').waitFor({state:'visible'}); await p.click(`[data-travel-open="${id}"]`); await p.locator("#travelHistoryDialog").waitFor({state:"hidden"}); await p.click('[data-workspace-mode="map"]'); if(await p.locator('[data-mobile-view="itinerary"]').isVisible())await p.click('[data-mobile-view="itinerary"]'); await wait(p,70); }
 async function edit(p,n=0) { await close(p); if(await p.locator('[data-mobile-view=itinerary]').isVisible())await p.click('[data-mobile-view=itinerary]'); await p.click('#travelPlanTab'); await p.locator('#resultList [data-action="edit"]').nth(n).click(); }
 async function add(p,name='추가 장소',date=D,time='',memo='') { await close(p); if(await p.locator('[data-mobile-view=itinerary]').isVisible())await p.click('[data-mobile-view=itinerary]'); await p.click('#travelPlanTab'); await p.click('#scheduleAdd'); await p.fill('#scheduleName',name); await p.fill('#scheduleDate',date); await p.fill('#scheduleTime',time); await p.fill('#scheduleMemo',memo); await p.click('#scheduleForm button[type=submit]'); await wait(p,550); }
