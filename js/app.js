@@ -1738,9 +1738,8 @@ async function loadRecs() {
   showRecPins(true);
 }
 
-// 그 장소가 일정에 이미 있는지 (구글 장소 ID가 같거나 거의 같은 자리)
 function plannedItem(p) {
-  return state.items.find((it) => it.place && ((p.id && it.place.id === p.id) || distanceMeters(it.place, p) < 15));
+  return state.items.find((it) => it.place && (p.id && it.place.id ? it.place.id === p.id : distanceMeters(it.place, p) < 15));
 }
 
 function recCurrency(recs) {
@@ -3552,7 +3551,7 @@ function showSchedulePlaces(places, caption, kind = '') {
     ? `<p class="schedule-recommend-caption">${escapeHtml(caption)} · 장소를 고르면 입력칸에 채워져요.</p><div class="schedule-recommend-list">${places.map((place, i) => {
       const planned = plannedItem(place);
       const alreadyPlanned = planned && planned.cells !== editingRecord?.cells;
-      return `<div class="schedule-recommend-item${selectedSchedulePlace?.id === place.id ? ' selected' : ''}"><button type="button" data-schedule-pick="${i}"${alreadyPlanned ? ' disabled' : ''}><span><b>${escapeHtml(place.name)}</b><span class="schedule-recommend-description">${escapeHtml(placeBrief(place, kind))}${place.walk != null ? ` · 도보 약 ${place.walk}분` : ''}</span><small>${escapeHtml(place.address || '주소 정보 없음')}</small></span><span class="schedule-recommend-rating">${alreadyPlanned ? '일정에 있음' : place.rating != null ? `★ ${place.rating.toFixed(1)} · ${place.count.toLocaleString()}` : '선택'}</span></button><a href="${escapeHtml(safeUrl(googleUrl(place)))}" target="_blank" rel="noopener" aria-label="${escapeHtml(place.name)} Google 지도에서 보기">지도 ↗</a></div>`;
+      return `<div class="schedule-recommend-item${selectedSchedulePlace?.id === place.id ? ' selected' : ''}"><button type="button" data-schedule-pick="${i}"><span><b>${escapeHtml(place.name)}</b><span class="schedule-recommend-description">${escapeHtml(placeBrief(place, kind))}${place.walk != null ? ` · 도보 약 ${place.walk}분` : ''}</span><small>${escapeHtml(place.address || '주소 정보 없음')}</small></span><span class="schedule-recommend-rating">${alreadyPlanned ? '일정에 있음 · 다시 선택' : place.rating != null ? `★ ${place.rating.toFixed(1)} · ${place.count.toLocaleString()}` : '선택'}</span></button><a href="${escapeHtml(safeUrl(googleUrl(place)))}" target="_blank" rel="noopener" aria-label="${escapeHtml(place.name)} Google 지도에서 보기">지도 ↗</a></div>`;
     }).join('')}</div>`
     : '장소를 찾지 못했어요. 지역이나 검색어를 바꿔 보세요.';
 }

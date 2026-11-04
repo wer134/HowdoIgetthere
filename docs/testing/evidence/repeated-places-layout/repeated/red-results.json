@@ -1,0 +1,9 @@
+{
+  "phase": "red",
+  "status": "FAIL",
+  "providerCalls": "none; all nonlocal requests blocked, mock SDK/map only",
+  "checks": [],
+  "viewports": [],
+  "errors": [],
+  "failure": "AssertionError [ERR_ASSERTION]: Existing station is disabled: a new same-day visit must be selectable\n\nfalse !== true\n\n    at E:\\HowdoIgetthere\\tests\\browser\\repeated-places.cjs:94:14"
+}
