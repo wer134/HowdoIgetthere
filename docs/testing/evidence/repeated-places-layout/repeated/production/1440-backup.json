@@ -1,0 +1,235 @@
+{
+  "format": "routeflow.travel",
+  "version": 1,
+  "travel": {
+    "id": "repeated-visits-test",
+    "name": "반복 방문 검증",
+    "updated": 1793801604043,
+    "headers": [
+      "장소",
+      "날짜",
+      "시간",
+      "메모",
+      "주소",
+      "위도",
+      "경도"
+    ],
+    "mapping": {
+      "name": 0,
+      "date": 1,
+      "time": 2,
+      "memo": 3,
+      "address": 4,
+      "lat": 5,
+      "lng": 6,
+      "category": 1,
+      "region": -1,
+      "mode": -1
+    },
+    "records": [
+      {
+        "rowNumber": 3,
+        "cells": [
+          {
+            "t": "s",
+            "v": "중간 버스정류장"
+          },
+          {
+            "t": "s",
+            "v": "2026-11-07"
+          },
+          {
+            "t": "s",
+            "v": "11:00"
+          },
+          {
+            "t": "s",
+            "v": "중간 방문"
+          },
+          {
+            "t": "s",
+            "v": "가상 도시 2"
+          },
+          {
+            "t": "n",
+            "v": 35.01
+          },
+          {
+            "t": "n",
+            "v": 139.01
+          }
+        ]
+      },
+      {
+        "rowNumber": 4,
+        "cells": [
+          {
+            "t": "s",
+            "v": "반복 방문역"
+          },
+          {
+            "t": "s",
+            "v": "2026-11-07"
+          },
+          {
+            "t": "s",
+            "v": "17:30"
+          },
+          {
+            "t": "s",
+            "v": "복귀 방문만 수정"
+          },
+          {
+            "t": "s",
+            "v": "가상 도시 1"
+          },
+          {
+            "t": "n",
+            "v": 35
+          },
+          {
+            "t": "n",
+            "v": 139
+          }
+        ]
+      },
+      {
+        "rowNumber": 5,
+        "cells": [
+          {
+            "t": "s",
+            "v": "다른 역 입구"
+          },
+          {
+            "t": "s",
+            "v": "2026-11-07"
+          },
+          {
+            "t": "s",
+            "v": "18:00"
+          },
+          {
+            "t": "s",
+            "v": "별도 입구"
+          },
+          {
+            "t": "s",
+            "v": "가상 도시 3"
+          },
+          {
+            "t": "n",
+            "v": 35.00004
+          },
+          {
+            "t": "n",
+            "v": 139
+          }
+        ]
+      },
+      {
+        "rowNumber": 6,
+        "cells": [
+          {
+            "t": "s",
+            "v": "반복 방문역"
+          },
+          {
+            "t": "s",
+            "v": "2026-11-09"
+          },
+          {
+            "t": "s",
+            "v": "08:00"
+          },
+          {
+            "t": "s",
+            "v": "다음날 출발"
+          },
+          {
+            "t": "s",
+            "v": "가상 도시 1"
+          },
+          {
+            "t": "n",
+            "v": 35
+          },
+          {
+            "t": "n",
+            "v": 139
+          }
+        ]
+      }
+    ],
+    "library": [],
+    "dates": [
+      "2026-11-07",
+      "2026-11-08",
+      "2026-11-09"
+    ],
+    "region": "",
+    "sheetName": "일정",
+    "places": [
+      {
+        "recordIndex": 0,
+        "status": "given",
+        "cachedAt": 1793801598431,
+        "place": {
+          "id": "mock-stop-b",
+          "name": "중간 버스정류장",
+          "address": "가상 도시 2",
+          "lat": 35.01,
+          "lng": 139.01,
+          "cachedAt": 1793801598431
+        }
+      },
+      {
+        "recordIndex": 1,
+        "status": "confirmed",
+        "cachedAt": 1793801599433,
+        "place": {
+          "id": "mock-station-a",
+          "name": "반복 방문역",
+          "address": "가상 도시 1",
+          "url": "",
+          "lat": 35,
+          "lng": 139,
+          "type": "",
+          "types": [],
+          "cachedAt": 1793801599433
+        }
+      },
+      {
+        "recordIndex": 2,
+        "status": "confirmed",
+        "cachedAt": 1793801600361,
+        "place": {
+          "id": "mock-entrance-c",
+          "name": "다른 역 입구",
+          "address": "가상 도시 3",
+          "url": "",
+          "lat": 35.00004,
+          "lng": 139,
+          "type": "",
+          "types": [],
+          "cachedAt": 1793801600361
+        }
+      },
+      {
+        "recordIndex": 3,
+        "status": "confirmed",
+        "cachedAt": 1793801601296,
+        "place": {
+          "id": "mock-station-a",
+          "name": "반복 방문역",
+          "address": "가상 도시 1",
+          "url": "",
+          "lat": 35,
+          "lng": 139,
+          "type": "",
+          "types": [],
+          "cachedAt": 1793801601296
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,3 @@
+npm notice run excel-map-maker@0.1.0 check:release
+npm notice run node tools/check-release.js
+Release checks passed: 45 assets, revision c4a2f2540fdea0b6fc76a999c3b699d1f33007b6

@@ -1,0 +1,13 @@
+AssertionError [ERR_ASSERTION]: Undo action label stays on one readable line
+
+2 !== 1
+
+    at pick (E:\HowdoIgetthere\tests\browser\repeated-places.cjs:87:66)
+    at async E:\HowdoIgetthere\tests\browser\repeated-places.cjs:109:7 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: 2,
+  expected: 1,
+  operator: 'strictEqual',
+  diff: 'simple'
+}

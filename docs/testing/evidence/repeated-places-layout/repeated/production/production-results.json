@@ -1,0 +1,153 @@
+{
+  "phase": "production",
+  "status": "PASS",
+  "assetRoot": "E:\\HowdoIgetthere\\dist",
+  "release": {
+    "version": "6f8479cb352129e4",
+    "revision": "c4a2f2540fdea0b6fc76a999c3b699d1f33007b6",
+    "site": "https://wer134.github.io/HowdoIgetthere/",
+    "assets": [
+      "index.html",
+      "config.js",
+      "runtime-config.js",
+      "지도_양식.xlsx",
+      "privacy.html",
+      "terms.html",
+      "robots.txt",
+      "sitemap.xml",
+      "THIRD_PARTY_NOTICES.md",
+      "COPYRIGHT.md",
+      "js/budget.js",
+      "js/day-revision-ui.js",
+      "js/day-revision.js",
+      "js/excel-loader.js",
+      "js/excel-worker.js",
+      "js/excel.js",
+      "js/file-limits.js",
+      "js/kml.js",
+      "js/mapview.js",
+      "js/memory-cache.js",
+      "js/nearby.js",
+      "js/places.js",
+      "js/plan.js",
+      "js/planner.js",
+      "js/routes.js",
+      "js/travel-portability.js",
+      "js/travel-store.js",
+      "js/util.js",
+      "js/xlsxedit.js",
+      "js/account-sync.js",
+      "js/account.js",
+      "js/app.js",
+      "js/workspace-model.js",
+      "js/workspace.js",
+      "css/account.css",
+      "css/legal.css",
+      "css/style.css",
+      "css/workspace.css",
+      "assets/favicon.svg",
+      "assets/og-routeflow.png",
+      "assets/og-routeflow.svg",
+      "vendor/xlsx.full.min.js",
+      "vendor/anthropic-sdk-0.131.0.min.js",
+      "vendor/SheetJS-APACHE-2.0.txt",
+      "vendor/anthropic-sdk-LICENSE.txt"
+    ]
+  },
+  "providerCalls": "none; all nonlocal requests blocked, mock SDK/map only",
+  "checks": [
+    "same-day A→B→A",
+    "cross-day repeated station",
+    "distinct nearby provider ID",
+    "independent time/memo edit",
+    "independent date move and delete",
+    "reload persistence",
+    "fresh-context backup roundtrip",
+    "visit-specific marker and leg keys"
+  ],
+  "viewports": [
+    {
+      "width": 1440,
+      "status": "PASS",
+      "visits": [
+        {
+          "name": "중간 버스정류장",
+          "day": "2026-11-07",
+          "time": "11:00",
+          "memo": "중간 방문"
+        },
+        {
+          "name": "반복 방문역",
+          "day": "2026-11-07",
+          "time": "17:30",
+          "memo": "복귀 방문만 수정"
+        },
+        {
+          "name": "다른 역 입구",
+          "day": "2026-11-07",
+          "time": "18:00",
+          "memo": "별도 입구"
+        },
+        {
+          "name": "반복 방문역",
+          "day": "2026-11-09",
+          "time": "08:00",
+          "memo": "다음날 출발"
+        }
+      ],
+      "identity": {
+        "markerKeys": [
+          "0",
+          "1",
+          "2"
+        ],
+        "legKeys": [
+          "0>1",
+          "1>2"
+        ]
+      }
+    },
+    {
+      "width": 390,
+      "status": "PASS",
+      "visits": [
+        {
+          "name": "중간 버스정류장",
+          "day": "2026-11-07",
+          "time": "11:00",
+          "memo": "중간 방문"
+        },
+        {
+          "name": "반복 방문역",
+          "day": "2026-11-07",
+          "time": "17:30",
+          "memo": "복귀 방문만 수정"
+        },
+        {
+          "name": "다른 역 입구",
+          "day": "2026-11-07",
+          "time": "18:00",
+          "memo": "별도 입구"
+        },
+        {
+          "name": "반복 방문역",
+          "day": "2026-11-09",
+          "time": "08:00",
+          "memo": "다음날 출발"
+        }
+      ],
+      "identity": {
+        "markerKeys": [
+          "0",
+          "1",
+          "2"
+        ],
+        "legKeys": [
+          "0>1",
+          "1>2"
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

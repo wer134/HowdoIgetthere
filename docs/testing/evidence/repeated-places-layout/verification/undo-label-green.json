@@ -1,0 +1,102 @@
+{
+  "phase": "undo-green",
+  "status": "PASS",
+  "assetRoot": "E:\\HowdoIgetthere",
+  "release": null,
+  "providerCalls": "none; all nonlocal requests blocked, mock SDK/map only",
+  "checks": [
+    "same-day A→B→A",
+    "cross-day repeated station",
+    "distinct nearby provider ID",
+    "independent time/memo edit",
+    "independent date move and delete",
+    "reload persistence",
+    "fresh-context backup roundtrip",
+    "visit-specific marker and leg keys"
+  ],
+  "viewports": [
+    {
+      "width": 1440,
+      "status": "PASS",
+      "visits": [
+        {
+          "name": "중간 버스정류장",
+          "day": "2026-11-07",
+          "time": "11:00",
+          "memo": "중간 방문"
+        },
+        {
+          "name": "반복 방문역",
+          "day": "2026-11-07",
+          "time": "17:30",
+          "memo": "복귀 방문만 수정"
+        },
+        {
+          "name": "다른 역 입구",
+          "day": "2026-11-07",
+          "time": "18:00",
+          "memo": "별도 입구"
+        },
+        {
+          "name": "반복 방문역",
+          "day": "2026-11-09",
+          "time": "08:00",
+          "memo": "다음날 출발"
+        }
+      ],
+      "identity": {
+        "markerKeys": [
+          "0",
+          "1",
+          "2"
+        ],
+        "legKeys": [
+          "0>1",
+          "1>2"
+        ]
+      }
+    },
+    {
+      "width": 390,
+      "status": "PASS",
+      "visits": [
+        {
+          "name": "중간 버스정류장",
+          "day": "2026-11-07",
+          "time": "11:00",
+          "memo": "중간 방문"
+        },
+        {
+          "name": "반복 방문역",
+          "day": "2026-11-07",
+          "time": "17:30",
+          "memo": "복귀 방문만 수정"
+        },
+        {
+          "name": "다른 역 입구",
+          "day": "2026-11-07",
+          "time": "18:00",
+          "memo": "별도 입구"
+        },
+        {
+          "name": "반복 방문역",
+          "day": "2026-11-09",
+          "time": "08:00",
+          "memo": "다음날 출발"
+        }
+      ],
+      "identity": {
+        "markerKeys": [
+          "0",
+          "1",
+          "2"
+        ],
+        "legKeys": [
+          "0>1",
+          "1>2"
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

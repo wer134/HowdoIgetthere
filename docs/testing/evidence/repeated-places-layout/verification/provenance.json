@@ -1,0 +1,15 @@
+{
+  "productRevision": "c4a2f2540fdea0b6fc76a999c3b699d1f33007b6",
+  "releaseVersion": "6f8479cb352129e4",
+  "files": {
+    "js/app.js": "997276eef62046dd88a0c46eae9042ea8385b02c7c1ac93d5724c3341d0a62d4",
+    "js/workspace.js": "e914745cf2b610bba70d36a7534fc9d8124f08ffd9215f3806f243d4d189d565",
+    "css/workspace.css": "c9fec85d4db823e870e736e2a15a1ac2e2efb5c8fab55afec8897c773f29b674",
+    "css/style.css": "48f6851bf8be8d0ad9c6175e8e1144bb81c7426ef7e8d3dd7a52ee130dcc449f",
+    "tests/browser/workspace-layout.cjs": "bfb566f94a598af109938e346f5d08447e94891057bc655cec4c23790051b9c0",
+    "tests/browser/repeated-places.cjs": "7c93707e16518fd96b1c8072e0d9feab96b60c36d86bfcefb6b4d3e6d342df25",
+    "tests/browser/workspace-board.cjs": "ab8411ae7201d19bfe85843b93392ab5e7233aef81a148c822e6295a01710c65"
+  },
+  "verification": "all four final browser reports from same committed production build",
+  "diagnostics": "TypeScript/Biome LSP not installed; previous user decision declined installation. JavaScript syntax checks passed."
+}
