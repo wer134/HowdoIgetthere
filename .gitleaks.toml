@@ -12,5 +12,6 @@ regexes = [
   '''^\s*"api\.js":\s*"(?:6a9bf751d08fb9b7311bdfb71ae09206242f983abe4823a2a579461f69062ce0|842c074842a9d013f3ab35b093ba3330740b835a2adf653ff97da1fcf222d9e3)",?\s*$'''
 ]
 paths = [
-  '''(?:^|/)docs/testing/evidence/rebuild/(?:account|final-da6ab5e/(?:account|extra))/results\.json$'''
+  '''(?:^|/)docs/testing/evidence/rebuild/(?:account|final-da6ab5e/(?:account|extra))/results\.json$''',
+  '''(?:^|/)docs/testing/evidence/repeated-places-layout/regression-account/results\.json$'''
 ]
