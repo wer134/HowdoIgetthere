@@ -1,3 +1,4 @@
+const {openDeviceEditor} = require('./member-fixture.cjs');
 const { chromium } = require('playwright');
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
@@ -5,7 +6,7 @@ const path = require('node:path');
 
 const OUT = path.resolve(process.env.REPEATED_OUT || 'docs/testing/evidence/repeated-places-layout/repeated');
 const PHASE = process.env.REPEATED_PHASE || 'green';
-const ASSET_ROOT = path.resolve(process.env.BOARD_ASSET_ROOT || '.');
+const ASSET_ROOT = path.resolve(process.env.BOARD_ASSET_ROOT || 'dist');
 const DAY = '2026-11-07';
 const A = { id: 'mock-station-a', name: '반복 방문역', address: '가상 도시 1', lat: 35, lng: 139 };
 const B = { id: 'mock-stop-b', name: '중간 버스정류장', address: '가상 도시 2', lat: 35.01, lng: 139.01 };
@@ -33,12 +34,9 @@ async function saved(page, count) {
 
 (async () => {
   await fs.mkdir(OUT, { recursive: true });
-  const { createStaticServer } = await import('../../tools/http-server.js');
   const production = ASSET_ROOT !== path.resolve('.');
   const release = production ? JSON.parse(await fs.readFile(path.join(ASSET_ROOT, 'release.json'), 'utf8')) : null;
-  const server = createStaticServer({ root: ASSET_ROOT, production });
-  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-  const base = `http://127.0.0.1:${server.address().port}`;
+  const base = process.env.APP_URL;
   const report = { phase: PHASE, status: 'FAIL', assetRoot: ASSET_ROOT, release, providerCalls: 'none; all nonlocal requests blocked, mock SDK/map only', checks: [], viewports: [], errors: [] };
   let browser;
   try {
@@ -95,7 +93,7 @@ async function saved(page, count) {
         await page.fill('#scheduleMemo', memo);
         await page.click('#scheduleForm button[type="submit"]');
       };
-      await page.goto(base); await open();
+      await openDeviceEditor(page, base); await open();
       await search(A, DAY);
       await page.screenshot({ path: path.join(OUT, `${PHASE}-${width}-initial-repeat.png`), fullPage: true });
       assert.equal(await page.locator('[data-schedule-pick="0"]').isEnabled(), true, 'Existing station is disabled: a new same-day visit must be selectable');
@@ -144,7 +142,7 @@ async function saved(page, count) {
       assert.equal(envelope.travel.places.filter(entry => entry.place.id === A.id).length, 2);
       const fresh = await browser.newContext({ viewport: { width, height: 1000 }, serviceWorkers: 'block' });
       await fresh.route('**/*', route => route.request().url().startsWith(base) ? route.continue() : route.abort());
-      const restored = await fresh.newPage(); await restored.goto(base);
+      const restored = await fresh.newPage(); await openDeviceEditor(restored, base);
       await restored.setInputFiles('#travelBackupInput', backupPath);
       await restored.waitForFunction(() => document.querySelector('#fileName').textContent.endsWith('(복원본)'));
       const roundTrip = await restored.evaluate(() => Object.values(JSON.parse(localStorage.getItem('routeflow.travels.v1')))[0]);
@@ -161,7 +159,6 @@ async function saved(page, count) {
   finally {
     await fs.writeFile(path.join(OUT, `${PHASE}-results.json`), JSON.stringify(report, null, 2));
     if (browser) await browser.close();
-    await new Promise(resolve => server.close(resolve));
   }
   console.log(JSON.stringify(report, null, 2));
 })().catch(error => { console.error(error); process.exitCode = 1; });

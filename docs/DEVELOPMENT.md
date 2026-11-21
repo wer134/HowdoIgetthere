@@ -4,9 +4,10 @@
 
 ## 실행
 
-Node.js가 설치된 환경에서 실행합니다. 현재 서버 실행에는 추가 npm 패키지 설치가 필요하지 않습니다.
+Node.js 24 이상에서 의존성을 설치하고 실행합니다.
 
 ```bash
+npm ci
 npm start
 ```
 
@@ -14,7 +15,7 @@ Windows에서는 `start.bat`을 실행할 수도 있습니다. 기본 주소는 
 
 `npm start`는 환경의 비밀 키를 브라우저에 전달하지 않습니다. 필요한 키는 설정 화면에서 입력합니다. 환경의 `googleAPI`/`googlemap` 및 `geminiapi`를 쓰는 **로컬 검증에만** `npm run start:local`을 사용하세요. 이 명령은 키를 로컬 브라우저로 전달하므로 공개 터널에 연결하면 안 됩니다. 브라우저에 직접 저장한 설정이 우선하며, 키를 비우고 저장하면 해당 브라우저의 환경 키 사용도 중지합니다.
 
-개발 서버는 127.0.0.1에만 바인딩하고 지정 포트가 점유되면 실패합니다. `PORT=8093 npm run start:local`처럼 포트를 정할 수 있습니다. 공개 운영은 `dist/`만 배포하며 [배포 안내](DEPLOYMENT.md)를 따릅니다.
+개발 서버는 127.0.0.1에만 바인딩하고 지정 포트가 점유되면 실패합니다. `PORT=8093 npm run start:local`처럼 포트를 정할 수 있습니다. 운영 서버는 정적 산출물 `dist/`와 Node 계정 API를 함께 제공하며 [배포 안내](DEPLOYMENT.md)를 따릅니다.
 
 ## 검증
 
@@ -22,20 +23,19 @@ Windows에서는 `start.bat`을 실행할 수도 있습니다. 기본 주소는 
 npm test
 ```
 
-`npm ci`와 `npx playwright install chromium`으로 검증 의존성을 설치합니다. Playwright와 Chromium이 설치된 환경에서는 서버를 실행한 뒤 다음 브라우저 검증도 사용할 수 있습니다.
+`npm ci`와 `npx playwright install chromium`으로 검증 의존성을 설치합니다. 운영 산출물에 대해 실제 SQLite 세션을 사용하고 외부 인증 제공업체를 대체한 회원 여정을 검증합니다.
 
 ```bash
-node tests/browser/travel-workspace.cjs
-node tests/browser/travel-order.cjs
+npm run build
+CHROMIUM_PATH="$(node -p "require('playwright').chromium.executablePath()")" node tests/browser/account-workspace.cjs
 ```
-
-`APP_URL` 기본값은 `http://127.0.0.1:8080`, `CHROMIUM_PATH` 기본값은 `/usr/bin/chromium`입니다.
 
 ## 주요 파일
 
 | 파일 | 역할 |
 |---|---|
-| `index.html`, `css/style.css` | 화면 구성과 반응형 스타일 |
+| `index.html`, `js/home.js`, `js/examples.js` | 비회원 도시 예시와 로그인 후 작업 연결 |
+| `editor.html`, `css/style.css` | 회원 여행 편집기와 반응형 스타일 |
 | `js/app.js` | 일정 편집·장소 보관함·브라우저 저장 |
 | `js/excel.js`, `js/xlsxedit.js` | 엑셀 처리 |
 | `js/places.js`, `js/nearby.js` | 장소 검색·사진·상세 정보 |

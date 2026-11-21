@@ -16,8 +16,11 @@ export function loadGoogleMaps({ key, language, region }) {
     const params = { key, v: 'weekly' };
     if (language) params.language = language;
     if (region) params.region = region;
-    bootstrap(params);
-    loading = google.maps.importLibrary('maps');
+    if (!window.google?.maps?.importLibrary) bootstrap(params);
+    loading = google.maps.importLibrary('maps').catch(error => {
+      loading = null;
+      throw error;
+    });
   }
   return loading;
 }

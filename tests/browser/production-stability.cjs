@@ -1,3 +1,4 @@
+const {openDeviceEditor, authenticateMember} = require('./member-fixture.cjs');
 const {chromium}=require('playwright');const assert=require('node:assert/strict');const fs=require('node:fs');
 const BASE=process.env.APP_URL||'http://127.0.0.1:8096',OUT=process.env.STABILITY_OUT||'/tmp/routeflow-production-stability';fs.mkdirSync(OUT,{recursive:true});
 const path = require('node:path');
@@ -16,12 +17,14 @@ async function verifyFirstTravelTap(browser) {
   const page = await context.newPage();
   page.setDefaultTimeout(10000);
   try {
-    await page.goto(BASE, {waitUntil: 'commit'});
-    await page.locator('#newTravel').tap();
-    assert(await page.locator('#travelDialog').isVisible(), 'The first tap must open the dialog while XLSX is loading');
-    assert.equal(await page.locator('dialog[open]').count(), 1);
-    await page.fill('#travelName', '첫 탭 여행');
+    await authenticateMember(page, BASE);
+    await page.goto(BASE + '/editor.html?action=new', {waitUntil:'commit'});
+    await page.locator('#newTravel').waitFor({state:'attached'});
+    assert.equal(await page.locator('body').evaluate(body => body.inert), true);
     releaseWorkbook();
+    await page.waitForSelector('#travelDialog[open]');
+    await page.fill('#travelName', '첫 탭 여행');
+    await page.fill('#travelStart', '2026-11-22');
     await page.click('#newTravelForm button');
     await page.waitForFunction(() => document.querySelector('#fileName').textContent === '첫 탭 여행');
   } finally {
@@ -56,7 +59,7 @@ async function verifySheetExport(browser) {
     assert.deepEqual(rows.slice(1).map(row => row[0]), ['텐진 지하상가']);
   }
   try {
-    await page.goto(BASE);
+    await openDeviceEditor(page, BASE);
     await page.waitForFunction(() => document.querySelector('#syncText').textContent === '지도 연결됨');
     const workbook = XLSX.utils.book_new();
     for (const [name, rows] of [
@@ -143,10 +146,10 @@ async function verifySheetExport(browser) {
 }
 
 (async()=>{const b=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',args:['--no-sandbox']});const results=[];
-try{await verifyFirstTravelTap(b);results.push({name:'엑셀 라이브러리가 로딩 중이어도 첫 탭으로 새 여행 시작',status:'통과'});
+try{await verifyFirstTravelTap(b);results.push({name:'로그인 확인과 엑셀 로딩 후 모바일 새 여행 요청을 한 번 처리',status:'통과'});
 await verifySheetExport(b);results.push({name:'시트 전환 후 PC·모바일 엑셀 상태와 다운로드 내용 확인',status:'통과'});
 const c=await b.newContext({viewport:{width:1440,height:900}});await c.route('**/*',r=>r.request().url().startsWith(BASE)?r.continue():r.abort());
-const p=await c.newPage();p.setDefaultTimeout(10000);const errors=[];p.on('pageerror',e=>errors.push(e.message));await p.goto(BASE);
+const p=await c.newPage();p.setDefaultTimeout(10000);const errors=[];p.on('pageerror',e=>errors.push(e.message));await openDeviceEditor(p, BASE);
 await p.click('#newTravel');await p.fill('#travelName','운영 안정성 테스트');await p.fill('#travelStart','2026-11-07');await p.click('#newTravelForm button');await p.click('[data-workspace-mode="map"]');
 await p.click('#scheduleAdd');await p.fill('#scheduleName','보존할 장소');await p.fill('#scheduleMemo','보존할 개인 메모');await p.click('#scheduleForm button[type=submit]');await p.waitForTimeout(600);
 const get=()=>p.evaluate(()=>Object.values(JSON.parse(localStorage.getItem('routeflow.travels.v1')))[0]);const before=await get();assert.equal(before.records.length,1);

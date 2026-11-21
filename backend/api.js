@@ -1,3 +1,4 @@
+import { exampleSnapshot } from '../js/examples.js';
 import { randomBytes } from 'node:crypto';
 import { isIP } from 'node:net';
 import { parsePhoneNumberFromString } from 'libphonenumber-js/max';
@@ -47,14 +48,25 @@ export function createAccountApi({config=accountConfig(),providers,store}={}) {
       }
       if(req.method==='GET' && url.pathname==='/api/auth/callback') {
         const flow=db.takeFlow(cookies(req.headers.cookie)[flowCookie]);res.setHeader('Set-Cookie',cookie(flowCookie,'',0));
-        requireValue(flow && url.searchParams.get('state')===flow.state && !url.searchParams.has('error'),400,'invalid_auth_flow');
+        requireValue(flow && url.searchParams.get('state')===flow.state,400,'invalid_auth_flow');
+        if(url.searchParams.has('error')) {
+          res.writeHead(302,{Location:config.origin+'/?signin=cancelled'});res.end();return true;
+        }
         const identity=await external.exchange(url,flow),account=db.upsertUser(identity),raw=db.createSession(account.id);
         res.setHeader('Set-Cookie',[cookie(flowCookie,'',0),cookie(sessionCookie,raw,7*86400)]);res.writeHead(302,{Location:config.origin+'/'});res.end();return true;
       }
+      if(req.headers['x-routeflow-user'])requireValue(req.headers['x-routeflow-user']===user?.id,401,'session_changed');
       if(req.method==='POST' && url.pathname==='/api/logout'){db.logout(sessionToken);res.setHeader('Set-Cookie',cookie(sessionCookie,'',0));send(res,200,{ok:true});return true;}
-      if(req.method==='GET' && route[1]==='shared' && route.length===3){send(res,200,db.readShare(route[2]));return true;}
       requireValue(user,401,'login_required');
+      if(req.method==='GET' && route[1]==='shared' && route.length===3){send(res,200,db.readShare(route[2]));return true;}
       const data=['POST','PUT','DELETE'].includes(req.method)?await body(req,config.maxTravelBytes+16384):{};
+      if(req.method==='POST' && route.length===4 && route[1]==='examples' && route[3]==='copy') {
+        requireValue(typeof data.requestId==='string' && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(data.requestId),400,'invalid_request_id');
+        const snapshot=exampleSnapshot(route[2]);
+        requireValue(snapshot,404,'unknown_example');
+        send(res,201,{travel:db.copyExample(user.id,route[2],data.requestId,snapshot)});
+        return true;
+      }
       if(route[1]==='travels' && route.length===2) {
         if(req.method==='GET'){send(res,200,{travels:db.listTravels(user.id)});return true;}
         if(req.method==='POST'){send(res,201,{travel:db.createTravel(user.id,data.snapshot)});return true;}
@@ -101,5 +113,8 @@ export function createAccountApi({config=accountConfig(),providers,store}={}) {
       return true;
     }
   }
-  return {handle,store:db,close(){db?.close();}};
+  function isMember(req) {
+    return Boolean(config.available && req.headers.host===new URL(config.origin).host && db?.session(cookies(req.headers.cookie)[sessionCookie]));
+  }
+  return {handle,isMember,store:db,close(){db?.close();}};
 }

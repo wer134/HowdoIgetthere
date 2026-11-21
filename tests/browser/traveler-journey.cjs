@@ -1,3 +1,4 @@
+const {openDeviceEditor} = require('./member-fixture.cjs');
 const {chromium}=require('playwright');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');const path=require('node:path');
@@ -11,7 +12,7 @@ async function download(p,selector){const promise=p.waitForEvent('download');awa
  try{for(const width of [1440,390]){
   const c=await browser.newContext({viewport:{width,height:900},locale:'ko-KR'});const external=[];
   await c.route('**/*',r=>r.request().url().startsWith(BASE)||r.request().url().startsWith('blob:')?r.continue():(external.push(r.request().url().split('?')[0]),r.abort()));
-  const p=await c.newPage();p.setDefaultTimeout(7000);const errors=[];p.on('pageerror',e=>errors.push(e.message));await p.goto(BASE);
+  const p=await c.newPage();p.setDefaultTimeout(7000);const errors=[];p.on('pageerror',e=>errors.push(e.message));await openDeviceEditor(p, BASE);
   await p.screenshot({path:path.join(OUT,`${width}-start.png`),fullPage:true});
   await p.click('#newTravel');assert.match(await p.inputValue('#travelStart'),/^\d{4}-\d{2}-\d{2}$/);
   await p.fill('#travelName','부산 주말 여행');await p.fill('#travelStart','2026-11-07');await p.click('#newTravelForm button');await p.click('[data-workspace-mode="map"]');if(width<950)await p.click('[data-mobile-view="itinerary"]');
@@ -74,7 +75,7 @@ async function download(p,selector){const promise=p.waitForEvent('download');awa
   await p.click('#travelSaveRetry');await waitSave(p);
   await p.reload();await p.click('#continueTravel');
   assert.deepEqual(Object.values(await store(p)).find(t=>t.id===restored.id).library.filter(p=>p.name==='저장 공간 부족 후보').map(p=>p.memo),['후보의 개인 메모']);
-  const otherTab=await c.newPage();await otherTab.goto(BASE);await otherTab.click('#continueTravel');
+  const otherTab=await c.newPage();await openDeviceEditor(otherTab, BASE);await otherTab.click('#continueTravel');
   await otherTab.click('[data-workspace-add]');await otherTab.fill('#manualPlaceName','다른 탭의 후보');
   await otherTab.click('#manualPlaceForm button');await waitSave(otherTab);
   await p.click('[data-workspace-add]');await p.fill('#manualPlaceName','이 탭의 미저장 후보');
@@ -87,7 +88,7 @@ async function download(p,selector){const promise=p.waitForEvent('download');awa
   assert.ok(!latest.library.some(p=>p.name==='이 탭의 미저장 후보'));
   await otherTab.close();
   // Another browser context has neither API keys nor the original storage.
-  const fresh=await browser.newContext({viewport:{width,height:900}});await fresh.route('**/*',r=>r.request().url().startsWith(BASE)?r.continue():r.abort());const q=await fresh.newPage();await q.goto(BASE);await q.setInputFiles('#travelBackupInput',backup);await q.waitForFunction(()=>document.querySelector('#fileName').textContent.endsWith('(복원본)'));assert.equal(Object.values(await store(q))[0].library.length,3);
+  const fresh=await browser.newContext({viewport:{width,height:900}});await fresh.route('**/*',r=>r.request().url().startsWith(BASE)?r.continue():r.abort());const q=await fresh.newPage();await openDeviceEditor(q, BASE);await q.setInputFiles('#travelBackupInput',backup);await q.waitForFunction(()=>document.querySelector('#fileName').textContent.endsWith('(복원본)'));assert.equal(Object.values(await store(q))[0].library.length,3);
   await q.reload();await q.click('#continueTravel');await q.click('[data-workspace-mode="map"]');if(width<950)await q.click('[data-mobile-view="itinerary"]');assert.equal(await q.locator('#resultList > li.item').count(),1);
   await q.reload();await q.evaluate(()=>{const key='routeflow.travels.v1', data=JSON.parse(localStorage.getItem(key));const t=Object.values(data)[0];t.library[0]={id:'expired',name:'오래된 후보',memo:'내 예약 메모',cachedAt:Date.now()-31*86400000};localStorage.setItem(key,JSON.stringify(data));});await q.click('#continueTravel');await q.click('[data-workspace-mode="map"]');if(width<950)await q.click('[data-mobile-view="itinerary"]');await q.click('#travelLibraryTab');assert.equal(await q.locator('[data-travel-note]').first().inputValue(),'내 예약 메모');await fresh.close();
   const offline=await browser.newContext();const op=await offline.newPage();await op.route('**/*',r=>r.abort());await op.setContent(fs.readFileSync(html,'utf8'));assert.match(await op.textContent('body'),/부산 느긋한 주말/);assert.match(await op.textContent('body'),/둘째 후보/);assert.equal(await op.locator('script').count(),0);await offline.close();

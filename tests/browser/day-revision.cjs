@@ -1,3 +1,4 @@
+const {openDeviceEditor} = require('./member-fixture.cjs');
 const { chromium } = require('playwright');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -41,7 +42,7 @@ const proposal = { summary: '예약은 유지하고 미술관 시간을 늦춘 �
     });
     const p = await c.newPage(); p.setDefaultTimeout(10000);
     const errors = []; p.on('pageerror', e => errors.push(e.message));
-    await p.goto(BASE);
+    await openDeviceEditor(p, BASE);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
       ['장소', '날짜', '시간', '메모', '지역', '위도', '경도', '내 추가 열'],
@@ -95,7 +96,7 @@ const proposal = { summary: '예약은 유지하고 미술관 시간을 늦춘 �
     await p.click('#dayRevisionApply'); await p.waitForFunction(() => document.querySelector('#dayRevisionStatus').textContent.includes('저장할 수 없'));
     assert.deepEqual((await latest(p)).records, original.records); await p.evaluate(() => __restoreWrite());
     // A second tab changes the same travel after preview; CAS refuses overwrite.
-    const q = await c.newPage(); await q.goto(BASE); await q.evaluate(id => { const k = 'routeflow.travels.v1'; const data=JSON.parse(localStorage.getItem(k)); data[id].name = '다른 탭에서 변경'; localStorage.setItem(k, JSON.stringify(data)); }, original.id);
+    const q = await c.newPage(); await openDeviceEditor(q, BASE); await q.evaluate(id => { const k = 'routeflow.travels.v1'; const data=JSON.parse(localStorage.getItem(k)); data[id].name = '다른 탭에서 변경'; localStorage.setItem(k, JSON.stringify(data)); }, original.id);
     await p.bringToFront();
     await p.click('#dayRevisionApply'); await p.waitForFunction(() => document.querySelector('#dayRevisionStatus').textContent.includes('다른 탭'));
     assert.equal((await latest(p)).name, '다른 탭에서 변경');

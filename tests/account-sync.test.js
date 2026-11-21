@@ -47,3 +47,29 @@ test('journal storage failure is visible while the unsent snapshot remains in me
   sync.open('user',travel());sync.queue({...travel().snapshot,name:'보관 필요'});await sync.flush();
   assert.equal(sync.state().journalFailed,true);assert.equal(sync.pending(),true);assert.equal(sync.state().status,'error');
 });
+
+test('returning to another trip preserves the expired session’s unsent edits', () => {
+  const storage = fixture();
+  const sync = createAccountSync({storage, send:async () => {}});
+  const original = travel();
+  sync.open('owner', original);
+  sync.queue({...original.snapshot, name:'다시 로그인한 뒤 복구할 편집'});
+  sync.close();
+  const other = {id:'another', version:1, snapshot:{...original.snapshot,id:'another'}};
+  sync.open('owner', other, {recover:false});
+  sync.queue({...other.snapshot,name:'다른 여행 메모'});
+  sync.close();
+  assert.equal(sync.open('owner', original).name, '다시 로그인한 뒤 복구할 편집');
+  assert.equal(sync.open('owner', other).name, '다른 여행 메모');
+});
+
+test('per-travel recovery can load and discard an earlier user-only draft', () => {
+  const storage = fixture();
+  const original = travel();
+  const legacy = {...original, snapshot:{...original.snapshot,name:'이전 임시본'}};
+  storage.setItem('routeflow.accountDraft.v1:owner', JSON.stringify(legacy));
+  const sync = createAccountSync({storage, send:async () => {}});
+  assert.equal(sync.open('owner', original).name, '이전 임시본');
+  sync.close({discard:true});
+  assert.equal(storage.values.size,0);
+});

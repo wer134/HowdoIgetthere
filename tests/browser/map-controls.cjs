@@ -1,26 +1,21 @@
+const {authenticateMember} = require('./member-fixture.cjs');
 const assert = require('node:assert/strict');
 const path = require('node:path');
 const {chromium} = require('playwright');
 
 async function main() {
   const project = path.resolve(__dirname, '../..');
-  const {createStaticServer} = await import('../../tools/http-server.js');
-  let server, browser;
+  let browser;
   try {
-    let url = process.env.APP_URL;
-    if (!url) {
-      server = createStaticServer({root:project});
-      await new Promise((resolve,reject) => server.once('error',reject).listen(0,'127.0.0.1',resolve));
-      url = 'http://127.0.0.1:' + server.address().port;
-    }
+    const url = process.env.APP_URL;
     browser = await chromium.launch(process.env.CHROMIUM_PATH ? {executablePath:process.env.CHROMIUM_PATH} : {});
     const page = await browser.newPage({hasTouch:true, viewport:{width:390,height:844}});
     await page.route('https://**/*',route => route.abort());
     await page.route(/\/js\/mapview\.js(?:\?.*)?$/,route => route.fulfill({path:path.join(project,'docs/testing/repro/mapview-mock.js'),contentType:'application/javascript'}));
     await page.addInitScript({path:path.join(project,'docs/testing/repro/google-mock.js')});
-    await page.addInitScript(() => localStorage.setItem('googleMapsApiKey','TEST_ONLY'));
-    await page.goto(url);
-    await page.click('#newTravel');
+    await page.route('**/runtime-config.js', route => route.fulfill({contentType:'text/javascript',body:"window.APP_CONFIG = {...window.APP_CONFIG, googleMapsApiKey:'TEST_ONLY'};"}));
+    await authenticateMember(page, url);
+    await page.goto(url + '/editor.html?action=new');
     await page.fill('#travelName','지도 조작 확인');
     await page.fill('#travelStart','2026-12-04');
     await page.click('#newTravelForm button');
@@ -49,7 +44,6 @@ async function main() {
     }
   } finally {
     await browser?.close();
-    if (server?.listening) await new Promise(resolve => server.close(resolve));
   }
 }
 

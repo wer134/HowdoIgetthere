@@ -1,3 +1,4 @@
+const {openDeviceEditor} = require('./member-fixture.cjs');
 // Optional paid live check. No mocks, persistent browser profile, or credential output.
 const {chromium}=require('playwright');
 const assert=require('node:assert/strict');
@@ -15,7 +16,7 @@ const clean=value=>secrets.reduce((s,key)=>s.split(key).join('[REDACTED]'),Strin
   await page.addInitScript(key=>localStorage.setItem('googleMapsApiKey',key),process.env.googlemap);
   page.on('pageerror',e=>result.errors.push(clean(e.message)));
   page.on('response',r=>{const u=new URL(r.url());if(/SearchText|ComputeRoutes/.test(u.pathname))result.responses.push({service:u.pathname.split('/').pop(),http:r.status()});});
-  await page.goto(BASE);await page.waitForFunction(()=>document.querySelector('#syncText').textContent==='지도 연결됨',null,{timeout:45000});
+  await openDeviceEditor(page, BASE);await page.waitForFunction(()=>document.querySelector('#syncText').textContent==='지도 연결됨',null,{timeout:45000});
   result.check=await page.evaluate(async()=>{
    const {searchPlaces,clearCache}=await import('/js/places.js');const {computeLeg,clearRouteCache,isRouteCached}=await import('/js/routes.js');clearCache();clearRouteCache();
    const origin=(await searchPlaces('후쿠오카 오호리 공원',{language:'ko',region:'jp'}))[0];

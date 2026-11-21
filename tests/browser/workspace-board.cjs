@@ -1,3 +1,4 @@
+const {openDeviceEditor} = require('./member-fixture.cjs');
 const {chromium} = require('playwright');
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
@@ -10,22 +11,20 @@ const fixture = () => ({id:'board-browser-test',name:'후쿠오카 · 보드 검
 ],places:[],sheetName:'일정'});
 
 (async()=>{
-  const {createStaticServer} = await import('../../tools/http-server.js');
   const root = path.resolve(process.env.BOARD_ASSET_ROOT || 'dist');
   const release = JSON.parse(await fs.readFile(path.join(root,'release.json'),'utf8'));
   const out = path.resolve(process.env.WORKSPACE_OUT || 'docs/testing/evidence/rebuild/board');
   await fs.mkdir(out,{recursive:true});
-  const server = createStaticServer({root,production:true});
-  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
-  const url = `http://127.0.0.1:${server.address().port}`;
-  const result = {status:'FAIL',time:new Date().toISOString(),assetRoot:root,release:{revision:release.revision,version:release.version},providerCalls:'none; static local server, guest storage only',checks:[],viewports:[],cleanup:{}};
+  const url = process.env.APP_URL;
+  const result = {status:'FAIL',time:new Date().toISOString(),assetRoot:root,release:{revision:release.revision,version:release.version},providerCalls:'none; authenticated test server and legacy on-device editor',checks:[],viewports:[],cleanup:{}};
   let browser;
   try {
     browser = await chromium.launch(process.env.CHROMIUM_PATH ? {executablePath:process.env.CHROMIUM_PATH} : {channel:'chrome'});
     const undoContext=await browser.newContext({viewport:{width:1440,height:1000}});
+    await undoContext.route('https://**/*',route=>route.abort());
     const undoPage=await undoContext.newPage();
     await undoPage.addInitScript(value=>localStorage.setItem('routeflow.travels.v1',JSON.stringify({[value.id]:value})),fixture());
-    await undoPage.goto(url);await undoPage.click('#continueTravel');await undoPage.click('[data-workspace-mode=board]');
+    await openDeviceEditor(undoPage, url);await undoPage.click('#continueTravel');await undoPage.click('[data-workspace-mode=board]');
     await undoPage.getByRole('button',{name:'후쿠오카시 미술관 앞으로',exact:true}).click();
     await undoPage.click('[data-workspace-mode=map]');await undoPage.click('#travelLibraryTab');
     await undoPage.locator('[data-travel-note]').first().fill('이동 뒤에 저장한 새 메모');
@@ -42,10 +41,11 @@ const fixture = () => ({id:'board-browser-test',name:'후쿠오카 · 보드 검
     await undoContext.close();
     result.checks.push('stale board undo rejects whole-snapshot replacement after a later candidate memo save');
     const context = await browser.newContext({viewport:{width:1440,height:1000}});
+    await context.route('https://**/*',route=>route.abort());
     const page = await context.newPage(), errors=[];
     page.on('pageerror',error=>errors.push(error.message));
     await page.addInitScript(value=>{if(!localStorage.getItem('routeflow.travels.v1'))localStorage.setItem('routeflow.travels.v1',JSON.stringify({[value.id]:value}));},fixture());
-    await page.goto(url); await page.click('#continueTravel');
+    await openDeviceEditor(page, url); await page.click('#continueTravel');
     await page.click('[data-workspace-mode=board]');
     const names = day => page.locator(`[data-workspace-drop-day="${day}"] .workspace-place-heading strong`).allTextContents();
     assert.deepEqual(await names('2026-11-01'),['오호리 공원','후쿠오카시 미술관']);
@@ -169,8 +169,7 @@ const fixture = () => ({id:'board-browser-test',name:'후쿠오카 · 보드 검
     result.status='PASS';
   } finally {
     await browser?.close();
-    await new Promise(resolve=>server.close(resolve));
-    result.cleanup={browserClosed:true,serverClosed:true,userData:'fresh context, no existing travel accessed'};
+    result.cleanup={browserClosed:true,userData:'fresh context, no existing travel accessed'};
     await fs.writeFile(path.join(out,'results.json'),JSON.stringify(result,null,2));
   }
   console.log(JSON.stringify(result,null,2));

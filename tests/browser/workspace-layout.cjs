@@ -1,3 +1,4 @@
+const {openDeviceEditor} = require('./member-fixture.cjs');
 const {chromium} = require('playwright');
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
@@ -7,15 +8,12 @@ const dates = ['2026-11-28','2026-11-29','2026-11-30','2026-12-01','2026-12-02']
 const fixture = () => ({id:'layout-five-day-test',name:'후쿠오카 · 긴 역 이름과 왕복 이동을 포함한 5일 여행',updated:Date.now(),headers:['장소','날짜','시간','메모','개인 열'],mapping:{name:0,date:1,time:2,memo:3,category:-1,region:-1,address:-1,lat:-1,lng:-1,mode:-1},dates,library:[],records:dates.flatMap((day,d)=>Array.from({length:8},(_,i)=>({rowNumber:d*8+i+2,cells:[{v:`하카타역 지하철 공항선 · ${d+1}일 ${i+1}번째 이동과 환승 확인`},{v:day},{v:'09:30~10:15'},{v:'출구와 승강장을 확인하고 일행을 만난 뒤 다음 목적지로 이동합니다. 긴 메모도 카드 안에서 읽을 수 있어야 합니다.'},{v:'개인 기록'}]}))),places:[],sheetName:'일정'});
 
 (async()=>{
-  const {createStaticServer} = await import('../../tools/http-server.js');
   const root=path.resolve(process.env.BOARD_ASSET_ROOT || 'dist');
   const out=path.resolve(process.env.WORKSPACE_OUT || 'docs/testing/evidence/repeated-places-layout/board');
   await fs.mkdir(out,{recursive:true});
   let release=null;
   try {release=JSON.parse(await fs.readFile(path.join(root,'release.json'),'utf8'));} catch {}
-  const server=createStaticServer({root,production:!!release});
-  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
-  const url=`http://127.0.0.1:${server.address().port}`;
+  const url = process.env.APP_URL;
   const result={status:'FAIL',time:new Date().toISOString(),assetRoot:root,release,providers:'no external calls; local guest storage, generated XLSX, account HTTP responses mocked for logout/reset only',checks:[],viewports:[]};
   let browser;
   try {
@@ -35,7 +33,7 @@ const fixture = () => ({id:'layout-five-day-test',name:'후쿠오카 · 긴 역 
       assert.equal(metrics.board.visible,mode==='board');assert.equal(metrics.search.visible,mode==='board');assert.equal(metrics.map.visible,mode==='map');
       return metrics;
     };
-    await page.goto(url);await page.click('#continueTravel');
+    await openDeviceEditor(page, url);await page.click('#continueTravel');
     await page.setViewportSize({width:390,height:844});
     const boardSearch = page.getByRole('searchbox',{name:'보드 장소 검색'});
     await boardSearch.fill('5일 8번째');
@@ -129,6 +127,6 @@ const fixture = () => ({id:'layout-five-day-test',name:'후쿠오카 · 긴 역 
     await page.click('#accountClose');await page.click('#newTravel');await page.fill('#travelName','로그아웃 뒤 새 여행');await page.fill('#travelStart','2026-12-15');await page.locator('#newTravelForm button').click();await checkMode('board','new travel after account logout resets applied mode');
     assert.deepEqual(errors,[]);await context.close();result.status='PASS';
   } catch(error){result.error=error.stack;throw error;}
-  finally {await browser?.close();await new Promise(resolve=>server.close(resolve));result.cleanup='fresh browser context and local server closed';await fs.writeFile(path.join(out,'results.json'),JSON.stringify(result,null,2));}
+  finally {await browser?.close();result.cleanup='fresh browser context closed';await fs.writeFile(path.join(out,'results.json'),JSON.stringify(result,null,2));}
   console.log(JSON.stringify({status:result.status,checks:result.checks.length,viewports:result.viewports.length,out},null,2));
 })().catch(error=>{console.error(error);process.exitCode=1;});
