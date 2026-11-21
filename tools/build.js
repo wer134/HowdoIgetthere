@@ -8,7 +8,7 @@ import { publicAssets, safeAsset } from './public-assets.js';
 import { buildRuntimeConfig } from '../runtime-config-builder.js';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const out = path.join(root, 'dist');
-const url = new URL(process.env.SITE_URL || 'https://wer134.github.io/HowdoIgetthere/');
+const url = new URL(process.env.SITE_URL || 'https://routeflow.example/');
 if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash) throw new Error('SITE_URL must be a public HTTPS URL without query/credentials');
 if (['localhost','127.0.0.1','0.0.0.0','[::1]'].includes(url.hostname)) throw new Error('SITE_URL must not be local');
 if (!url.pathname.endsWith('/')) url.pathname += '/';
@@ -22,7 +22,7 @@ for (const name of allowed) {
 }
 contents.set('runtime-config.js', Buffer.from(buildRuntimeConfig({ NODE_ENV: 'production', PUBLIC_GOOGLE_MAPS_KEY: process.env.PUBLIC_GOOGLE_MAPS_KEY })));
 for (const [name, bytes] of contents) if (/\.(html|xml|txt)$/.test(name)) {
-  contents.set(name, Buffer.from(bytes.toString().replaceAll('https://wer134.github.io/HowdoIgetthere/', url.href)));
+  contents.set(name, Buffer.from(bytes.toString().replaceAll('https://routeflow.example/', url.href)));
 }
 const version = createHash('sha256');
 for (const [name, bytes] of [...contents].sort()) version.update(name).update(bytes);

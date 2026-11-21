@@ -9,13 +9,13 @@ RouteFlow는 정적 게스트 앱과 선택형 Node 계정 서버로 구성된�
 ```sh
 npm ci
 npm test
-SITE_URL=https://wer134.github.io/HowdoIgetthere/ npm run build
+SITE_URL=https://routeflow.example/ npm run build
 npm run check:release
 PORT=8080 npm run start:production
 ```
 
-- HTTP로 공개하는 정적 파일은 **dist 디렉터리의 allowlist 자산만**이다. 저장소 루트, `.env`, `backend`, 개발 문서와 검증 증거를 웹 루트로 공개하지 않는다. GitHub Pages도 브랜치 루트 공개 대신 CI의 production-dist 산출물을 사용한다. Node 계정 서버 배포에는 서버 코드·의존성과 dist가 필요하지만 서버 코드 자체를 정적 파일로 제공하지 않는다. 이 변경은 실제 배포를 실행하지 않는다.
-- `SITE_URL`은 최종 HTTPS URL이고 프로젝트 하위 경로를 포함해야 한다. canonical·OG·사이트맵 URL이 이 값으로 치환된다. 변경 후 다시 빌드한다.
+- HTTP로 공개하는 정적 파일은 **dist 디렉터리의 allowlist 자산만**이다. 저장소 루트, `.env`, `backend`, 개발 문서와 검증 증거를 웹 루트로 공개하지 않는다. 개편 기간에는 GitHub Pages 배포를 중단하고 CI에서 production-dist 산출물만 검증한다. Node 계정 서버 배포에는 서버 코드·의존성과 dist가 필요하지만 서버 코드 자체를 정적 파일로 제공하지 않는다. 이 변경은 실제 배포를 실행하지 않는다.
+- `SITE_URL`은 최종 HTTPS URL이고 프로젝트 하위 경로를 포함해야 한다. 위 예제의 routeflow.example은 빌드 검증용 도메인이다. 재공개할 때는 운영 주소를 설정하여 canonical·OG·사이트맵 URL에 반영한다. 변경 후 다시 빌드한다.
 - 선택 항목 `PUBLIC_GOOGLE_MAPS_KEY`만 브라우저 공개 설정에 들어간다. 이 키는 비밀이 아니며 Google Cloud에서 운영 HTTP 리퍼러와 필요한 Maps API만 허용하고 쿼터/예산 알림을 설정해야 한다. 비공개 AI 환경 키는 빌드에서 제외된다.
 - 서버는 `.env`를 자동 로드하지 않는다. 플랫폼의 환경변수 설정을 사용한다. `.env.example`에 실제 키를 쓰지 않는다. `.env`가 추적됐는지는 `git ls-files '.env' '.env.*'`로 검사한다(`.env.example` 제외). 노출 이력이 있으면 파일 삭제만으로 해결되지 않으며 키 교체가 필요하다.
 - Node 운영 서버는 HOST(기본 0.0.0.0)/PORT를 준수하고 `/healthz`를 제공한다. 포트 점유 시 실패한다. HTTPS는 앞단 호스팅/리버스 프록시가 종료해야 한다.

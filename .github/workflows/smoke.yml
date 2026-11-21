@@ -98,33 +98,3 @@ jobs:
           path: dist/
           include-hidden-files: true
           retention-days: 14
-
-  deploy-pages:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: app
-    runs-on: ubuntu-latest
-    concurrency:
-      group: pages
-      cancel-in-progress: false
-    permissions:
-      actions: read
-      contents: read
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.publish.outputs.page_url }}
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: production-dist
-          path: dist
-      - name: Verify the tested revision and public file boundary
-        run: |
-          node -e "const assert = require('node:assert/strict'); assert.equal(require('./dist/release.json').revision, process.env.GITHUB_SHA)"
-          test -f dist/index.html && test ! -e dist/backend && test ! -e dist/docs
-      - uses: actions/upload-pages-artifact@v4
-        with:
-          path: dist
-      - uses: actions/deploy-pages@v4
-        id: publish
