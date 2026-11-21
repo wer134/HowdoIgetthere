@@ -10,7 +10,7 @@ if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('PORT m
 const localKeys = process.argv.includes('--local-keys');
 if (process.env.NODE_ENV === 'production') throw new Error('Use npm run build && npm run start:production');
 const accounts = createAccountApi();
-const server = createStaticServer({ root, port, api: accounts.handle, runtime: buildRuntimeConfig(process.env, { localKeys }) });
+const server = createStaticServer({ root, port, authorizeEditor: accounts.isMember, api: accounts.handle, runtime: buildRuntimeConfig(process.env, { localKeys }) });
 server.on('error', error => { console.error(error.code === 'EADDRINUSE' ? 'Requested port is already in use.' : error.message); process.exitCode = 1; });
 server.listen(port, '127.0.0.1', () => console.log(`RouteFlow: http://127.0.0.1:${port}/${localKeys ? ' (local credentials enabled)' : ''}`));
 for (const signal of ['SIGTERM', 'SIGINT']) process.on(signal, () => { server.close(() => accounts.close()); server.closeIdleConnections(); });

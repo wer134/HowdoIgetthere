@@ -15,11 +15,6 @@ jobs:
     timeout-minutes: 35
     env:
       APP_URL: http://127.0.0.1:8097
-      NEGATIVE_OUT: /tmp/routeflow-ci/negative-78
-      REVISION_OUT: /tmp/routeflow-ci/day-revision
-      STABILITY_OUT: /tmp/routeflow-ci/stability
-      JOURNEY_OUT: /tmp/routeflow-ci/journey
-      WORKSPACE_OUT: /tmp/routeflow-ci/workspace
       ACCOUNT_OUT: /tmp/routeflow-ci/accounts
     steps:
       - uses: actions/checkout@v4
@@ -38,6 +33,9 @@ jobs:
           mkdir -p /tmp/routeflow-ci
           /tmp/gitleaks git --redact --report-format json --report-path /tmp/routeflow-ci/secrets.json --log-opts='--all' .
       - name: Check source, dependencies, units and release
+        env:
+          SITE_URL: ${{ vars.STAGING_SITE_URL }}
+          PUBLIC_GOOGLE_MAPS_KEY: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.STAGING_PUBLIC_MAPS_KEY || '' }}
         run: |
           git ls-files '*.js' '*.cjs' ':!:vendor/*' | while IFS= read -r file; do node --check "$file"; done
           npm audit --audit-level=moderate
@@ -56,32 +54,16 @@ jobs:
             sleep 0.25
           done
           exit 1
-      - name: Browser journeys and import stability (external APIs mocked or blocked)
+      - name: Member journeys on the production artifact (mock identity provider)
         run: |
-          node tests/browser/production-stability.cjs
-          node tests/browser/budget-travel.cjs
-          node tests/browser/day-revision.cjs
-          node tests/browser/traveler-journey.cjs
-          node tests/browser/travel-order.cjs
-          node tests/browser/travel-drag.cjs
-          node tests/browser/travel-safety.cjs
-          node tests/browser/workspace-board.cjs
-          node tests/browser/workspace-layout.cjs
-          node tests/browser/map-controls.cjs
           node tests/browser/account-workspace.cjs
-      - name: All 78 negative cases (9 explicitly unavailable in this harness)
-        run: |
-          node docs/testing/repro/negative-78.cjs
-          node --input-type=module <<'JS'
-          import fs from 'node:fs';
-          import assert from 'node:assert/strict';
-          const results = JSON.parse(fs.readFileSync(process.env.NEGATIVE_OUT + '/results.json'));
-          assert.equal(results.length, 78);
-          assert.equal(results.filter(r => r.status === '결함 확인').length, 0);
-          assert.equal(results.filter(r => r.harnessError).length, 0);
-          assert(results.every(r => ['통과', '검증 불가'].includes(r.status)));
-          assert.deepEqual(results.filter(r => r.status === '검증 불가').map(r => r.id), [5,40,50,59,67,69,71,72,75]);
-          JS
+          node tests/browser/editor-entry.cjs
+          node tests/browser/public-examples.cjs
+      - name: Editor regressions including all 78 negative cases
+        env:
+          REGRESSION_OUT: /tmp/routeflow-ci/editor
+          REGRESSION_ONLY: production-stability,budget-travel,day-revision,traveler-journey,travel-order,travel-drag,travel-workspace,travel-safety,workspace-board,workspace-layout,map-controls,repeated-places,negative-78
+        run: node tests/browser/rebuild-regressions.cjs
       - name: Lighthouse lab measurement (keyless first visit)
         env:
           CHROME_PATH: ${{ env.CHROMIUM_PATH }}
@@ -97,4 +79,12 @@ jobs:
           name: production-dist
           path: dist/
           include-hidden-files: true
+          retention-days: 14
+      - name: Package the checked Node service for private staging
+        run: |
+          tar -czf "${RUNNER_TEMP}/routeflow-service.tgz" dist backend js/examples.js js/travel-store.js tools/http-server.js tools/public-assets.js production-server.js package.json package-lock.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: routeflow-service
+          path: ${{ runner.temp }}/routeflow-service.tgz
           retention-days: 14

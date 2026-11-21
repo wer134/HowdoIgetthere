@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const rootFiles = ['index.html', 'config.js', 'runtime-config.js', '지도_양식.xlsx',
+const rootFiles = ['index.html', 'editor.html', 'config.js', 'runtime-config.js', '지도_양식.xlsx',
   'privacy.html', 'terms.html', 'robots.txt', 'sitemap.xml', 'release.json', 'THIRD_PARTY_NOTICES.md', 'COPYRIGHT.md'];
 const vendorFiles = ['xlsx.full.min.js', 'anthropic-sdk-0.131.0.min.js', 'SheetJS-APACHE-2.0.txt', 'anthropic-sdk-LICENSE.txt'];
 export function publicAssets(root) {

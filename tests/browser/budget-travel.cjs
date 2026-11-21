@@ -1,3 +1,4 @@
+const {openDeviceEditor} = require('./member-fixture.cjs');
 const assert = require('node:assert/strict');
 const { chromium } = require('playwright');
 const XLSX = require('../../vendor/xlsx.full.min.js');
@@ -47,7 +48,7 @@ async function run() {
       lastConfirmation = dialog.message();
       return useLegacy || lastConfirmation.includes('삭제할까요') ? dialog.accept() : dialog.dismiss();
     });
-    await page.goto(base);
+    await openDeviceEditor(page, base);
 
     await importTrip(page, [
       ['점심 식당 A', '2026-12-07', '12:30', '점심 12000원'],

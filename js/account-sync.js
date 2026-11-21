@@ -1,5 +1,6 @@
 const fingerprint = snapshot => JSON.stringify({...snapshot, updated:0});
-const keyFor = user => `routeflow.accountDraft.v1:${user}`;
+const legacyKey = user => `routeflow.accountDraft.v1:${user}`;
+const keyFor = (user, id) => `${legacyKey(user)}:${id}`;
 
 export function createAccountSync({send, storage, onState = () => {}}) {
   let current = null, pendingSnapshot = null, savedFingerprint = '', request = null, generation = 0;
@@ -8,8 +9,12 @@ export function createAccountSync({send, storage, onState = () => {}}) {
   const announce = () => onState(state());
   function journal() {
     try {
-      if (current && pendingSnapshot) storage.setItem(keyFor(current.user), JSON.stringify({id:current.id,version:current.version,snapshot:pendingSnapshot}));
-      else if (current) storage.removeItem(keyFor(current.user));
+      if (current) {
+        const {id, user, version} = current;
+        if (pendingSnapshot) storage.setItem(keyFor(user, id), JSON.stringify({id, version, snapshot:pendingSnapshot}));
+        else storage.removeItem(keyFor(user, id));
+        if (JSON.parse(storage.getItem(legacyKey(user)) || 'null')?.id === id) storage.removeItem(legacyKey(user));
+      }
       journalFailed = false;
     } catch { journalFailed = true; }
   }
@@ -56,7 +61,7 @@ export function createAccountSync({send, storage, onState = () => {}}) {
       savedFingerprint=fingerprint(travel.snapshot);status='saved';message='';
       if(recover) {
         try {
-          const draft=JSON.parse(storage.getItem(keyFor(user)) || 'null');
+          const draft=JSON.parse(storage.getItem(keyFor(user, travel.id)) || storage.getItem(legacyKey(user)) || 'null');
           if(draft?.id===travel.id && draft.snapshot?.id===travel.id && Number.isInteger(draft.version)) {
             pendingSnapshot=draft.snapshot;status=draft.version===travel.version?'pending':'conflict';
             current.version=draft.version;
@@ -66,7 +71,7 @@ export function createAccountSync({send, storage, onState = () => {}}) {
       announce();return structuredClone(pendingSnapshot || travel.snapshot);
     },
     close({discard=false}={}) {
-      if(discard && current) {try {storage.removeItem(keyFor(current.user));} catch {journalFailed=true;}}
+      if(discard && current) { pendingSnapshot=null; journal(); }
       generation++;current=null;pendingSnapshot=null;request=null;savedFingerprint='';status='idle';message='';announce();
     },
   };

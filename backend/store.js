@@ -49,6 +49,13 @@ export function createAccountStore(config) {
     requireValue(totals.bytes-oldBytes+bytes<=config.maxUserBytes,413,'storage_limit');
     requireValue(get('SELECT coalesce(sum(bytes),0) AS bytes FROM travels').bytes-oldBytes+bytes<=config.maxTotalBytes,503,'service_storage_limit');
   }
+  function insertTravel(user,snapshot) {
+    const id=randomUUID();
+    const {clean,data,bytes}=serialized(snapshot,id);
+    quota(user,bytes,0,true);
+    run('INSERT INTO travels VALUES(?,?,1,?,?,?,?)',id,user,data,bytes,clean.name,clean.updated);
+    return {id,version:1,snapshot:clean};
+  }
   function update(user,id,snapshot,version) {
     const old=owned(user,id); requireValue(Number.isSafeInteger(version) && old.version===version,409,'conflict');
     const {clean,data,bytes}=serialized(snapshot,id); quota(user,bytes,old.bytes);
@@ -97,7 +104,19 @@ export function createAccountStore(config) {
     takeFlow(raw) {return transaction(()=>{if(!raw)return null;const row=get('SELECT * FROM flows WHERE hash=? AND expires>?',hash(raw),now());run('DELETE FROM flows WHERE hash=?',hash(raw));return row?JSON.parse(row.data):null;});},
     listTravels(user){return all('SELECT id,name,updated,version FROM travels WHERE owner=? ORDER BY updated DESC',user);},
     getTravel(user,id){return travelView(owned(user,id));},
-    createTravel(user,snapshot){return transaction(()=>{const id=randomUUID(),{clean,data,bytes}=serialized(snapshot,id);quota(user,bytes,0,true);run('INSERT INTO travels VALUES(?,?,1,?,?,?,?)',id,user,data,bytes,clean.name,clean.updated);return {id,version:1,snapshot:clean};});},
+    createTravel(user,snapshot){return transaction(()=>insertTravel(user,snapshot));},
+    copyExample(user,city,requestId,snapshot) {
+      return transaction(()=>{
+        const previous=get('SELECT city,travel_id FROM example_copies WHERE owner=? AND request_id=?',user,requestId);
+        if(previous) {
+          requireValue(previous.city===city,409,'request_id_reused');
+          return travelView(owned(user,previous.travel_id));
+        }
+        const travel=insertTravel(user,snapshot);
+        run('INSERT INTO example_copies(owner,request_id,city,travel_id) VALUES(?,?,?,?)',user,requestId,city,travel.id);
+        return travel;
+      });
+    },
     saveTravel(user,id,snapshot,version){return transaction(()=>update(user,id,snapshot,version));},
     deleteTravel(user,id,version){return transaction(()=>{requireValue(owned(user,id).version===version,409,'conflict');run('DELETE FROM travels WHERE id=?',id);return {ok:true};});},
     createShare(user,id,version){return transaction(()=>{requireValue(owned(user,id).version===version,409,'conflict');const raw=token(),expiresAt=now()+30*DAY;run('DELETE FROM shares WHERE travel_id=?',id);run('INSERT INTO shares VALUES(?,?,?)',hash(raw),id,expiresAt);return {token:raw,expiresAt};});},

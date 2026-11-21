@@ -20,15 +20,19 @@ export function downloadBlob(blob, filename) {
 }
 
 // 사생활 보호 모드 등에서 localStorage가 막혀 있어도 앱이 멈추지 않도록 감싼다
+let storagePrefix = '';
+export function scopeEditorStorage(userId) {
+  storagePrefix = `routeflow.user.${encodeURIComponent(userId)}:`;
+}
 export const storage = {
   get(key) {
-    try { return localStorage.getItem(key); } catch { return null; }
+    try { return localStorage.getItem(storagePrefix + key); } catch { return null; }
   },
   set(key, value) {
-    try { localStorage.setItem(key, value); return true; } catch { return false; }
+    try { localStorage.setItem(storagePrefix + key, value); return true; } catch { return false; }
   },
   remove(key) {
-    try { localStorage.removeItem(key); } catch { /* 무시 */ }
+    try { localStorage.removeItem(storagePrefix + key); } catch { /* 무시 */ }
   },
 };
 

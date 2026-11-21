@@ -20,7 +20,7 @@ async function setup(t,overrides={}) {
     async startVerification(){calls.sms++;},async checkVerification(phone,code){return code==='123456';},
     async generate(){calls.ai++;return '공원에서 산책하세요.';},
   };
-  const api=createAccountApi({config,providers}),server=createStaticServer({root:path.resolve('.'),api:api.handle});
+  const api=createAccountApi({config,providers}),server=createStaticServer({root:path.resolve('.'),api:api.handle,authorizeEditor:api.isMember});
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));config.origin=`http://127.0.0.1:${server.address().port}`;
   t.after(async()=>{server.closeAllConnections();await new Promise(resolve=>server.close(resolve));api.close();await fs.rm(dir,{recursive:true,force:true});});
   const owner=api.store?.upsertUser({sub:'owner',name:'Owner',email:'owner@example.test'}),other=api.store?.upsertUser({sub:'other',name:'Other',email:'other@example.test'});
@@ -54,15 +54,16 @@ test('OIDC state is single-use, bad state never reaches provider, logout revokes
   login=await f.request('/api/auth/login',{cookie:''});const result=await f.request(`/api/auth/callback?state=${f.flow().state}&code=test`,{cookie:login.headers.get('set-cookie').split(';')[0]});assert.equal(result.status,302);assert.equal(f.calls.exchange,1);
   assert.equal((await f.request('/api/logout',{method:'POST',data:{}})).status,200);assert.equal((await f.request('/api/session')).data.user,null);
 });
-test('share reads without login, proposals require login, acceptance is owner-version gated',async t=>{
+test('share reads require login, proposals require login, acceptance is owner-version gated',async t=>{
   const f=await setup(t);const {travel}=(await f.request('/api/travels',{method:'POST',data:{snapshot:snapshot()}})).data;
   const share=(await f.request(`/api/travels/${travel.id}/share`,{method:'POST',data:{version:1}})).data;
-  assert.equal((await f.request(`/api/shared/${share.token}`,{cookie:''})).data.snapshot.name,travel.snapshot.name);
+  assert.equal((await f.request(`/api/shared/${share.token}`,{cookie:''})).status,401);
+  assert.equal((await f.request(`/api/shared/${share.token}`,{cookie:f.otherCookie})).data.snapshot.name,travel.snapshot.name);
   assert.equal((await f.request(`/api/shared/${share.token}/suggestions`,{method:'POST',data:{place:{name:'카페'}},cookie:''})).status,401);
   const suggestion=(await f.request(`/api/shared/${share.token}/suggestions`,{method:'POST',data:{place:{name:'카페',memo:'메모'}},cookie:f.otherCookie})).data;
   assert.equal((await f.request(`/api/travels/${travel.id}/suggestions/${suggestion.id}/accept`,{method:'POST',data:{version:1},cookie:f.otherCookie})).status,404);
   const accepted=await f.request(`/api/travels/${travel.id}/suggestions/${suggestion.id}/accept`,{method:'POST',data:{version:1}});assert.equal(accepted.data.travel.snapshot.library[0].memo,'메모');
-  await f.request(`/api/travels/${travel.id}/share`,{method:'DELETE',data:{}});assert.equal((await f.request(`/api/shared/${share.token}`,{cookie:''})).status,404);
+  await f.request(`/api/travels/${travel.id}/share`,{method:'DELETE',data:{}});assert.equal((await f.request(`/api/shared/${share.token}`,{cookie:f.otherCookie})).status,404);
 });
 const budgets={dailyCalls:100,monthlyCalls:200,dailyCost:10000,monthlyCost:20000,cost:100};
 const paidConfig={sms:budgets,ai:budgets,freeAI:true,twilioAccount:'test',twilioToken:'test',twilioService:'test'};
@@ -100,4 +101,44 @@ test('untrusted forwarded headers cannot reset login initiation limits',async t=
   const f=await setup(t);
   for(let i=0;i<10;i++)await f.request('/api/auth/login',{cookie:'',headers:{'X-Forwarded-For':`192.0.2.${i+1}`}});
   assert.equal((await f.request('/api/auth/login',{cookie:'',headers:{'X-Forwarded-For':'198.51.100.1'}})).status,429);assert.equal(f.calls.authorize,10);
+});
+
+test('example copies belong to the signed-in traveler and retries reuse that copy', async t => {
+  const f = await setup(t);
+  const data = {requestId: randomUUID()};
+  const copy = (city, cookie=f.ownerCookie, body=data) => f.request(`/api/examples/${city}/copy`, {method:'POST', data:body, cookie});
+  assert.equal((await copy('busan','')).status,401);
+  const first = await copy('busan');
+  assert.equal(first.status,201);
+  assert.equal((await copy('busan')).data.travel.id,first.data.travel.id);
+  assert.equal((await copy('seoul')).status,409);
+  assert.notEqual((await copy('busan',f.otherCookie)).data.travel.id,first.data.travel.id);
+  assert.equal((await copy('unknown')).status,404);
+  assert.equal((await copy('busan',f.ownerCookie,{requestId:'invalid'})).status,400);
+  assert.equal(f.api.store.listTravels(f.owner.id).length,1);
+});
+
+test('editor navigation requires a session and does not cache private entry', async t => {
+  const f = await setup(t);
+  const guest = await fetch(f.config.origin+'/editor.html?action=new',{redirect:'manual'});
+  assert.equal(guest.status,302);
+  assert.equal(guest.headers.get('location'),'/');
+  const member = await fetch(f.config.origin+'/editor.html',{headers:{Cookie:f.ownerCookie}});
+  assert.equal(member.status,200);
+  assert.match(member.headers.get('cache-control'),/no-store/);
+});
+
+test('a stale editor cannot write into or log out of a different account', async t => {
+  const f=await setup(t);
+  const headers={'X-RouteFlow-User':f.other.id};
+  assert.equal((await f.request('/api/travels',{method:'POST',data:{snapshot:snapshot()},headers})).status,401);
+  assert.equal((await f.request('/api/logout',{method:'POST',data:{},headers})).status,401);
+  assert.equal((await f.request('/api/session')).data.user.id,f.owner.id);
+});
+test('a cancelled sign-in returns to the landing page without creating a session',async t=>{
+  const f=await setup(t),login=await f.request('/api/auth/login',{cookie:''});
+  const response=await f.request('/api/auth/callback?error=access_denied&state='+f.flow().state,{cookie:login.headers.get('set-cookie').split(';')[0]});
+  assert.equal(response.status,302);
+  assert.equal(response.headers.get('location'),f.config.origin+'/?signin=cancelled');
+  assert.equal(f.calls.exchange,0);
 });

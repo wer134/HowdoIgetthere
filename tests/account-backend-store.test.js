@@ -111,3 +111,24 @@ test('eight SQLite connections racing for last global budget reserve exactly onc
   const outcomes=await Promise.all(results);assert.equal(outcomes.filter(value=>value==='reserved').length,1);assert.equal(outcomes.filter(value=>value==='usage_limit').length,7);
   const sql=new DatabaseSync(dbPath);try{sql.exec('PRAGMA busy_timeout=5000');assert.equal(sql.prepare('SELECT count(*) AS n FROM reservations').get().n,1);}finally{sql.close();}
 });
+
+test('offline DB backup restores an example copy and its retry key after restart', async t => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(),'routeflow-restore-'));
+  t.after(() => fs.rm(dir,{recursive:true,force:true}));
+  const config = {...accountConfig({}),secret:'test-secret-for-isolated-tests-only-32',dbPath:path.join(dir,'original.sqlite')};
+  const original = createAccountStore(config);
+  let user, travel;
+  try {
+    user = original.upsertUser({sub:'restore-owner',name:'여행자'});
+    travel = original.copyExample(user.id,'busan','request-1',snapshot());
+  } finally { original.close(); }
+
+  const restoredPath = path.join(dir,'restored.sqlite');
+  await fs.copyFile(config.dbPath,restoredPath);
+  const restored = createAccountStore({...config,dbPath:restoredPath});
+  try {
+    assert.equal(restored.getTravel(user.id,travel.id).snapshot.name,'테스트 여행');
+    assert.equal(restored.copyExample(user.id,'busan','request-1',snapshot()).id,travel.id);
+    assert.equal(restored.listTravels(user.id).length,1);
+  } finally { restored.close(); }
+});

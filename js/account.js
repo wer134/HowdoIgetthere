@@ -1,3 +1,4 @@
+import { editorSession, leavingEditor, leaveEditor } from './editor-session.js';
 import { createAccountSync } from './account-sync.js';
 import { validTravel } from './travel-store.js';
 import { escapeHtml } from './util.js';
@@ -6,9 +7,12 @@ import { itineraryContent } from './travel-portability.js';
 export function setupAccounts({snapshot, ready, saveGuest, restore, reset, busy, canLeave = () => true, notify, backup, onSaveStatus}) {
   const byId=id=>document.getElementById(id);
   const dialog=byId('accountDialog');
-  let session={available:false,user:null,freeAI:false}, operation=false, sharedToken='', epoch=0, aiRequest=null;
+  let session=editorSession || {available:false,user:null,freeAI:false}, operation=false, sharedToken='', epoch=0, aiRequest=null;
   async function api(path, body, method=body===undefined?'GET':'POST') {
-    const response=await fetch(`/api${path}`,{method,credentials:'same-origin',cache:'no-store',headers:body===undefined?{}:{'Content-Type':'application/json','X-RouteFlow-Request':'1'},body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(30000)});
+    const headers = body === undefined ? {} : {'Content-Type':'application/json','X-RouteFlow-Request':'1'};
+    if (editorSession) headers['X-RouteFlow-User'] = editorSession.user.id;
+    const response=await fetch(`/api${path}`,{method,credentials:'same-origin',cache:'no-store',headers,body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(30000)});
+    if (response.status === 401 && editorSession) leaveEditor();
     const data=await response.json();
     if(!response.ok) throw Object.assign(new Error(data.message || '요청을 완료하지 못했어요.'),{status:response.status,code:data.error});
     return data;
@@ -19,7 +23,7 @@ export function setupAccounts({snapshot, ready, saveGuest, restore, reset, busy,
   function unchanged(stamp,id,generation) {return epoch===generation && snapshot().id===id && fingerprint(snapshot())===stamp;}
   function renderStatus() {
     const state=sync.state(), active=sync.active();
-    byId('accountStatus').textContent=active ? ({saving:'계정에 저장 중…',pending:'계정 변경사항 대기 중',saved:'계정에 저장됨',conflict:'다른 곳에서 일정이 변경됐어요. 현재 편집을 백업하고 최신본을 확인하세요.',error:'계정 저장 실패. 재시도하거나 탭을 닫기 전에 파일로 백업하세요.'}[state.status] || '') : '기기 저장 · 계정으로 복사할 여행을 직접 선택하세요.';
+    byId('accountStatus').textContent=active ? ({saving:'계정에 저장 중…',pending:'계정 변경사항 대기 중',saved:'계정에 저장됨',conflict:'다른 곳에서 일정이 변경됐어요. 현재 편집을 백업하고 최신본을 확인하세요.',error:'계정 저장 실패. 재시도하거나 탭을 닫기 전에 파일로 백업하세요.'}[state.status] || '') : editorSession ? '내 계정에 저장한 여행을 선택하세요.' : '기기 저장 · 계정으로 복사할 여행을 직접 선택하세요.';
     byId('accountStatus').dataset.state=state.status;
     if(active) onSaveStatus?.(active,state.status,byId('accountStatus').textContent);
     for(const button of document.querySelectorAll('[data-account-open]')) button.textContent=active ? ({saved:'계정 · 저장됨',saving:'계정 · 저장 중',pending:'계정 · 대기',conflict:'계정 · 충돌',error:'계정 · 저장 실패'}[state.status] || '계정 · 저장') : session.user?'계정 · 저장':'로그인 · 계정';
@@ -67,12 +71,23 @@ export function setupAccounts({snapshot, ready, saveGuest, restore, reset, busy,
     if(!validTravel(travel.snapshot)) throw new Error('계정 여행 형식이 올바르지 않아 현재 여행을 유지했어요.');
     const next=sync.open(session.user.id,travel,{recover});
     if(!validTravel(next)) {sync.close();throw new Error('임시본 형식을 확인할 수 없어요. 서버 원본을 다시 열어 주세요.');}
-    restore(next);renderStatus();dialog.close();
+    restore(next);rememberTravel(travel.id);renderStatus();dialog.close();
+  }
+  function rememberTravel(id) {
+    if (editorSession) history.replaceState(null, '', `/editor.html?travel=${encodeURIComponent(id)}`);
+  }
+  async function createTravel(snapshot) {
+    const {travel} = await api('/travels', {snapshot});
+    if (!validTravel(travel?.snapshot, travel?.id)) throw new Error('계정 여행을 저장하지 못했어요.');
+    epoch++;
+    sync.open(session.user.id, travel, {recover:false});
+    rememberTravel(travel.id);
+    return travel.snapshot;
   }
   async function listTravels() {
     if(!session.user) return;
     const {travels}=await api('/travels');
-    byId('accountTravels').innerHTML=travels.length?travels.map(t=>`<article class="account-entry"><strong>${escapeHtml(t.name)}</strong><small>버전 ${t.version}</small><button type="button" data-account-travel="${escapeHtml(t.id)}">열기</button></article>`).join(''):'<p>아직 계정에 저장한 여행이 없어요.</p>';
+    byId('accountTravels').innerHTML=travels.length?travels.map(t=>`<article class="account-entry"><strong>${escapeHtml(t.name)}</strong><small>버전 ${t.version}</small><button type="button" data-account-travel="${escapeHtml(t.id)}">열기</button><button type="button" data-delete-trip="${escapeHtml(t.id)}" data-version="${Number(t.version)}">삭제</button></article>`).join(''):'<p>아직 계정에 저장한 여행이 없어요.</p>';
   }
   async function listSuggestions() {
     const active=sync.active();if(!active)return;
@@ -97,7 +112,33 @@ export function setupAccounts({snapshot, ready, saveGuest, restore, reset, busy,
     sync.open(session.user.id,travel,{recover:false});restore(travel.snapshot);
     byId('accountMessage').textContent='계정으로 복사했어요. 기기에 저장한 원본도 그대로 남아 있습니다.';await listTravels();
   });
-  byId('accountTravels').onclick=event=>{const button=event.target.closest('[data-account-travel]');if(button)run(()=>openTravel(button.dataset.accountTravel));};
+  byId('accountTravels').onclick=event=>{
+    const button=event.target.closest('button');
+    if(!button)return;
+    if(button.dataset.accountTravel)run(()=>openTravel(button.dataset.accountTravel));
+    if(button.dataset.deleteTrip)run(async()=>{
+      if(busy() || !(await beforeLeave()))return;
+      const id=button.dataset.deleteTrip;
+      const name=button.closest('article').querySelector('strong').textContent;
+      if(!confirm(`‘${name}’ 여행과 공유 링크를 삭제할까요? 삭제 후에는 되돌릴 수 없어요.`))return;
+      try {
+        const active=sync.active();
+        const version=active?.id===id ? active.version : Number(button.dataset.version);
+        await api('/travels/'+encodeURIComponent(id),{version},'DELETE');
+      } catch(error) {
+        if(error.status!==409 && error.status!==404)throw error;
+        await listTravels();
+        throw new Error('여행 목록이 바뀌었어요. 최신 목록을 확인해 주세요.');
+      }
+      if(sync.active()?.id===id) {
+        epoch++;sync.close({discard:true});
+        location.replace('/editor.html?action=account');
+        return;
+      }
+      await listTravels();
+      byId('accountMessage').textContent='여행을 삭제했어요.';
+    });
+  };
   byId('accountRetry').onclick=()=>run(async()=>{if(ready())sync.queue(snapshot());await sync.flush({retry:true});});
   byId('accountLatest').onclick=()=>run(async()=>{
     const active=sync.active();if(!active || busy())return;
@@ -112,8 +153,18 @@ export function setupAccounts({snapshot, ready, saveGuest, restore, reset, busy,
   byId('accountLogout').onclick=()=>run(async()=>{
     if(busy() || !(await beforeLeave()))return;
     await api('/logout',{});epoch++;const active=sync.active();sync.close({discard:true});
-    if(session.user) {sessionStorage.removeItem(`routeflow.accountEditor.v1:${session.user.id}`);sessionStorage.removeItem(`routeflow.accountEditor.v1:${session.user.id}:notes`);}
+    if(session.user) {
+      try {
+        sessionStorage.removeItem(`routeflow.accountEditor.v1:${session.user.id}`);
+        sessionStorage.removeItem(`routeflow.accountEditor.v1:${session.user.id}:notes`);
+      } catch { /* Storage may be disabled on this device. */ }
+    }
     session={...session,user:null};aiRequest=null;byId('accountAIResult').textContent='';byId('accountPhone').value='';byId('accountCode').value='';byId('accountTravels').replaceChildren();byId('accountSuggestions').replaceChildren();byId('accountShareLink').value='';
+    if(editorSession) {
+      window.dispatchEvent(new Event('routeflow-logout'));
+      leaveEditor();
+      return;
+    }
     if(active)reset();renderSession();byId('accountMessage').textContent='로그아웃했어요. 계정 편집 임시본을 이 탭에서 지웠습니다.';
   });
   byId('accountShareCreate').onclick=()=>run(async()=>{
@@ -121,8 +172,8 @@ export function setupAccounts({snapshot, ready, saveGuest, restore, reset, busy,
     const generation=epoch;
     const result=await api(`/travels/${encodeURIComponent(active.id)}/share`,{version:active.version});
     if(epoch!==generation || sync.active()?.id!==active.id)return;
-    const url=new URL(location.href);url.search='';url.hash=`share=${encodeURIComponent(result.token)}`;
-    byId('accountShareLink').value=url.href;byId('accountMessage').textContent='30일 읽기 링크를 만들었어요. 링크를 가진 사람은 일정·메모·후보를 볼 수 있습니다. 이전 링크는 만료됩니다.';
+    const url=new URL('/',location.origin);url.hash=`share=${encodeURIComponent(result.token)}`;
+    byId('accountShareLink').value=url.href;byId('accountMessage').textContent='30일 읽기 링크를 만들었어요. 링크를 받은 동행자는 로그인 후 일정·메모·후보를 볼 수 있어요. 이전 링크는 만료됩니다.';
   });
   byId('accountShareRevoke').onclick=()=>run(async()=>{const active=sync.active();if(!active)return;await api(`/travels/${encodeURIComponent(active.id)}/share`,{},'DELETE');byId('accountShareLink').value='';byId('accountMessage').textContent='공유 링크를 취소했어요.';});
   byId('accountSuggestionsRefresh').onclick=()=>run(listSuggestions);
@@ -158,8 +209,21 @@ export function setupAccounts({snapshot, ready, saveGuest, restore, reset, busy,
     await api(`/shared/${encodeURIComponent(sharedToken)}/suggestions`,{place:{name:byId('sharedPlaceName').value.trim(),address:byId('sharedPlaceAddress').value.trim(),memo:byId('sharedPlaceMemo').value.trim()}});
     byId('sharedSuggestionStatus').textContent='주인에게 제안을 보냈어요. 수락되면 후보에 추가됩니다.';byId('sharedSuggestionForm').reset();
   });};
-  window.addEventListener('beforeunload',event=>{if(sync.active() && ready())sync.queue(snapshot());if(sync.pending()){event.preventDefault();event.returnValue='';}});
+  window.addEventListener('beforeunload',event=>{if(leavingEditor)return;if(sync.active() && ready())sync.queue(snapshot());if(sync.pending()){event.preventDefault();event.returnValue='';}});
   async function initialize() {
+    if (editorSession) {
+      byId('accountCopy').hidden = true;
+      renderSession();
+      const query = new URLSearchParams(location.search);
+      const travel = query.get('travel');
+      const token = new URLSearchParams(location.hash.slice(1)).get('share');
+      if (token) await run(() => openShared(token));
+      else if (travel) await run(() => openTravel(travel));
+      else if (query.get('action') === 'new') byId('newTravel').click();
+      else if (query.get('action') === 'import') byId('importDialog').showModal();
+      else document.querySelector('[data-account-open]').click();
+      return;
+    }
     try {session=await api('/session');} catch {session={available:false,user:null,freeAI:false};}
     renderSession();
     const token=new URLSearchParams(location.hash.slice(1)).get('share') || sessionStorage.getItem('routeflow.pendingShare');
@@ -169,13 +233,13 @@ export function setupAccounts({snapshot, ready, saveGuest, restore, reset, busy,
       if(draft?.id)await run(()=>openTravel(draft.id));
     }
   }
-  initialize().catch(()=>notify('계정 임시 저장소에 접근하지 못했어요. 기기 여행은 파일로 백업해 주세요.'));
+  Promise.resolve().then(initialize).catch(()=>notify('계정 임시 저장소에 접근하지 못했어요. 기기 여행은 파일로 백업해 주세요.'));
   return {
-    active:()=>sync.active(),pending:()=>sync.pending(),beforeLeave,
+    createTravel,active:()=>sync.active(),pending:()=>sync.pending(),beforeLeave,
     save:async (value,options)=>{sync.queue(value);return sync.flush(options);},
     changed:()=>{if(sync.active() && ready())sync.queue(snapshot());renderStatus();},
     detach:()=>{epoch++;sync.close({discard:true});renderStatus();},
-    editorKey:()=>sync.active()?`routeflow.accountEditor.v1:${session.user.id}`:null,
+    editorKey:()=>editorSession || sync.active()?`routeflow.accountEditor.v1:${editorSession?.user.id || session.user.id}`:null,
     render:renderStatus,
   };
 }

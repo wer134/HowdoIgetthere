@@ -9,6 +9,13 @@ CREATE TABLE IF NOT EXISTS flows(hash TEXT PRIMARY KEY, data TEXT NOT NULL, expi
 CREATE TABLE IF NOT EXISTS login_attempts(network TEXT NOT NULL, created INTEGER NOT NULL);
 CREATE INDEX IF NOT EXISTS login_attempts_network ON login_attempts(network,created);
 CREATE TABLE IF NOT EXISTS travels(id TEXT PRIMARY KEY, owner TEXT NOT NULL REFERENCES users(id), version INTEGER NOT NULL, data TEXT NOT NULL, bytes INTEGER NOT NULL, name TEXT NOT NULL, updated INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS example_copies(
+  owner TEXT NOT NULL REFERENCES users(id),
+  request_id TEXT NOT NULL,
+  city TEXT NOT NULL,
+  travel_id TEXT NOT NULL REFERENCES travels(id) ON DELETE CASCADE,
+  PRIMARY KEY(owner,request_id)
+);
 CREATE INDEX IF NOT EXISTS travels_owner ON travels(owner);
 CREATE TABLE IF NOT EXISTS shares(hash TEXT PRIMARY KEY, travel_id TEXT UNIQUE NOT NULL REFERENCES travels(id) ON DELETE CASCADE, expires INTEGER NOT NULL);
 CREATE TABLE IF NOT EXISTS suggestions(id TEXT PRIMARY KEY, travel_id TEXT NOT NULL REFERENCES travels(id) ON DELETE CASCADE, author TEXT NOT NULL REFERENCES users(id), place TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending', created INTEGER NOT NULL);

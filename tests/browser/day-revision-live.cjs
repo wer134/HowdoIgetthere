@@ -1,3 +1,4 @@
+const {openDeviceEditor} = require('./member-fixture.cjs');
 // 실제 API를 호출하는 선택 실행 검사. 환경 키 값을 로그/파일에 기록하지 않는다.
 const { chromium } = require('playwright');
 const fs = require('node:fs');
@@ -31,7 +32,7 @@ const clean = value => secrets.reduce((s, key) => s.split(key).join('[REDACTED]'
       }, { maps: process.env.googlemap, gemini: process.env.geminiapi });
       report.keyMode = '운영 빌드 + 별도 테스트 브라우저 BYOK 설정';
     }
-    await p.goto(BASE);
+    await openDeviceEditor(p, BASE);
     await p.waitForFunction(() => document.querySelector('#syncText').textContent === '지도 연결됨', null, { timeout: 30000 });
     await p.waitForTimeout(2000);
     const wb = XLSX.utils.book_new();
