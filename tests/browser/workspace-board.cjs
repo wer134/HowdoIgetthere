@@ -60,9 +60,19 @@ const fixture = () => ({id:'board-browser-test',name:'후쿠오카 · 보드 검
     await page.click('#toastUndo');
     assert.deepEqual(await names('2026-11-01'),['오호리 공원','후쿠오카시 미술관']);
     result.checks.push('earlier and existing undo restore order; open editor blocks undo until closed');
+    await page.evaluate(() => new Promise(held => {
+      navigator.locks.request('routeflow.travels.v1', async () => {
+        held();
+        await new Promise(release => window.addEventListener('release-test-lock', release, {once:true}));
+      });
+    }));
     const dragData = await page.evaluateHandle(()=>new DataTransfer());
     await page.locator('[data-workspace-kind=record][data-workspace-index="0"]').dispatchEvent('dragstart',{dataTransfer:dragData});
     await page.getByRole('button',{name:'후쿠오카시 미술관 앞으로',exact:true}).click();
+    await page.waitForFunction(() => document.querySelector('[data-workspace-add]').disabled);
+    await page.evaluate(() => window.dispatchEvent(new Event('release-test-lock')));
+    await page.waitForFunction(() => !document.querySelector('[data-workspace-add]').disabled);
+    assert.deepEqual(await names('2026-11-01'),['후쿠오카시 미술관','오호리 공원']);
     await page.locator('[data-workspace-drop-day="2026-11-03"]').dispatchEvent('drop',{dataTransfer:dragData});
     assert.deepEqual(await names('2026-11-03'),[]);
     assert.match(await page.locator('.workspace-status').textContent(),/변경/);
