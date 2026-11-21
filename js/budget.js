@@ -231,7 +231,7 @@ export function kmFromMinutes(cls, minutes, currency) {
 /* ── 날짜별 지출 ── */
 
 /**
- * @param {Array} rows 일정표 행 [{ index, day, title, memo, mode, place, time, travel, fixed }]
+ * @param {Array} rows 일정표 행 [{ index, day, title, memo, mode, place, time, travel, fixed, manualCost }]
  *   travel: 장소가 비고 이동 수단이 적힌 이동 행 · fixed: [고정] 행
  * @param {object} o
  * @param {(day: string) => string} o.currencyOf 그날 통화 (메모에 금액이 없을 때)
@@ -239,7 +239,6 @@ export function kmFromMinutes(cls, minutes, currency) {
  * @param {(index: number) => number|null} [o.legKm] 이동 행이 한 구간의 유일한 유료 이동일 때 그 구간 거리(km)
  * @param {(index: number) => ({amount, currency})|null} [o.googleFare] 구글 경로가 준 요금
  * @param {Map<number, {amount, currency, name?}>} [o.picks] 추천에서 고른 가게의 1인 가격
- * @param {Map<number, number>} [o.overrides] 사용자가 직접 고친 금액 (그날 통화)
  * @param {(amount, from, to) => number|null} [o.convert] 환율로 바꾸기 (모르면 null)
  * @returns {Array<{ day, currency, lines, total, fixed, estimated, unknown, excluded }>}
  *   lines: [{ index, kind, meal, slot, amount, min, max, currency, value, source, note, excluded }]
@@ -311,7 +310,7 @@ function rowCost(row, dayRows, i, o) {
       extra.length ? `선택 ${extra.map((m) => m.text).join(', ')}` : '',
     ].filter(Boolean).join(' · '),
   });
-  const manual = o.overrides?.get(row.index);
+  const manual = row.manualCost;
   const withManual = (line) => (manual != null && !line.excluded
     ? { ...line, amount: manual, min: manual, max: manual, currency: o.currency, source: 'manual', note: '' } : line);
 

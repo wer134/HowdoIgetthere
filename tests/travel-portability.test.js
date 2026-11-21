@@ -18,6 +18,15 @@ test('backup import rejects malformed, unsupported and structurally damaged docu
   assert.throws(()=>decodeTravelBackup(JSON.stringify(invalid),{id:'new'}),/형식/);
   assert.throws(()=>decodeTravelBackup(text,{id:'original'}),/새 ID/);
 });
+test('backup round trip keeps manually edited visit costs and rejects invalid values', () => {
+  const source = fixture();
+  source.records[0].manualCost = 59000;
+  const text = encodeTravelBackup(source);
+  assert.equal(decodeTravelBackup(text, { id: 'new' }).records[0].manualCost, 59000);
+  const invalid = JSON.parse(text);
+  invalid.travel.records[0].manualCost = '59000';
+  assert.throws(() => decodeTravelBackup(JSON.stringify(invalid), { id: 'new' }), /형식/);
+});
 test('standalone itinerary escapes hostile content and carries no scripts or external assets',()=>{
   const source=fixture();source.name='<script>bad()</script>';source.library[0].memo='<img src=x onerror=bad()>\n메모';
   const html=itineraryDocument(source);

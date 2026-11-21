@@ -59,12 +59,15 @@ jobs:
       - name: Browser journeys and import stability (external APIs mocked or blocked)
         run: |
           node tests/browser/production-stability.cjs
+          node tests/browser/budget-travel.cjs
           node tests/browser/day-revision.cjs
           node tests/browser/traveler-journey.cjs
           node tests/browser/travel-order.cjs
           node tests/browser/travel-drag.cjs
           node tests/browser/travel-safety.cjs
           node tests/browser/workspace-board.cjs
+          node tests/browser/workspace-layout.cjs
+          node tests/browser/map-controls.cjs
           node tests/browser/account-workspace.cjs
       - name: All 78 negative cases (9 explicitly unavailable in this harness)
         run: |

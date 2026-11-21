@@ -11,7 +11,7 @@ export function validTravel(s, id = s?.id) {
   return object(s) && safeId(id) && s.id === id && typeof s.name === 'string' && finite(s.updated)
     && Array.isArray(s.headers) && s.headers.length <= 200 && s.headers.every(h => typeof h === 'string')
     && object(s.mapping) && ['name','date','category','time','region','memo','address','lat','lng','mode'].every(k => Number.isInteger(s.mapping[k]) && s.mapping[k] >= -1 && s.mapping[k] < s.headers.length)
-    && Array.isArray(s.records) && s.records.length <= 20000 && s.records.every(r => object(r) && Number.isInteger(r.rowNumber) && Array.isArray(r.cells) && r.cells.length <= 200 && r.cells.every(c => c == null || (object(c) && (c.v == null || ['string','number','boolean'].includes(typeof c.v) || c.v instanceof Date) && (c.w == null || typeof c.w === 'string'))))
+    && Array.isArray(s.records) && s.records.length <= 20000 && s.records.every(r => object(r) && Number.isInteger(r.rowNumber) && (r.manualCost == null || (finite(r.manualCost) && r.manualCost >= 0)) && Array.isArray(r.cells) && r.cells.length <= 200 && r.cells.every(c => c == null || (object(c) && (c.v == null || ['string','number','boolean'].includes(typeof c.v) || c.v instanceof Date) && (c.w == null || typeof c.w === 'string'))))
     && (s.library == null || (Array.isArray(s.library) && s.library.every(point)))
     && (s.dates == null || (Array.isArray(s.dates) && s.dates.every(d => typeof d === 'string')))
     && (s.places == null || (Array.isArray(s.places) && s.places.every(e => object(e) && Number.isInteger(e.recordIndex) && e.recordIndex >= 0 && e.recordIndex < s.records.length && point(e.place) && finite(e.place.lat) && finite(e.place.lng) && statuses.has(e.status) && optionalTime(e.cachedAt))))

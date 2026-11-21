@@ -1,7 +1,151 @@
 const {chromium}=require('playwright');const assert=require('node:assert/strict');const fs=require('node:fs');
 const BASE=process.env.APP_URL||'http://127.0.0.1:8096',OUT=process.env.STABILITY_OUT||'/tmp/routeflow-production-stability';fs.mkdirSync(OUT,{recursive:true});
+const path = require('node:path');
+const XLSX = require('../../vendor/xlsx.full.min.js');
+
+async function verifyFirstTravelTap(browser) {
+  const context = await browser.newContext({viewport: {width: 390, height: 844}, hasTouch: true});
+  let releaseWorkbook;
+  const workbookReady = new Promise(resolve => { releaseWorkbook = resolve; });
+  await context.route('**/*', async route => {
+    const url = new URL(route.request().url());
+    if (!route.request().url().startsWith(BASE)) return route.abort();
+    if (url.pathname.endsWith('/vendor/xlsx.full.min.js')) await workbookReady;
+    return route.continue();
+  });
+  const page = await context.newPage();
+  page.setDefaultTimeout(10000);
+  try {
+    await page.goto(BASE, {waitUntil: 'commit'});
+    await page.locator('#newTravel').tap();
+    assert(await page.locator('#travelDialog').isVisible(), 'The first tap must open the dialog while XLSX is loading');
+    assert.equal(await page.locator('dialog[open]').count(), 1);
+    await page.fill('#travelName', '첫 탭 여행');
+    releaseWorkbook();
+    await page.click('#newTravelForm button');
+    await page.waitForFunction(() => document.querySelector('#fileName').textContent === '첫 탭 여행');
+  } finally {
+    releaseWorkbook();
+    await context.close();
+  }
+}
+
+async function verifySheetExport(browser) {
+  const context = await browser.newContext({viewport: {width: 1440, height: 900}});
+  const mockDir = path.resolve(__dirname, '../../docs/testing/repro');
+  await context.route('**/*', route => {
+    const url = new URL(route.request().url());
+    if (!route.request().url().startsWith(BASE)) return route.abort();
+    if (url.pathname.endsWith('/js/mapview.js')) {
+      return route.fulfill({contentType: 'text/javascript', path: path.join(mockDir, 'mapview-mock.js')});
+    }
+    return route.continue();
+  });
+  await context.addInitScript({path: path.join(mockDir, 'google-mock.js')});
+  await context.addInitScript(() => localStorage.setItem('googleMapsApiKey', 'TEST_GOOGLE'));
+  const page = await context.newPage();
+  page.setDefaultTimeout(10000);
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  const names = page.locator('#resultList .item-name');
+  async function checkDownload(button) {
+    const [download] = await Promise.all([page.waitForEvent('download'), page.click(button)]);
+    const exported = XLSX.read(fs.readFileSync(await download.path()), {type: 'buffer'});
+    assert.deepEqual(exported.SheetNames, ['형식 다른 일정']);
+    const rows = XLSX.utils.sheet_to_json(exported.Sheets['형식 다른 일정'], {header: 1});
+    assert.deepEqual(rows.slice(1).map(row => row[0]), ['텐진 지하상가']);
+  }
+  try {
+    await page.goto(BASE);
+    await page.waitForFunction(() => document.querySelector('#syncText').textContent === '지도 연결됨');
+    const workbook = XLSX.utils.book_new();
+    for (const [name, rows] of [
+      ['첫 일정', [
+        ['장소', '날짜', '시간', '위도', '경도'],
+        ['오호리 공원', '2026-12-07', '10:00', 33.586, 130.376],
+        ['시립 미술관', '2026-12-07', '13:00', 33.559, 130.395],
+      ]],
+      ['형식 다른 일정', [['내가가려는곳', '현지 날짜'], ['텐진 지하상가', '2026-12-09']]],
+      ['주소 또는 좌표', [['주소', '위도', '경도'], ['후쿠오카 하카타역', '', ''], ['', 33.59, 130.42]]],
+    ]) {
+      XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(rows), name);
+    }
+    await page.locator('#fileInput').setInputFiles({
+      name: '여행 일정.xlsx',
+      mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      buffer: Buffer.from(XLSX.write(workbook, {type: 'array', bookType: 'xlsx'})),
+    });
+    await names.first().waitFor();
+    assert.deepEqual(await names.allTextContents(), ['오호리 공원', '시립 미술관']);
+    await page.waitForFunction(() => Object.keys(window.__mock.markers).length === 2 && Object.keys(window.__mock.legs).length === 1);
+    await names.first().click();
+    assert(await page.locator('#placePanel').isVisible());
+    if (!(await page.locator('#sheetSelect').isVisible())) await page.click('#columnsToggle');
+    await page.selectOption('#sheetSelect', '형식 다른 일정');
+    assert.deepEqual(await names.allTextContents(), [], 'Unmapped sheet must clear the previous sheet’s rows');
+    assert(await page.locator('#placePanel').isHidden());
+    assert.deepEqual(await page.evaluate(() => window.__mock.markers), {});
+    assert.deepEqual(await page.evaluate(() => window.__mock.legs), {});
+    assert(await page.locator('#exportXlsx').isDisabled());
+
+    await page.setViewportSize({width: 390, height: 844});
+    await page.click('#mobileSave');
+    assert(await page.locator('#mobileExportXlsx').isDisabled());
+    await page.locator('#mobileExportDialog .dialog-x').click();
+
+    await page.setViewportSize({width: 1440, height: 900});
+    await page.selectOption('#map-name', '0');
+    assert.deepEqual(await names.allTextContents(), ['텐진 지하상가']);
+    await checkDownload('#exportXlsx');
+    await page.setViewportSize({width: 390, height: 844});
+    await page.click('#mobileSave');
+    await checkDownload('#mobileExportXlsx');
+    await page.locator('#mobileExportDialog .dialog-x').click();
+    await page.setViewportSize({width: 1440, height: 900});
+
+    await page.selectOption('#map-name', '-1');
+    assert.deepEqual(await names.allTextContents(), []);
+    assert(await page.locator('#exportXlsx').isDisabled());
+    await page.selectOption('#map-name', '0');
+    await page.evaluate(async () => {
+      const {Place} = await google.maps.importLibrary('places');
+      const search = Place.searchByText;
+      window.__mock.query['텐진 지하상가'] = {results: [{name: '텐진 지하상가', lat: 33.59, lng: 130.40}]};
+      Place.searchByText = async request => {
+        if (request.textQuery !== '텐진 지하상가') return search.call(Place, request);
+        await new Promise(resolve => { window.finishPreviousSheetSearch = resolve; });
+        const result = await search.call(Place, request);
+        requestAnimationFrame(() => { window.previousSheetSearchReturned = true; });
+        return result;
+      };
+    });
+    await page.click('#runBtn');
+    await page.waitForFunction(() => typeof window.finishPreviousSheetSearch === 'function');
+    assert(await page.locator('#exportXlsx').isDisabled());
+    await page.click('#columnsToggle');
+    await page.selectOption('#sheetSelect', '주소 또는 좌표');
+    assert.deepEqual(await names.allTextContents(), ['후쿠오카 하카타역', '(장소 없음)']);
+    assert(await page.locator('#exportXlsx').isEnabled());
+    await page.evaluate(() => window.finishPreviousSheetSearch());
+    await page.waitForFunction(() => window.previousSheetSearchReturned);
+    assert.deepEqual(await names.allTextContents(), ['후쿠오카 하카타역', '(장소 없음)']);
+    assert.deepEqual(await page.evaluate(() => Object.values(window.__mock.markers).map(marker => marker.title)), ['(장소 없음)']);
+    await page.evaluate(() => {
+      window.__mock.query['후쿠오카 하카타역'] = {results: [{id: 'hakata', name: '하카타역', lat: 33.59, lng: 130.42}]};
+    });
+    await page.click('#runBtn');
+    await page.waitForFunction(() => window.__mock.markers[0]?.position?.lat === 33.59);
+    assert(await page.locator('#exportXlsx').isEnabled());
+    assert.deepEqual(errors, []);
+  } finally {
+    await context.close();
+  }
+}
+
 (async()=>{const b=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',args:['--no-sandbox']});const results=[];
-try{const c=await b.newContext({viewport:{width:1440,height:900}});await c.route('**/*',r=>r.request().url().startsWith(BASE)?r.continue():r.abort());
+try{await verifyFirstTravelTap(b);results.push({name:'엑셀 라이브러리가 로딩 중이어도 첫 탭으로 새 여행 시작',status:'통과'});
+await verifySheetExport(b);results.push({name:'시트 전환 후 PC·모바일 엑셀 상태와 다운로드 내용 확인',status:'통과'});
+const c=await b.newContext({viewport:{width:1440,height:900}});await c.route('**/*',r=>r.request().url().startsWith(BASE)?r.continue():r.abort());
 const p=await c.newPage();p.setDefaultTimeout(10000);const errors=[];p.on('pageerror',e=>errors.push(e.message));await p.goto(BASE);
 await p.click('#newTravel');await p.fill('#travelName','운영 안정성 테스트');await p.fill('#travelStart','2026-11-07');await p.click('#newTravelForm button');await p.click('[data-workspace-mode="map"]');
 await p.click('#scheduleAdd');await p.fill('#scheduleName','보존할 장소');await p.fill('#scheduleMemo','보존할 개인 메모');await p.click('#scheduleForm button[type=submit]');await p.waitForTimeout(600);

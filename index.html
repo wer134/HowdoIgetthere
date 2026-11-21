@@ -22,45 +22,13 @@
   <link rel="stylesheet" href="css/account.css">
   <script src="config.js"></script>
   <script src="runtime-config.js"></script>
+  <script src="js/first-interaction.js"></script>
   <script src="vendor/xlsx.full.min.js" defer></script>
   <script type="module" src="js/app.js"></script>
 </head>
 <body>
+<dialog class="dialog" id="travelDialog" aria-labelledby="travelTitle"><form method="dialog"><button class="dialog-x" aria-label="닫기">×</button></form><h2 id="travelTitle">새 여행 시작</h2><form id="newTravelForm" class="schedule-form"><label>여행 이름<input id="travelName" required maxlength="100" placeholder="후쿠오카 여행"></label><label>출발일<input id="travelStart" type="date" required></label><label>여행 일수<input id="travelDays" type="number" min="1" max="60" value="3" required></label><button type="submit" class="primary-button" disabled>여행 만들기</button></form><p>엑셀 없이 시작할 수 있어요. 현재 여행도 이 기기에 저장됩니다.</p></dialog>
 <div class="app-shell">
-  <aside class="sidebar" aria-label="주 메뉴">
-    <a class="brand-lockup" href="#top">
-      <span class="brand-mark" aria-hidden="true"></span>
-      <span>
-        <span class="brand-name">route<span>flow</span></span>
-        <span class="brand-caption">excel trip mapper</span>
-      </span>
-    </a>
-
-    <div class="sidebar-section-label">WORKSPACE</div>
-    <nav class="primary-nav">
-      <a class="nav-item active" href="#top"><span class="nav-icon grid-icon" aria-hidden="true"></span><span class="nav-text">일정 지도</span></a>
-      <a class="nav-item" href="#planCard"><span class="nav-icon calendar-icon" aria-hidden="true"></span><span class="nav-text">내 일정</span><span class="nav-count" id="navCount"></span></a>
-      <a class="nav-item" href="#mapPanel"><span class="nav-icon pin-icon" aria-hidden="true"></span><span class="nav-text">지도</span></a>
-      <a class="nav-item" href="#plannerCard"><span class="nav-icon route-icon" aria-hidden="true">↝</span><span class="nav-text">일정 추천</span></a>
-      <a class="nav-item" href="#recsCard"><span class="nav-icon star-icon" aria-hidden="true">✦</span><span class="nav-text">주변 추천</span></a>
-      <a class="nav-item" href="#budgetCard"><span class="nav-icon coin-icon" aria-hidden="true">₩</span><span class="nav-text">예산</span></a>
-    </nav>
-
-    <div class="sidebar-section-label sidebar-section-label--second">SETTINGS</div>
-    <nav class="primary-nav">
-      <button class="nav-item" type="button" data-open="settingsDialog"><span class="nav-icon settings-icon" aria-hidden="true"></span><span class="nav-text">설정</span></button>
-      <button class="nav-item" type="button" data-open="helpDialog"><span class="nav-icon help-icon" aria-hidden="true">?</span><span class="nav-text">도움말</span></button>
-    </nav>
-
-    <div class="sidebar-bottom">
-      <div class="api-card" id="apiCard">
-        <div class="api-card-top"><span class="sparkle">✦</span><span>GOOGLE MAPS</span></div>
-        <strong id="apiCardTitle">API 키를 넣으면<br>지도가 열려요.</strong>
-        <button type="button" data-open="settingsDialog">키 설정하기 <span>↗</span></button>
-      </div>
-    </div>
-  </aside>
-
   <main class="main-content" id="top">
     <header class="topbar">
       <a class="workspace-brand" href="#top"><span class="brand-symbol">↗</span>RouteFlow<small>가고 싶은 곳을 모아<br>나만의 여행을 만들어요</small></a><label class="workspace-search"><span>⌕</span><input id="workspaceSearch" type="search" placeholder="일정 속 장소, 주소 검색" aria-label="일정 속 장소 검색"></label><div class="breadcrumbs"><span>내 워크스페이스</span><span class="crumb-chevron">/</span><strong id="crumbTitle">새 여행 일정</strong></div>
@@ -73,19 +41,6 @@
     </header>
 
     <div class="page-content">
-      <section class="intro-row">
-        <div>
-          <div class="eyebrow-label"><span class="eyebrow-line"></span> TRAVEL ITINERARY</div>
-          <h1>엑셀 한 장으로,<br><em>여행 동선이 선명해져요.</em></h1>
-          <p class="intro-copy">일정표를 올리면 장소를 구글 지도에서 찾아 표시하고, 날짜별 이동 경로까지 이어 드려요.</p>
-        </div>
-        <div class="date-context">
-          <div class="date-context-label">여행 기간</div>
-          <div class="date-context-value"><span class="mini-calendar-icon">▣</span> <span id="tripDates">일정을 올려 주세요</span></div>
-          <div class="date-context-place"><span class="location-pulse"></span> <span id="tripPlaces">장소 0곳</span></div>
-        </div>
-      </section>
-
       <section id="workspaceBoard" aria-label="여행 정리 보드" hidden></section>
       <div class="workspace-grid">
         <section class="left-column" aria-label="일정 올리기와 일정 목록">
@@ -98,7 +53,7 @@
               </div>
             </div>
 
-            <div class="travel-welcome" id="travelWelcome"><span class="section-kicker">나만의 여행 준비</span><h2>가고 싶은 곳부터,<br>하루의 순서까지.</h2><p>장소와 메모를 모으고 날짜별로 정리하세요. 지도 없이도 시작할 수 있어요.</p><button type="button" id="continueTravel" class="secondary-button hidden"></button></div><div class="travel-start"><button type="button" id="newTravel" class="primary-button">＋ 새 여행 시작</button><button type="button" id="savedTravels" class="secondary-button">저장한 여행</button><button type="button" id="travelImport" class="secondary-button">엑셀 가져오기</button><button type="button" id="travelRestore" class="secondary-button">백업 불러오기</button><input type="file" id="travelBackupInput" accept=".json" hidden><small id="travelSaveStatus" role="status">이 기기에 여행을 자동 저장합니다.</small></div>
+            <div class="travel-welcome" id="travelWelcome"><span class="section-kicker">나만의 여행 준비</span><h2>가고 싶은 곳부터,<br>하루의 순서까지.</h2><p>장소와 메모를 모으고 날짜별로 정리하세요. 지도 없이도 시작할 수 있어요.</p><button type="button" id="continueTravel" class="secondary-button hidden"></button></div><div class="travel-start"><button type="button" id="newTravel" class="primary-button">＋ 새 여행 시작</button><button type="button" id="savedTravels" class="secondary-button">저장한 여행</button><button type="button" id="travelImport" class="secondary-button">엑셀 가져오기</button><button type="button" id="travelRestore" class="secondary-button">백업 불러오기</button><input type="file" id="travelBackupInput" accept=".json" hidden></div>
             <div class="uploaded-file hidden" id="uploadedFile">
               <div class="file-symbol">XLS<span>X</span></div>
               <div class="file-details"><strong id="fileName"></strong><span id="fileMeta"></span></div>
@@ -229,8 +184,8 @@
             <div class="map-card-heading">
               <div class="step-heading"><span class="step-number">03</span><div><div class="section-kicker">EXPLORE THE FLOW</div><h2>지도에서 확인하기</h2></div></div>
               <div class="map-mode" id="mapMode">
-                <button class="active" type="button" data-type="roadmap">지도</button>
-                <button type="button" data-type="hybrid">위성</button>
+                <button class="active" type="button" data-type="roadmap" aria-pressed="true">지도</button>
+                <button type="button" data-type="hybrid" aria-pressed="false">위성</button>
               </div>
             </div>
             <div class="map-toolbar">
@@ -267,7 +222,7 @@
   </main>
 </div>
 
-<dialog class="dialog tools-dialog" id="workspaceTools"><form method="dialog"><button class="dialog-x" aria-label="닫기">×</button></form><h2>여행 도구</h2><p class="muted">일정 추천 · 주변 장소 · 하루 예산</p><section class="travel-portability"><h3>여행 보관과 공유</h3><p>저장한 일정·후보 장소·메모를 함께 백업하거나, 여행 중 펼쳐 볼 일정표를 만드세요.</p><div class="travel-portability-actions"><button type="button" id="travelBackup" class="secondary-button" disabled>여행 전체 백업</button><button type="button" id="travelItinerary" class="secondary-button" disabled>일정표 보기</button></div><p class="muted">백업 파일은 다른 브라우저의 ‘백업 불러오기’로 열 수 있습니다. API 키와 사진·리뷰는 포함하지 않습니다.</p></section><div id="workspaceToolBody"></div></dialog>
+<dialog class="dialog tools-dialog" id="workspaceTools" aria-labelledby="workspaceToolsTitle"><form method="dialog"><button class="dialog-x" aria-label="닫기">×</button></form><h2 id="workspaceToolsTitle">여행 도구</h2><p class="muted">일정 추천 · 주변 장소 · 하루 예산</p><section class="travel-portability"><h3>여행 보관과 공유</h3><p>저장한 일정·후보 장소·메모를 함께 백업하거나, 여행 중 펼쳐 볼 일정표를 만드세요.</p><div class="travel-portability-actions"><button type="button" id="travelBackup" class="secondary-button" disabled>여행 전체 백업</button><button type="button" id="travelItinerary" class="secondary-button" disabled>일정표 보기</button></div><p class="muted">백업 파일은 다른 브라우저의 ‘백업 불러오기’로 열 수 있습니다. API 키와 사진·리뷰는 포함하지 않습니다.</p></section><div id="workspaceToolBody"></div></dialog>
 <nav class="mobile-workspace-nav" aria-label="모바일 작업 메뉴">
   <button type="button" data-mobile-view="itinerary" aria-pressed="true">☷<span>일정</span></button>
   <button type="button" data-mobile-view="map" aria-pressed="false">⌖<span>지도</span></button>
@@ -275,7 +230,7 @@
   <button type="button" id="mobileSave">↓<span>저장</span></button>
   <button type="button" data-open="settingsDialog">⚙<span>설정</span></button>
 </nav>
-<dialog class="dialog" id="mobileExportDialog"><form method="dialog"><button class="dialog-x" aria-label="닫기">×</button></form><h2>일정 내보내기</h2><p>일정만 내보내거나, 후보와 메모까지 함께 백업하세요.</p><div class="mobile-export-actions"><button type="button" id="mobileTravelBackup" class="primary-button">여행 전체 백업</button><button type="button" id="mobileTravelItinerary" class="secondary-button">일정표 보기</button><button type="button" id="mobileExportXlsx" class="primary-button">엑셀 저장</button><button type="button" id="mobileExportKml" class="secondary-button">KML 저장</button></div><p class="muted">엑셀은 일정을 불러온 뒤, KML은 지도에 장소를 표시한 뒤 저장할 수 있습니다.</p></dialog>
+<dialog class="dialog" id="mobileExportDialog" aria-labelledby="mobileExportTitle"><form method="dialog"><button class="dialog-x" aria-label="닫기">×</button></form><h2 id="mobileExportTitle">일정 내보내기</h2><p>일정만 내보내거나, 후보와 메모까지 함께 백업하세요.</p><div class="mobile-export-actions"><button type="button" id="mobileTravelBackup" class="primary-button">여행 전체 백업</button><button type="button" id="mobileTravelItinerary" class="secondary-button">일정표 보기</button><button type="button" id="mobileExportXlsx" class="primary-button">엑셀 저장</button><button type="button" id="mobileExportKml" class="secondary-button">KML 저장</button></div><p class="muted">엑셀은 일정을 불러온 뒤, KML은 지도에 장소를 표시한 뒤 저장할 수 있습니다.</p></dialog>
 <dialog class="dialog schedule-editor" id="scheduleDialog" aria-labelledby="scheduleTitle">
   <div class="schedule-editor-header"><div><span class="section-kicker">ITINERARY EDITOR</span><h2 id="scheduleTitle">일정 추가</h2><p id="scheduleContext" class="muted"></p></div><form method="dialog"><button class="dialog-x" aria-label="닫기">×</button></form></div>
   <div class="schedule-editor-tabs" role="tablist" aria-label="일정 수정 메뉴">
@@ -310,9 +265,8 @@
 <dialog class="dialog" id="manualPlaceDialog" aria-labelledby="manualPlaceTitle"><form method="dialog"><button class="dialog-x" aria-label="닫기">×</button></form><h2 id="manualPlaceTitle">가고 싶은 곳 보관</h2><p>정확한 위치를 몰라도 괜찮아요. 이름과 기억할 내용을 먼저 남겨 두세요.</p><form id="manualPlaceForm" class="schedule-form"><label>장소 이름<input id="manualPlaceName" required maxlength="300" placeholder="예: 해운대 해변"></label><label>지역·주소 <small>선택</small><input id="manualPlaceAddress" maxlength="1000" placeholder="예: 부산 해운대구"></label><label>메모 <small>선택</small><textarea id="manualPlaceMemo" rows="3" placeholder="예: 해 질 무렵 산책, 근처 저녁 식사"></textarea></label><button class="primary-button">보관하기</button></form><p class="muted">지도 위치는 Google Maps 연결 후 확인할 수 있습니다.</p></dialog>
 <dialog class="dialog" id="renameTravelDialog" aria-labelledby="renameTravelTitle"><form method="dialog"><button class="dialog-x" aria-label="닫기">×</button></form><h2 id="renameTravelTitle">여행 이름 변경</h2><form id="renameTravelForm" class="schedule-form"><label>여행 이름<input id="renameTravelName" required maxlength="100"></label><button class="primary-button">이름 저장</button></form></dialog>
 <dialog class="dialog itinerary-dialog" id="travelItineraryDialog" aria-labelledby="itineraryTitle"><form method="dialog"><button class="dialog-x" aria-label="닫기">×</button></form><div class="itinerary-controls"><h2 id="itineraryTitle">여행 일정표</h2><p>전체 일정과 보관한 후보를 함께 담았어요. 저장한 일정표는 인터넷 없이도 열 수 있습니다.</p><button type="button" class="primary-button" id="printItinerary">인쇄 / PDF</button><button type="button" class="secondary-button" id="saveItinerary">일정표 파일 저장</button></div><article id="itineraryPreview"></article></dialog>
-<dialog class="dialog" id="travelDialog"><form method="dialog"><button class="dialog-x" aria-label="닫기">×</button></form><h2>새 여행 시작</h2><form id="newTravelForm" class="schedule-form"><label>여행 이름<input id="travelName" required maxlength="100" placeholder="후쿠오카 여행"></label><label>출발일<input id="travelStart" type="date" required></label><label>여행 일수<input id="travelDays" type="number" min="1" max="60" value="3" required></label><button class="primary-button">여행 만들기</button></form><p>엑셀 없이 시작할 수 있어요. 현재 여행도 이 기기에 저장됩니다.</p></dialog>
-<dialog class="dialog" id="travelHistoryDialog"><form method="dialog"><button class="dialog-x" aria-label="닫기">×</button></form><h2>저장한 여행</h2><p>이 브라우저에 저장한 여행입니다. 다른 기기로 옮기려면 여행 도구에서 전체 백업을 받으세요.</p><div id="travelHistoryList"></div></dialog>
-<dialog class="dialog" id="travelAssignDialog"><form method="dialog"><button class="dialog-x" aria-label="닫기">×</button></form><h2 id="travelAssignTitle">일정에 넣기</h2><form id="travelAssignForm" class="schedule-form"><label>날짜<input id="travelAssignDay" list="travelDateOptions" required></label><datalist id="travelDateOptions"></datalist><label>배치 위치<select id="travelAssignPosition"></select></label><button class="primary-button">적용</button></form></dialog>
+<dialog class="dialog" id="travelHistoryDialog" aria-labelledby="travelHistoryTitle"><form method="dialog"><button class="dialog-x" aria-label="닫기">×</button></form><h2 id="travelHistoryTitle">저장한 여행</h2><p>이 브라우저에 저장한 여행입니다. 다른 기기로 옮기려면 여행 도구에서 전체 백업을 받으세요.</p><div id="travelHistoryList"></div></dialog>
+<dialog class="dialog" id="travelAssignDialog" aria-labelledby="travelAssignTitle"><form method="dialog"><button class="dialog-x" aria-label="닫기">×</button></form><h2 id="travelAssignTitle">일정에 넣기</h2><form id="travelAssignForm" class="schedule-form"><label>날짜<input id="travelAssignDay" list="travelDateOptions" required></label><datalist id="travelDateOptions"></datalist><label>배치 위치<select id="travelAssignPosition"></select></label><button class="primary-button">적용</button></form></dialog>
 <dialog class="dialog day-revision-dialog" id="dayRevisionDialog" aria-labelledby="dayRevisionTitle">
   <form method="dialog"><button class="dialog-x" aria-label="수정안 닫기">×</button></form>
   <h2 id="dayRevisionTitle">AI로 하루 일정 수정</h2>

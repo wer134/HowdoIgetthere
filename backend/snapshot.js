@@ -19,7 +19,7 @@ export function cleanSnapshot(value, id = value?.id) {
   const snapshot = {
     id, name: value.name, updated: Date.now(), headers: value.headers,
     mapping: Object.fromEntries(['name','date','category','time','region','memo','address','lat','lng','mode'].map(key => [key, value.mapping[key]])),
-    records: value.records.map(row => ({ rowNumber: row.rowNumber, cells: row.cells.map(cell => cell == null ? null : {
+    records: value.records.map(row => ({ rowNumber: row.rowNumber, ...(row.manualCost === undefined ? {} : {manualCost:row.manualCost}), cells: row.cells.map(cell => cell == null ? null : {
       v: cell.v ?? null, ...(typeof cell.t === 'string' ? { t: cell.t.slice(0, 4) } : {}), ...(cell.w == null ? {} : { w: cell.w }), ...(typeof cell.f==='string' ? {f:cell.f.slice(0,8192)} : {}),
     }) })),
     library: (value.library || []).map(cleanPlace), dates: value.dates || [], region: value.region || '', sheetName: value.sheetName || '일정',

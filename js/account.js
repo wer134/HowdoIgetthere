@@ -3,7 +3,7 @@ import { validTravel } from './travel-store.js';
 import { escapeHtml } from './util.js';
 import { itineraryContent } from './travel-portability.js';
 
-export function setupAccounts({snapshot, ready, saveGuest, restore, reset, busy, canLeave = () => true, notify, backup}) {
+export function setupAccounts({snapshot, ready, saveGuest, restore, reset, busy, canLeave = () => true, notify, backup, onSaveStatus}) {
   const byId=id=>document.getElementById(id);
   const dialog=byId('accountDialog');
   let session={available:false,user:null,freeAI:false}, operation=false, sharedToken='', epoch=0, aiRequest=null;
@@ -21,7 +21,7 @@ export function setupAccounts({snapshot, ready, saveGuest, restore, reset, busy,
     const state=sync.state(), active=sync.active();
     byId('accountStatus').textContent=active ? ({saving:'계정에 저장 중…',pending:'계정 변경사항 대기 중',saved:'계정에 저장됨',conflict:'다른 곳에서 일정이 변경됐어요. 현재 편집을 백업하고 최신본을 확인하세요.',error:'계정 저장 실패. 재시도하거나 탭을 닫기 전에 파일로 백업하세요.'}[state.status] || '') : '기기 저장 · 계정으로 복사할 여행을 직접 선택하세요.';
     byId('accountStatus').dataset.state=state.status;
-    if(active) byId('travelSaveStatus').textContent=byId('accountStatus').textContent;
+    if(active) onSaveStatus?.(active,state.status,byId('accountStatus').textContent);
     for(const button of document.querySelectorAll('[data-account-open]')) button.textContent=active ? ({saved:'계정 · 저장됨',saving:'계정 · 저장 중',pending:'계정 · 대기',conflict:'계정 · 충돌',error:'계정 · 저장 실패'}[state.status] || '계정 · 저장') : session.user?'계정 · 저장':'로그인 · 계정';
     byId('accountRetry').hidden=!['error','pending'].includes(state.status);
     byId('accountLatest').hidden=!active;
@@ -172,7 +172,7 @@ export function setupAccounts({snapshot, ready, saveGuest, restore, reset, busy,
   initialize().catch(()=>notify('계정 임시 저장소에 접근하지 못했어요. 기기 여행은 파일로 백업해 주세요.'));
   return {
     active:()=>sync.active(),pending:()=>sync.pending(),beforeLeave,
-    save:async value=>{sync.queue(value);return sync.flush();},
+    save:async (value,options)=>{sync.queue(value);return sync.flush(options);},
     changed:()=>{if(sync.active() && ready())sync.queue(snapshot());renderStatus();},
     detach:()=>{epoch++;sync.close({discard:true});renderStatus();},
     editorKey:()=>sync.active()?`routeflow.accountEditor.v1:${session.user.id}`:null,

@@ -13,7 +13,7 @@ function portableTravel(snapshot) {
   return {
     id:snapshot.id, name:snapshot.name, updated:snapshot.updated,
     headers:snapshot.headers, mapping:snapshot.mapping,
-    records:snapshot.records.map(r => ({rowNumber:r.rowNumber,cells:r.cells.map(c => c == null ? null : {t:c.t,v:c.v,...(c.w == null ? {} : {w:c.w})})})),
+    records:snapshot.records.map(r => ({rowNumber:r.rowNumber,cells:r.cells.map(c => c == null ? null : {t:c.t,v:c.v,...(c.w == null ? {} : {w:c.w})}), ...(r.manualCost === undefined ? {} : {manualCost:r.manualCost})})),
     library:(snapshot.library || []).map(p => portablePlace(p,snapshot.updated)),
     dates:snapshot.dates || [], region:snapshot.region || '', sheetName:snapshot.sheetName || '일정',
     places:(snapshot.places || []).map(e => ({recordIndex:e.recordIndex,status:e.status,cachedAt:e.cachedAt || snapshot.updated,place:portablePlace(e.place,snapshot.updated)})),

@@ -44,6 +44,48 @@ async function download(p,selector){const promise=p.waitForEvent('download');awa
   assert.equal(await p.textContent('#fileName'),restoredName);assert.equal(Object.keys(await store(p)).length,2);assert.match(await p.textContent('#toast'),/지원하는/);
   await p.evaluate(()=>{const original=Storage.prototype.setItem;window.__restoreStorage=()=>Storage.prototype.setItem=original;Storage.prototype.setItem=function(k,v){if(k==='routeflow.travels.v1')throw new DOMException('full','QuotaExceededError');return original.call(this,k,v);};});
   await p.setInputFiles('#travelBackupInput',backup);await p.waitForTimeout(600);assert.equal(await p.textContent('#fileName'),restoredName);assert.equal(Object.keys(await store(p)).length,2);assert.match(await p.textContent('#toast'),/저장할 수 없|저장하지 못/);await p.evaluate(()=>__restoreStorage());
+  await p.click('[data-workspace-mode="board"]');
+  await p.evaluate(()=>{
+   const setItem=Storage.prototype.setItem;
+   window.__blockTravelSave=true;
+   Storage.prototype.setItem=function(key,value){
+    if(window.__blockTravelSave&&key==='routeflow.travels.v1')throw new DOMException('full','QuotaExceededError');
+    return setItem.call(this,key,value);
+   };
+  });
+  await p.click('[data-workspace-add]');
+  await p.fill('#manualPlaceName','저장 공간 부족 후보');await p.fill('#manualPlaceMemo','후보의 개인 메모');
+  await p.evaluate(()=>new Promise(resolve=>{
+   navigator.locks.request('routeflow.travels.v1',()=>new Promise(release=>{window.__releaseTravelLock=release;resolve();}));
+  }));
+  await p.click('#manualPlaceForm button');
+  assert.match(await p.textContent('#travelSaveStatus'),/저장 중/);
+  await p.evaluate(()=>window.__releaseTravelLock());
+  await p.waitForFunction(()=>document.querySelector('#travelSaveStatus').textContent.includes('저장 공간'));
+  assert.doesNotMatch(await p.textContent('#toast'),/가고 싶은 곳에 보관했어요/);
+  assert.equal(await p.locator('#travelSaveStatus').isVisible(),true);
+  assert.ok(!Object.values(await store(p)).find(t=>t.id===restored.id).library.some(p=>p.name==='저장 공간 부족 후보'));
+  const recovery=JSON.parse(fs.readFileSync(await download(p,'#travelSaveBackup'),'utf8')).travel;
+  assert.deepEqual(recovery.library.filter(p=>p.name==='저장 공간 부족 후보').map(p=>p.memo),['후보의 개인 메모']);
+  await p.click('[data-workspace-mode="map"]');
+  if(width<950)await p.click('[data-mobile-view="itinerary"]');
+  assert.equal(await p.locator('#travelSaveStatus').isVisible(),true);
+  await p.evaluate(()=>{window.__blockTravelSave=false;});
+  await p.click('#travelSaveRetry');await waitSave(p);
+  await p.reload();await p.click('#continueTravel');
+  assert.deepEqual(Object.values(await store(p)).find(t=>t.id===restored.id).library.filter(p=>p.name==='저장 공간 부족 후보').map(p=>p.memo),['후보의 개인 메모']);
+  const otherTab=await c.newPage();await otherTab.goto(BASE);await otherTab.click('#continueTravel');
+  await otherTab.click('[data-workspace-add]');await otherTab.fill('#manualPlaceName','다른 탭의 후보');
+  await otherTab.click('#manualPlaceForm button');await waitSave(otherTab);
+  await p.click('[data-workspace-add]');await p.fill('#manualPlaceName','이 탭의 미저장 후보');
+  await p.click('#manualPlaceForm button');
+  await p.waitForFunction(()=>document.querySelector('#travelSaveStatus').textContent.includes('다른 탭에서'));
+  await p.click('#travelSaveRetry');
+  await p.waitForFunction(()=>document.querySelector('#travelSaveStatus').textContent.includes('다른 탭에서'));
+  const latest=Object.values(await store(p)).find(t=>t.id===restored.id);
+  assert.ok(latest.library.some(p=>p.name==='다른 탭의 후보'));
+  assert.ok(!latest.library.some(p=>p.name==='이 탭의 미저장 후보'));
+  await otherTab.close();
   // Another browser context has neither API keys nor the original storage.
   const fresh=await browser.newContext({viewport:{width,height:900}});await fresh.route('**/*',r=>r.request().url().startsWith(BASE)?r.continue():r.abort());const q=await fresh.newPage();await q.goto(BASE);await q.setInputFiles('#travelBackupInput',backup);await q.waitForFunction(()=>document.querySelector('#fileName').textContent.endsWith('(복원본)'));assert.equal(Object.values(await store(q))[0].library.length,3);
   await q.reload();await q.click('#continueTravel');await q.click('[data-workspace-mode="map"]');if(width<950)await q.click('[data-mobile-view="itinerary"]');assert.equal(await q.locator('#resultList > li.item').count(),1);

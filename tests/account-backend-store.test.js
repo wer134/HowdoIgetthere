@@ -34,6 +34,17 @@ test('share rotation invalidates old token and only owner accepts suggestions on
   assert.equal(accepted.snapshot.library[0].memo,'창가');
   assert.throws(()=>store.acceptSuggestion(owner.id,travel.id,suggestion.id,2),{code:'already_reviewed'});
 });
+test('owners retain manual visit costs on save and shared trips omit them', t => {
+  const { store, owner } = setup(t);
+  const travel = store.createTravel(owner.id, snapshot());
+  const share = store.createShare(owner.id, travel.id, travel.version);
+  travel.snapshot.records[0].manualCost = 59000;
+  store.saveTravel(owner.id, travel.id, travel.snapshot, travel.version);
+
+  const reopened = store.getTravel(owner.id, travel.id).snapshot;
+  assert.equal(reopened.records[0].manualCost, 59000);
+  assert.deepEqual(store.readShare(share.token).snapshot.records, snapshot().records);
+});
 test('reservations consume budget even when external provider fails', t => {
   const {store,owner}=setup(t,{ai:{dailyCalls:1,monthlyCalls:5,dailyCost:100,monthlyCost:500,cost:100}});
   store.reserve({kind:'ai',user:owner.id,phone:'phonehash',travel:'travel',requestId:'first'});

@@ -36,10 +36,48 @@ const fixture = () => ({id:'layout-five-day-test',name:'후쿠오카 · 긴 역 
       return metrics;
     };
     await page.goto(url);await page.click('#continueTravel');
+    await page.setViewportSize({width:390,height:844});
+    const boardSearch = page.getByRole('searchbox',{name:'보드 장소 검색'});
+    await boardSearch.fill('5일 8번째');
+    assert.equal(await page.locator('[data-workspace-kind=record]').count(),1,'mobile search includes days outside the selected column');
+    assert.equal(await page.locator('.workspace-day h2').textContent(),dates[4]);
+    await page.getByRole('button',{name:'일정에서 보기'}).click({timeout:1500});
+    assert.equal(await boardSearch.inputValue(),'');
+    assert.equal(await page.locator('.workspace-place:focus').getAttribute('data-workspace-index'),'39');
+    assert.equal(await page.locator('.workspace-days [aria-pressed=true]').textContent(),dates[4]);
+    await boardSearch.fill('결과없는검색');
+    assert.match(await page.locator('.workspace-columns').innerText(),/검색 결과가 없/);
+    await boardSearch.fill('');
+    const nextDay = page.locator('.workspace-days button').nth(1);
+    await nextDay.focus();
+    await page.keyboard.press('Enter');
+    assert.equal(await page.evaluate(() => document.activeElement.dataset.workspaceDay),dates[1],'keyboard keeps focus on the selected day');
+    const edit = page.locator('[data-workspace-action=edit]').first();
+    await edit.click();
+    assert.ok(await page.locator('#scheduleDialog').evaluate(dialog => dialog.matches(':modal')),'phone editor keeps background controls out of the tab order');
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => document.activeElement.dataset.workspaceAction === 'edit');
+    await page.locator('.workspace-board').getByRole('button',{name:'여행 도구'}).click({timeout:1500});
+    await page.getByRole('dialog',{name:'여행 도구'}).getByRole('button',{name:'일정표 보기'}).click();
+    await page.getByRole('dialog',{name:'여행 일정표'}).getByRole('button',{name:'닫기'}).click();
+    assert.equal(await page.locator('.workspace-days [aria-pressed=true]').textContent(),dates[1]);
+    await page.click('[data-workspace-add]');
+    await page.fill('#manualPlaceName','예약할 식당');
+    await page.click('#manualPlaceForm button');
+    await page.locator('.workspace-candidates').getByRole('button',{name:'예약할 식당 일정에 넣기'}).waitFor();
+    await boardSearch.fill('예약할 식당');
+    assert.equal(await page.locator('[data-workspace-kind=library]:visible').count(),1);
+    await boardSearch.fill('');
+    for (const id of ['travelDialog','travelHistoryDialog','workspaceTools','mobileExportDialog','travelAssignDialog']) {
+      assert.ok(await page.locator('#'+id).evaluate(dialog => dialog.querySelector('h2') === document.getElementById(dialog.getAttribute('aria-labelledby'))),id+' has its visible heading as its accessible name');
+    }
+    await page.locator('.workspace-days button').first().click();
+    await page.setViewportSize({width:1920,height:1020});
     await page.screenshot({path:path.join(out,'1920x1020-saved-continue.png'),fullPage:true});
     await checkMode('board','saved travel continue without extra board click');
     for(const size of [{width:1920,height:1020},{width:1440,height:1000},{width:1280,height:900},{width:768,height:1024},{width:390,height:844}]){
       await page.setViewportSize(size);await page.locator('.page-content').evaluate(element=>{element.scrollTop=0;});
+      await page.waitForFunction(count => document.querySelectorAll('.workspace-day').length === count,size.width<=760?1:size.width<=1100?2:3);
       const metrics=await checkMode('board',`resize ${size.width}`);
       assert.equal(metrics.overflow,false);assert.equal(metrics.days.length,size.width<=760?1:size.width<=1100?2:3);
       assert.ok(metrics.days.every(day=>day.width>=200),`readable date columns ${size.width}`);

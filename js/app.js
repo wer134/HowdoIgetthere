@@ -54,7 +54,7 @@ const CFG = {
 const KEY_STORAGE = 'googleMapsApiKey';
 const PACE_STORAGE = 'pace'; // 일정 점검의 여유 정도 (이 브라우저에 기억)
 const BUDGET_STORAGE = 'budget.v1'; // 하루 예산 { amount, currency, trip(현지 통화, 비우면 자동) }
-const OVERRIDE_STORAGE = 'budgetOverrides.v1'; // 파일·시트별로 직접 고친 금액 { '파일|시트': { 엑셀 행: 금액 } }
+const LEGACY_OVERRIDE_STORAGE = 'budgetOverrides.v1'; // 여행 ID 없이 저장된 예전 금액
 const SCORE_STORAGE = 'ratingScores.v1'; // 타베로그·카카오맵에서 보고 직접 적은 점수 { 구글 장소 ID: 점수 }
 const FX_STORAGE = 'fxRates.v1'; // 환율 { 'JPY>KRW': { rate, date, t } }
 const CLAUDE_KEY_STORAGE = 'anthropicApiKey'; // 일정 추천용 Claude API 키 (이 브라우저에만)
@@ -67,7 +67,7 @@ function loadJson(key, fallback) {
 const els = Object.fromEntries([
   // 설정 · 상단
   'settingsDialog', 'helpDialog', 'helpTemplate', 'keySection', 'keyForm', 'apiKeyInput', 'keyStatus', 'clearCache',
-  'syncStatus', 'syncText', 'apiCard', 'apiCardTitle', 'crumbTitle', 'tripDates', 'tripPlaces', 'navCount', 'toast',
+  'syncStatus', 'syncText', 'crumbTitle', 'toast',
   // 01 업로드 · 열 맞추기
   'uploadCard', 'uploadDone', 'uploadedFile', 'fileName', 'fileMeta', 'dropzone', 'fileInput', 'dropTitle', 'dropSub', 'templateLink',
   'columnsPanel', 'columnsToggle', 'columnsSummary', 'columnsBody',
@@ -86,7 +86,7 @@ const els = Object.fromEntries([
   // 03 지도
   'mapPanel', 'mapMode', 'mapScope', 'routeToggle', 'fitMap', 'map', 'mapPlaceholder', 'mapNote', 'pickBanner', 'pickCancel',
   'zoomIn', 'zoomOut', 'zoomSlider',
-  'exportXlsx', 'exportKml',
+  'exportXlsx', 'exportKml', 'mobileExportXlsx',
   'placePanel', 'placePanelBody', 'placePanelClose',
 ].map((id) => [id, document.getElementById(id)]));
 
@@ -131,8 +131,7 @@ const state = {
   // 하루 예산 (1인, 숙박·항공 제외)
   budget: { amount: null, currency: 'KRW', trip: '', ...loadJson(BUDGET_STORAGE, {}) },
   budgetOpen: null, // 펼친 날
-  editAmount: null, // 금액을 고치는 중인 행 (records 번호)
-  overrides: new Map(), // records 번호 → 직접 고친 금액 (그날 통화)
+  editAmount: null, // 금액을 고치는 중인 방문 기록
   picks: new Map(), // records 번호 → 추천에서 고른 가게의 1인 가격 (메모 열이 없을 때 셈에 쓴다)
   // 여행 일정 추천: { running, engine, step, progress, error, result: { plan, req, raw, cost, engine, model, buffer, fileName } }
   planner: { running: false, engine: '', step: '', progress: null, error: '', result: null },
@@ -209,18 +208,16 @@ function setKeyStatus(text, tone = '') {
   els.keyStatus.className = `status ${tone}`;
 }
 
-// 상단 막대 · 사이드바 카드에 지도 연결 상태를 보여 준다
+// 상단 막대에 지도 연결 상태를 보여 준다
 function setConnection() {
   const view = {
-    none: ['warn', '지도 연결 전', 'API 키를 넣으면<br>지도가 열려요.'],
-    loading: ['', '지도 불러오는 중', '지도를<br>불러오는 중이에요.'],
-    ready: ['ok', '지도 연결됨', '지도가<br>연결되어 있어요.'],
-    error: ['warn', 'API 키 확인 필요', 'API 키를<br>확인해 주세요.'],
+    none: ['warn', '지도 연결 전'],
+    loading: ['', '지도 불러오는 중'],
+    ready: ['ok', '지도 연결됨'],
+    error: ['warn', 'API 키 확인 필요'],
   }[mapState];
   els.syncStatus.className = `sync-status ${view[0]}`;
   els.syncText.textContent = view[1];
-  els.apiCard.classList.toggle('ok', mapState === 'ready');
-  els.apiCardTitle.innerHTML = view[2];
   for (const control of [els.zoomIn, els.zoomOut, els.zoomSlider]) control.disabled = mapState !== 'ready';
 }
 
@@ -280,6 +277,7 @@ async function initMap() {
 /* ───────────── 엑셀 읽기 / 열 맞추기 ───────────── */
 
 let importController = null;
+let sheetRevision = 0;
 let importGeneration = 0;
 document.getElementById('importCancel').onclick = () => importController?.abort();
 async function handleFile(file) {
@@ -300,7 +298,7 @@ async function handleFile(file) {
     accounts?.detach();
     state.parsedSheets = parsedSheets;
     state.defaultSheet = defaultSheet;
-    deleteUndoAction = null; deleteUndoButton.classList.add('hidden'); undoToastAction = null; toastUndoButton.classList.add('hidden'); travelReady = true; travelId = crypto.randomUUID(); travelLibrary = []; travelDates = []; travelSearchVersion++; travelEl('travelSearchResults').replaceChildren();
+    deleteUndoAction = null; deleteUndoButton.classList.add('hidden'); undoToastAction = null; toastUndoButton.classList.add('hidden'); travelReady = true; travelId = crypto.randomUUID(); resetTravelSaveStatus(); travelLibrary = []; travelDates = []; travelSearchVersion++; travelEl('travelSearchResults').replaceChildren();
     document.body.classList.remove('travel-native');
     state.workbook = workbook;
     state.fileBuffer = buffer;
@@ -341,7 +339,6 @@ function setColumnsOpen(open) {
 }
 
 function loadSheet(name) {
-  resetMediaCaches();
   state.sheetName = name;
   els.sheetSelect.value = name;
   const { headers, records, startCol } = state.parsedSheets?.[name] || parseSheet(state.workbook, name);
@@ -354,31 +351,43 @@ function loadSheet(name) {
   state.picks = new Map();
   state.budgetOpen = null;
   state.editAmount = null;
-  state.overrides = loadOverrides();
   state.mapping = autoMap(headers);
   state.resultCols = Object.fromEntries(Object.entries(RESULT_COLUMNS).map(([k, h]) => [k, headers.indexOf(h)]));
   const kb = Math.max(1, Math.round(state.fileSize / 1024));
   els.fileMeta.textContent = `Excel · ${kb} KB · ${name} 시트 · ${records.length}행`;
   renderMapping();
-  updateSummary();
   previewItinerary();
 }
 
 function previewItinerary() {
-  if (state.running || state.mapping.name < 0) return;
-  state.items = buildItems().items;
-  scheduleTravelSave();
-  state.selected = null;
-  state.day = null;
-  state.filter = "all";
-  state.legs = [];
-  state.selectedLeg = null;
-  state.alert = "";
+  sheetRevision++;
+  resetMediaCaches();
+  Object.assign(state, {
+    items: buildItems().items,
+    selected: null, day: null, filter: 'all', recs: null, openRide: null,
+    running: false, progress: { done: 0, total: 0 }, alert: '',
+    legs: [], selectedLeg: null, showRoutes: hasRouteColumns(), routesRequested: false,
+    routeRunning: false, routeRerun: false, routeAnnounce: false,
+    routeProgress: { done: 0, total: 0 }, routeAlert: '',
+  });
+  state.legModes.clear();
   assignColors();
-  mapView?.clear();
-  els.planCard.classList.remove("hidden");
-  document.body.classList.add("has-itinerary");
+  rendered.clear();
+  if (!els.pickBanner.classList.contains('hidden')) cancelPick();
+  if (mapState === 'ready') {
+    mapView.clear();
+    mapView.clearRecs();
+    state.items.forEach(it => { if (it.place) placeMarker(it); });
+  }
+  buildLegs();
+  if (mapState === 'ready') {
+    drawLegs();
+    mapView.fitAll();
+  }
+  els.planCard.classList.remove('hidden');
+  updateSummary();
   render();
+  scheduleTravelSave();
 }
 
 // 접힌 열 맞추기 패널에 보여 줄 한 줄 요약 (예: 장소 ← 장소 · 날짜 ← 날짜)
@@ -502,25 +511,7 @@ function updateSummary() {
   els.rowSummary.innerHTML = escapeHtml(parts.join(' · '))
     + (example ? `<br>검색어 예: <b>${escapeHtml(example)}</b>` : '');
   els.columnsSummary.textContent = columnsSummaryText();
-  renderTrip(items);
   updateRunButton();
-}
-
-// 머리말 오른쪽 '여행 기간'과 장소 수
-function renderTrip(items) {
-  const days = [...new Set(items.map((it) => it.day).filter(Boolean))];
-  const label = (day) => {
-    const cell = items.find((it) => it.day === day)?.dateCell;
-    const d = parseDay(cell);
-    return d ? `${d.getMonth() + 1}월 ${d.getDate()}일` : day;
-  };
-  els.tripDates.textContent = !days.length ? (items.length ? '날짜 열 없음' : '일정을 올려 주세요')
-    : days.length === 1 ? label(days[0]) : `${label(days[0])} — ${label(days[days.length - 1])}`;
-  const placed = items.filter((it) => it.place).length;
-  const regions = [...new Set(items.map((it) => (state.mapping.region >= 0 ? cellText(it.cells[state.mapping.region]) : '')).filter(Boolean))];
-  const where = regions.length ? ` · ${regions.slice(0, 2).join('·')}${regions.length > 2 ? ` 외 ${regions.length - 2}곳` : ''}` : '';
-  const count = placed && placed < items.length ? `${placed}/${items.length}곳 표시` : `${items.length}곳`;
-  els.tripPlaces.textContent = `장소 ${count}${days.length ? ` · ${days.length}일` : ''}${where}`;
 }
 
 function updateRunButton() {
@@ -573,7 +564,9 @@ function fatalMessage({ err, kind }) {
 
 async function run() {
   if (mapState !== 'ready' || state.running) return;
+  const revision = sheetRevision;
   const { items } = buildItems();
+  if (!items.length) return;
   Object.assign(state, {
     items, selected: null, filter: 'all', alert: '',
     legs: [], selectedLeg: null, routesRequested: false, routeAlert: '', showRoutes: hasRouteColumns(),
@@ -601,13 +594,16 @@ async function run() {
 
   let fatal = null;
   const worker = async () => {
-    while (queue.length && !fatal) {
+    while (queue.length && !fatal && revision === sheetRevision) {
       const it = queue.shift();
       it.status = 'searching';
       scheduleRender();
       try {
-        applyCandidates(it, await searchPlaces(it.query, searchOptions(it.language)));
+        const candidates = await searchPlaces(it.query, searchOptions(it.language));
+        if (revision !== sheetRevision) return;
+        applyCandidates(it, candidates);
       } catch (err) {
+        if (revision !== sheetRevision) return;
         const kind = classifyError(err);
         if (kind !== 'other') {
           // 키·한도 문제는 나머지도 다 실패하므로 여기서 멈춘다
@@ -624,6 +620,7 @@ async function run() {
     }
   };
   await Promise.all(Array.from({ length: Math.max(1, CFG.concurrency) }, worker));
+  if (revision !== sheetRevision) return;
 
   state.running = false;
   scheduleTravelSave();
@@ -646,8 +643,11 @@ async function research(it, query) {
   it.note = '';
   render();
   try {
-    applyCandidates(it, await searchPlaces(query, searchOptions(it.language)));
+    const candidates = await searchPlaces(query, searchOptions(it.language));
+    if (!state.items.includes(it)) return;
+    applyCandidates(it, candidates);
   } catch (err) {
+    if (!state.items.includes(it)) return;
     const kind = classifyError(err);
     it.status = 'error';
     it.note = kind === 'other' ? `검색 중 오류: ${err?.message || err}` : fatalMessage({ err, kind });
@@ -867,6 +867,7 @@ async function computeLegs(announce = false) {
   state.routeAnnounce = false;
   const queue = state.legs.filter((l) => l.status === 'pending' && (state.routesRequested || l.wanted));
   if (!queue.length) return;
+  const revision = sheetRevision;
   state.routeRunning = true;
   state.routeProgress = { done: 0, total: queue.length };
   state.routeAlert = '';
@@ -874,13 +875,15 @@ async function computeLegs(announce = false) {
 
   let fatal = null;
   const worker = async () => {
-    while (queue.length && !fatal) {
+    while (queue.length && !fatal && revision === sheetRevision) {
       const leg = queue.shift();
       leg.status = 'searching';
       scheduleRender();
       try {
         await resolveLeg(leg);
+        if (revision !== sheetRevision) return;
       } catch (err) {
+        if (revision !== sheetRevision) return;
         const kind = classifyError(err);
         if (kind !== 'other') {
           fatal ??= { err, kind };
@@ -896,6 +899,7 @@ async function computeLegs(announce = false) {
     }
   };
   await Promise.all(Array.from({ length: Math.max(1, CFG.concurrency) }, worker));
+  if (revision !== sheetRevision) return;
 
   state.routeRunning = false;
   if (fatal) {
@@ -2116,19 +2120,22 @@ async function searchAnchor(query) {
     return;
   }
   const kind = state.recs?.kind || 'food';
-  state.recs = { anchor: { name: query }, kind, keyword: '', loading: true, error: '', list: null };
+  const recs = { anchor: { name: query }, kind, keyword: '', loading: true, error: '', list: null };
+  state.recs = recs;
   mapView?.clearRecs();
   render();
   try {
     const [top] = await searchPlaces(query, searchOptions(languageFor(query, CFG.language)));
+    if (state.recs !== recs) return;
     if (!top) {
-      Object.assign(state.recs, { loading: false, error: `“${query}”을(를) 구글 지도에서 찾지 못했어요. 현지어 이름으로도 찾아보세요.` });
+      Object.assign(recs, { loading: false, error: `“${query}”을(를) 구글 지도에서 찾지 못했어요. 현지어 이름으로도 찾아보세요.` });
       render();
       return;
     }
     openRecs({ name: top.name || query, lat: top.lat, lng: top.lng, item: null, slot: null, at: null, hints: [] }, { kind });
   } catch (err) {
-    Object.assign(state.recs, { loading: false, error: `대표 장소를 찾지 못했어요: ${err?.message || err}` });
+    if (state.recs !== recs) return;
+    Object.assign(recs, { loading: false, error: `대표 장소를 찾지 못했어요: ${err?.message || err}` });
     render();
   }
 }
@@ -2181,7 +2188,9 @@ async function openSlotRecs(index) {
   const rows = budgetRows();
   const row = rows[index];
   if (!row || mapState !== 'ready') return;
+  const revision = sheetRevision;
   const near = await slotPlace(index, rows);
+  if (revision !== sheetRevision) return;
   if (!near) {
     showToast('이 끼니 근처의 장소를 몰라요 · 대표 장소를 직접 적어 주세요');
     return;
@@ -2318,26 +2327,16 @@ async function ensureRates(currencies, base) {
   render();
 }
 
-const overrideKey = () => `${state.fileName}|${state.sheetName}`;
-
-function loadOverrides() {
-  const saved = loadJson(OVERRIDE_STORAGE, {})[overrideKey()] || {};
-  const byRow = new Map(state.records.map((r, i) => [String(r.rowNumber), i]));
-  return new Map(Object.entries(saved).filter(([row]) => byRow.has(row)).map(([row, amount]) => [byRow.get(row), amount]));
-}
-
-function setOverride(index, value, original) {
+function setOverride(record, value, original) {
   state.editAmount = null;
-  if (String(value).trim() === String(original ?? '').trim()) {
+  if (!state.records.includes(record) || String(value).trim() === String(original ?? '').trim()) {
     render(); // 고치지 않고 나갔다
     return;
   }
-  const amount = parseFloat(String(value).replace(/[^\d.]/g, ''));
-  if (Number.isFinite(amount)) state.overrides.set(index, amount);
-  else state.overrides.delete(index);
-  const all = loadJson(OVERRIDE_STORAGE, {});
-  all[overrideKey()] = Object.fromEntries([...state.overrides].map(([i, a]) => [state.records[i].rowNumber, a]));
-  storage.set(OVERRIDE_STORAGE, JSON.stringify(all));
+  const amount = typeof value === 'number' ? value : parseFloat(String(value).replace(/[^\d.]/g, ''));
+  // 여행 저장본의 방문 기록에 붙여 이동·이름 변경에도 같은 항목의 금액을 유지한다.
+  record.manualCost = Number.isFinite(amount) ? amount : null;
+  scheduleTravelSave();
   rankRecs();
   render();
 }
@@ -2369,6 +2368,7 @@ function budgetRows() {
       dateCell: m.date >= 0 ? lastDate : null,
       title: rowTitle(index),
       memo: get(rec.cells, m.memo),
+      manualCost: rec.manualCost,
       mode,
       place,
       time: get(rec.cells, m.time),
@@ -2416,9 +2416,9 @@ function dayLabelOf(cell, day) {
   return d ? `${d.getMonth() + 1}/${d.getDate()} (${WEEKDAYS[d.getDay()]})` : day || '날짜 없음';
 }
 
-function budgetLineHtml(line, row) {
+function budgetLineHtml(line, row, legacyAmount) {
   const start = parseTimeRange(row.time).start;
-  const editing = state.editAmount === line.index;
+  const editing = state.editAmount === state.records[line.index];
   const money = line.amount == null ? '미정' : line.min != null && line.max != null && line.min !== line.max && line.source !== 'manual'
     ? `${formatMoney(line.min, line.currency).replace(/[^\d,.]+$/, '')}–${formatMoney(line.max, line.currency)}`
     : formatMoney(line.amount, line.currency);
@@ -2426,10 +2426,13 @@ function budgetLineHtml(line, row) {
     ? `<input class="bl-input" data-amount-input="${line.index}" data-original="${line.amount ?? ''}" inputmode="decimal" value="${line.amount ?? ''}" aria-label="금액">`
     : `<button type="button" class="bl-amount" data-amount="${line.index}" title="눌러서 금액 고치기"${line.excluded ? ' disabled' : ''}>${escapeHtml(money)}</button>`;
   const what = [SOURCE_LABELS[line.source], line.note && line.note !== SOURCE_LABELS[line.source] ? line.note : ''].filter(Boolean).join(' · ');
+  const recover = !line.excluded && row.manualCost === undefined && Number.isFinite(legacyAmount) && legacyAmount >= 0
+    ? `<button type="button" class="secondary-button small" data-recover-amount="${line.index}">이전 금액 ${escapeHtml(formatMoney(legacyAmount, line.currency))} 확인</button>` : '';
   return `<li class="budget-line src-${line.source}${line.excluded ? ' excluded' : ''}">
     <span class="bl-time">${start != null ? hm(start) : ''}</span>
     <span class="bl-title"><span class="bl-kind">${KIND_LABELS[line.kind] || ''}</span>${escapeHtml(row.title)}<small>${escapeHtml(what)}</small></span>
     ${amount}
+    ${recover}
     ${line.slot && mapState === 'ready' ? `<button type="button" class="secondary-button small" data-slot-recs="${line.index}">${line.meal === 'cafe' ? '카페 추천' : '맛집 추천'}</button>` : ''}
   </li>`;
 }
@@ -2443,9 +2446,10 @@ function renderBudget() {
     return;
   }
   const rows = budgetRows();
+  const legacy = loadJson(LEGACY_OVERRIDE_STORAGE, {})[`${state.fileName}|${state.sheetName}`];
   const base = state.budget.currency;
   budgetDays = dayCosts(rows, {
-    currencyOf: dayCurrency, fixedCurrency: state.budget.trip, legKm, googleFare, picks: state.picks, overrides: state.overrides, convert,
+    currencyOf: dayCurrency, fixedCurrency: state.budget.trip, legKm, googleFare, picks: state.picks, convert,
   });
   ensureRates(budgetDays.flatMap((d) => [d.currency, ...d.lines.map((l) => l.currency)]), base);
 
@@ -2481,7 +2485,7 @@ function renderBudget() {
       : `<span class="budget-left over">${formatMoney(Math.round(-left), d.currency)} 넘음</span>`;
     const label = dayLabelOf(rows.find((r) => r.day === d.day)?.dateCell, d.day);
     const color = state.colors.get(state.items.find((it) => it.day === d.day)?.category) || PALETTE[i % PALETTE.length];
-    const lines = open ? `<ul class="budget-lines">${d.lines.map((l) => budgetLineHtml(l, rows[l.index])).join('')}</ul>
+    const lines = open ? `<ul class="budget-lines">${d.lines.map((l) => budgetLineHtml(l, rows[l.index], legacy?.[state.records[l.index].rowNumber])).join('')}</ul>
       <p class="budget-note">${[
         Object.entries(KIND_LABELS).map(([k, name]) => {
           const v = d.lines.filter((l) => l.kind === k && !l.excluded && l.value != null).reduce((n, l) => n + l.value, 0);
@@ -2541,12 +2545,11 @@ function render() {
   els.runAlert.textContent = state.alert;
   els.runAlert.classList.toggle('hidden', !state.alert);
   els.exportXlsx.disabled = state.running || !state.items.length;
+  els.mobileExportXlsx.disabled = els.exportXlsx.disabled;
   els.exportKml.disabled = state.running || !placed;
   for (const id of ['travelBackup','travelItinerary','mobileTravelBackup','mobileTravelItinerary']) document.getElementById(id).disabled = !state.workbook || state.running;
   document.getElementById('travelWelcome').classList.toggle('hidden', !!state.workbook);
-  els.navCount.textContent = state.items.length ? String(placed).padStart(2, '0') : '';
   els.planSummary.textContent = planSummaryText();
-  if (state.items.length) renderTrip(state.items);
   renderBudget();
   renderRecs();
   renderPlanCheck();
@@ -2830,6 +2833,7 @@ function renderList() {
 /* ───────────── 내보내기 ───────────── */
 
 function exportXlsx() {
+  if (state.running || !state.items.length) return;
   const wb = buildResultWorkbook({
     headers: state.headers,
     mapping: state.mapping,
@@ -2887,12 +2891,6 @@ for (const dialog of [els.settingsDialog, els.helpDialog]) {
 }
 els.helpTemplate.addEventListener('click', () => downloadTemplate());
 
-document.querySelectorAll('.primary-nav a.nav-item').forEach((link) => {
-  link.addEventListener('click', () => {
-    document.querySelectorAll('.nav-item').forEach((n) => n.classList.toggle('active', n === link));
-  });
-});
-
 els.columnsToggle.addEventListener('click', () => {
   setColumnsOpen(els.columnsToggle.getAttribute('aria-expanded') !== 'true');
 });
@@ -2900,7 +2898,10 @@ els.columnsToggle.addEventListener('click', () => {
 els.mapMode.addEventListener('click', (e) => {
   const button = e.target.closest('[data-type]');
   if (!button || !mapView) return;
-  els.mapMode.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b === button));
+  els.mapMode.querySelectorAll('button').forEach((option) => {
+    option.classList.toggle('active', option === button);
+    option.setAttribute('aria-pressed', String(option === button));
+  });
   mapView.setMapType(button.dataset.type);
 });
 
@@ -2968,7 +2969,6 @@ els.mappingFields.addEventListener('change', (e) => {
   const { key } = e.target.dataset;
   if (!key) return;
   state.mapping[key] = Number(e.target.value);
-  updateSummary();
   previewItinerary();
 });
 
@@ -3200,6 +3200,17 @@ els.budgetForm.addEventListener('submit', (e) => {
 els.budgetForm.addEventListener('change', saveBudget);
 
 els.budgetDays.addEventListener('click', (e) => {
+  const recovery = e.target.closest('[data-recover-amount]');
+  if (recovery) {
+    const index = Number(recovery.dataset.recoverAmount);
+    const record = state.records[index];
+    if (!record || record.manualCost !== undefined) return;
+    const saved = loadJson(LEGACY_OVERRIDE_STORAGE, {})[`${state.fileName}|${state.sheetName}`]?.[record.rowNumber];
+    if (Number.isFinite(saved) && saved >= 0 && confirm(`“${state.fileBase}” 여행의 “${rowTitle(index)}” 방문에 이 이전 금액을 적용할까요?`)) {
+      setOverride(record, saved);
+    }
+    return;
+  }
   const slot = e.target.closest('[data-slot-recs]');
   if (slot) {
     openSlotRecs(Number(slot.dataset.slotRecs));
@@ -3207,7 +3218,7 @@ els.budgetDays.addEventListener('click', (e) => {
   }
   const amount = e.target.closest('[data-amount]');
   if (amount) {
-    state.editAmount = Number(amount.dataset.amount);
+    state.editAmount = state.records[Number(amount.dataset.amount)];
     render();
     return;
   }
@@ -3224,14 +3235,16 @@ els.budgetDays.addEventListener('click', (e) => {
 
 els.budgetDays.addEventListener('keydown', (e) => {
   if (!e.target.matches('[data-amount-input]')) return;
-  if (e.key === 'Enter') setOverride(Number(e.target.dataset.amountInput), e.target.value, e.target.dataset.original);
+  if (e.key === 'Enter' && state.editAmount === state.records[Number(e.target.dataset.amountInput)]) {
+    setOverride(state.editAmount, e.target.value, e.target.dataset.original);
+  }
   if (e.key === 'Escape') {
     state.editAmount = null;
     render();
   }
 });
 els.budgetDays.addEventListener('focusout', (e) => {
-  if (e.target.matches('[data-amount-input]') && state.editAmount === Number(e.target.dataset.amountInput)) {
+  if (e.target.matches('[data-amount-input]') && state.editAmount === state.records[Number(e.target.dataset.amountInput)]) {
     setOverride(state.editAmount, e.target.value, e.target.dataset.original);
   }
 });
@@ -3318,7 +3331,6 @@ document.querySelector('.mobile-workspace-nav').addEventListener('click', event 
   if (button) { select(null, 'mobile'); setMobileView(button.dataset.mobileView); }
 });
 document.getElementById('mobileSave').addEventListener('click', () => {
-  document.getElementById('mobileExportXlsx').disabled = els.exportXlsx.disabled;
   document.getElementById('mobileExportKml').disabled = els.exportKml.disabled;
   for (const id of ['mobileTravelBackup','mobileTravelItinerary']) document.getElementById(id).disabled = !state.workbook || state.running;
   document.getElementById('mobileExportDialog').showModal();
@@ -3329,6 +3341,7 @@ for (const [mobile, original] of [['mobileExportXlsx', els.exportXlsx], ['mobile
 
 /* ───────────── 일정 추가·수정·삭제 ───────────── */
 let editingRecord = null;
+let mobileEditorReturn = null;
 const scheduleDialog = document.getElementById('scheduleDialog');
 const scheduleInfoTab = document.getElementById('scheduleInfoTab');
 const schedulePlaceTab = document.getElementById('schedulePlaceTab');
@@ -3386,6 +3399,11 @@ scheduleDialog.addEventListener('close', () => {
   scheduleSearchId++;
   editingRecord = null;
   selectedSchedulePlace = null;
+  if (mobileEditorReturn?.travel === travelId && document.body.classList.contains('workspace-board-open')) {
+    const card = document.querySelector(`[data-workspace-kind="record"][data-workspace-index="${mobileEditorReturn.index}"]`);
+    card?.querySelector('[data-workspace-action=edit]')?.focus({preventScroll:true});
+  }
+  mobileEditorReturn = null;
 });
 
 function showSchedulePlacePreview(place) {
@@ -3440,6 +3458,10 @@ function openScheduleEditor(it = null) {
     showToast('먼저 일정 파일을 올리고 장소 열을 연결해 주세요.');
     return;
   }
+  const mobileEditor = window.matchMedia('(max-width:700px)').matches;
+  if (it && !scheduleDialog.open && mobileEditor && document.activeElement?.matches('[data-workspace-action=edit]')) {
+    mobileEditorReturn = {travel:travelId,index:it.recordIndex};
+  }
   if (it && state.selected !== it.idx) select(it.idx, 'list');
   editingRecord = it ? state.records[it.recordIndex] : null;
   scheduleSearchId++;
@@ -3461,7 +3483,10 @@ function openScheduleEditor(it = null) {
   scheduleFields.memo.value = it?.memo || '';
   activeDraftInitialFields = JSON.stringify(draftFields());
   document.getElementById('scheduleContext').textContent = it ? `${it.day || '전체 일정'} · ${it.idx + 1}번째 장소` : `${state.day || '현재 일정'}에 새 장소를 추가해요`;
-  if (!scheduleDialog.open) scheduleDialog.show();
+  if (!scheduleDialog.open) {
+    if (mobileEditor) scheduleDialog.showModal();
+    else scheduleDialog.show();
+  }
   document.body.classList.add('schedule-editing');
   showScheduleTab('info');
   activeDraftKey = `${travelId}:${editingRecord?.rowNumber ?? 'new'}`;
@@ -3645,7 +3670,7 @@ scheduleFields.name.addEventListener('input', () => {
     showSchedulePlacePreview(null);
   }
 });
-document.getElementById('scheduleForm').addEventListener('submit', (event) => {
+document.getElementById('scheduleForm').addEventListener('submit', async (event) => {
   event.preventDefault();
   if (!scheduleDialog.open) return;
   const name = scheduleFields.name.value.trim();
@@ -3685,7 +3710,14 @@ document.getElementById('scheduleForm').addEventListener('submit', (event) => {
   editingRecord = null;
   selectedSchedulePlace = null;
   rebuildEditedSchedule(record.cells, pickedPlace);
-  showToast('일정을 반영했어요. 엑셀 저장으로 변경 내용을 보관하세요.', () => {
+  const context = travelContext;
+  const account = accounts?.editorKey();
+  const saved = await saveTravelNow();
+  if (context !== travelContext || account !== accounts?.editorKey()) return;
+  const message = saved?.ok
+    ? (account ? '일정 변경을 계정에 저장했어요.' : '일정 변경을 이 기기에 저장했어요.')
+    : '일정 변경을 저장하지 못했어요. 다시 저장하거나 전체 백업을 받으세요.';
+  showToast(message, () => {
     if (wasEditing) {
       record.cells.splice(0, record.cells.length, ...previousCells);
       if (previousResolved) resolvedPlaces.set(record.cells, previousResolved);
@@ -3715,6 +3747,8 @@ var travelSearchVersion = 0;
 var travelPinCount = 0;
 const TRAVEL_STORE = 'routeflow.travels.v1';
 const travelEl = (id) => document.getElementById(id);
+let travelContext = 0;
+let travelSaveVersion = 0;
 function travelSnapshot() {
   return { id: travelId, name: state.fileBase || '내 여행', updated: Date.now(), headers: state.headers,
     records: state.records, mapping: state.mapping, library: travelLibrary, dates: travelDates,
@@ -3729,18 +3763,31 @@ const travelStore = createTravelStore({
 let travelHistoryEntries = new Map();
 function travelSaveMessage(result) {
   return result.ok ? '이 기기에 저장됨 · 사진·리뷰 제외'
-    : result.conflict ? '다른 탭에서 이 여행을 변경하거나 삭제했어요. 현재 편집은 엑셀로 보관하고 저장한 여행에서 다시 열어 주세요.'
-    : result.unsupported ? '이 브라우저는 안전한 자동 저장을 지원하지 않아요. 엑셀로 저장해 주세요.'
-    : result.invalid ? '여행 데이터 형식을 확인해 주세요. 저장본은 변경하지 않았어요.'
-    : '저장 공간이 부족하거나 저장할 수 없어요. 엑셀로 저장해 주세요.';
+    : result.conflict ? '다른 탭에서 여행을 변경하거나 삭제했어요. 현재 편집은 전체 백업으로 보관하세요.'
+    : result.unsupported ? '이 브라우저에서 자동 저장을 사용할 수 없어요. 전체 백업으로 보관하세요.'
+    : result.invalid ? '여행 형식을 확인해 주세요. 저장본은 그대로 보존됐어요.'
+    : '저장 공간이 부족하거나 저장할 수 없어요. 변경 내용은 화면에 남아 있어요.';
 }
-async function saveTravelNow() {
+function setTravelSaveStatus(state = '', message = '') {
+  const panel = travelEl('travelSavePanel');
+  panel.dataset.state = state;
+  panel.hidden = !message;
+  travelEl('travelSaveStatus').textContent = message;
+  travelEl('travelSaveActions').hidden = state !== 'error';
+}
+function resetTravelSaveStatus(saved = false) {
+  travelContext++;
+  setTravelSaveStatus(saved ? 'saved' : '', saved ? travelSaveMessage({ok:true}) : '');
+}
+async function saveTravelNow({retry = false} = {}) {
   clearTimeout(travelSaveTimer);
   if (!travelReady || !state.workbook) return;
-  const id = travelId;
+  const id = travelId, context = travelContext, version = ++travelSaveVersion;
   const snapshot = structuredClone(travelSnapshot());
-  if (accounts?.active()?.id === snapshot.id) return accounts.save(snapshot);
+  if (accounts?.active()?.id === id) return accounts.save(snapshot, {retry});
+  setTravelSaveStatus('pending', '이 기기에 저장 중…');
   const result = await travelStore.save(snapshot);
+  if (context !== travelContext || accounts?.active()?.id === id) return result;
   if (result.ok) {
     const notes = loadLibraryNotes();
     for (const place of snapshot.library) {
@@ -3750,11 +3797,15 @@ async function saveTravelNow() {
     }
     storeLibraryNotes(notes);
   }
-  if (id === travelId) travelEl('travelSaveStatus').textContent = travelSaveMessage(result);
+  if (version === travelSaveVersion) setTravelSaveStatus(result.ok ? 'saved' : 'error', travelSaveMessage(result));
   return result;
 }
 function scheduleTravelSave() {
   if (!travelReady || !state.workbook) return;
+  travelSaveVersion++;
+  if (accounts?.active()?.id !== travelId && travelEl('travelSavePanel').dataset.state !== 'error') {
+    setTravelSaveStatus('pending', '이 기기에 저장 중…');
+  }
   accounts?.changed();
   clearTimeout(travelSaveTimer);
   travelSaveTimer = setTimeout(saveTravelNow, 400);
@@ -3774,6 +3825,7 @@ function restoreTravel(snapshot, fromStorage = false) {
   els.resultList.replaceChildren();
   travelSearchVersion++;
   travelId = snapshot.id;
+  resetTravelSaveStatus(fromStorage);
   travelDates = snapshot.dates || [];
   travelLibrary = structuredClone(snapshot.library || []);
   const notes=loadLibraryNotes();
@@ -3835,12 +3887,15 @@ function travelChanged(message, before) {
 }
 function travelBusy() { if(importController || creatingTravel || restoringBackup || state.running || state.routeRunning || state.planner.running) {showToast('진행 중인 작업이 끝나면 다시 시도해 주세요.');return true;} return false; }
 travelEl('travelImport').onclick = () => {if(!travelBusy()) els.fileInput.click();};
-travelEl('newTravel').onclick = () => {
-  if (travelBusy()) return;
+function setDefaultTravelStart() {
   if (!travelEl('travelStart').value) {
     const today = new Date();
     travelEl('travelStart').value = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
   }
+}
+travelEl('newTravel').onclick = () => {
+  if (travelBusy()) return;
+  setDefaultTravelStart();
   travelEl('travelDialog').showModal();
 };
 let creatingTravel = false;
@@ -3870,6 +3925,8 @@ travelEl('newTravelForm').onsubmit = async (event) => {
   showToast('여행을 만들었어요. 첫 일정이나 가고 싶은 곳을 추가해 보세요.');
   } finally { creatingTravel = false; }
 };
+if (travelEl('travelDialog').open) setDefaultTravelStart();
+travelEl('newTravelForm').querySelector('button[type="submit"]').disabled = typeof XLSX === 'undefined';
 function setTravelTab(library) {
   document.body.classList.toggle('travel-library-open', library);
   travelEl('travelLibrary').classList.toggle('hidden', !library);
@@ -3916,12 +3973,26 @@ function storeTravelPlace(place) {
   const entry = {...place,cachedAt:place.cachedAt || Date.now()};
   if(index < 0) travelLibrary.push(entry);
   else travelLibrary[index] = {...travelLibrary[index],...entry};
-  renderTravelLibrary(); saveTravelNow();
+  renderTravelLibrary();
   mapView?.fitAll();
 }
-travelEl('travelLibrary').onclick = event => {
+async function confirmTravelPlaceSave() {
+  const context = travelContext;
+  const account = accounts?.editorKey();
+  const result = await saveTravelNow();
+  if (context !== travelContext || account !== accounts?.editorKey()) return;
+  if (result?.ok) showToast('가고 싶은 곳에 보관했어요.');
+  else showToast('장소를 저장하지 못했어요. 다시 저장하거나 전체 백업을 받으세요.');
+}
+travelEl('travelLibrary').onclick = async event => {
   const b = event.target.closest('button'); if (!b) return;
-  if (b.dataset.travelSave != null) { storeTravelPlace(travelSearchResults[Number(b.dataset.travelSave)]); showToast('가고 싶은 곳에 보관했어요.'); }
+  if (b.dataset.travelSave != null) {
+    const place = travelSearchResults[Number(b.dataset.travelSave)];
+    if (!place || b.disabled || travelBusy()) return;
+    b.disabled = true;
+    try { storeTravelPlace(place); await confirmTravelPlaceSave(); }
+    finally { b.disabled = false; }
+  }
   if (b.dataset.travelDirect != null) openTravelAssign({place:travelSearchResults[Number(b.dataset.travelDirect)]});
   if (b.dataset.travelAdd != null) openTravelAssign({place:travelLibrary[Number(b.dataset.travelAdd)]});
   if (b.dataset.travelRemove != null) {
@@ -4012,7 +4083,7 @@ travelEl('travelHistoryList').onclick=async event=>{
       const id=b.dataset.travelDelete;
       const result=await travelStore.remove(id,travelHistoryEntries.get(id));
       if(!result.ok) {showToast(travelSaveMessage(result));return;}
-      if(id===travelId) {travelReady=false;clearTimeout(travelSaveTimer);deleteUndoAction=null;deleteUndoButton.classList.add('hidden');undoToastAction=null;toastUndoButton.classList.add('hidden');}
+      if(id===travelId) {travelReady=false;clearTimeout(travelSaveTimer);resetTravelSaveStatus();deleteUndoAction=null;deleteUndoButton.classList.add('hidden');undoToastAction=null;toastUndoButton.classList.add('hidden');}
       b.closest('article').remove();
     }
   } finally {b.disabled=false;}
@@ -4063,7 +4134,7 @@ travelEl('travelLibraryList').addEventListener('input', event => {
 
 // 여행자에게 필요한 로컬 보관·이동·일정표 흐름.
 travelEl('manualPlaceAdd').onclick = () => travelEl('manualPlaceDialog').showModal();
-travelEl('manualPlaceForm').onsubmit = event => {
+travelEl('manualPlaceForm').onsubmit = async event => {
   event.preventDefault();
   if (!travelEl('manualPlaceDialog').open || travelBusy()) return;
   const name = travelEl('manualPlaceName').value.trim();
@@ -4071,9 +4142,9 @@ travelEl('manualPlaceForm').onsubmit = event => {
   const address = travelEl('manualPlaceAddress').value.trim(), memo = travelEl('manualPlaceMemo').value.trim();
   // 사용자가 구분해 보관한 동명 장소는 합치지 않는다.
   travelLibrary.push({name,address,memo});
-  renderTravelLibrary(); saveTravelNow();
+  renderTravelLibrary();
   travelEl('manualPlaceDialog').close(); event.currentTarget.reset();
-  showToast('가고 싶은 곳에 보관했어요. 방문할 날은 나중에 정해도 됩니다.');
+  await confirmTravelPlaceSave();
 };
 els.resultList.addEventListener('click', event => {
   if (!event.target.closest('[data-reset-filters]')) return;
@@ -4242,11 +4313,17 @@ accounts=setupAccounts({
     clearTimeout(travelSaveTimer);scheduleDialog.close();activeDraftKey=null;activeDraftBaseline='';activeDraftInitialFields='';
     undoToastAction=null;deleteUndoAction=null;toastUndoButton.classList.add('hidden');deleteUndoButton.classList.add('hidden');
     state.workbook=null;state.fileBuffer=null;state.items=[];state.records=[];state.headers=[];state.mapping={};state.fileBase='';state.fileName='';state.legs=[];state.selected=null;state.day=null;state.planEdits=[];
-    travelId=crypto.randomUUID();travelLibrary=[];travelDates=[];state.colors=new Map();mapView?.clear();
+    travelId=crypto.randomUUID();resetTravelSaveStatus();travelLibrary=[];travelDates=[];state.colors=new Map();mapView?.clear();
     sessionStorage.removeItem('routeflow.libraryNotes.v1');
     travelEl('uploadedFile').classList.add('hidden');travelEl('planCard').classList.add('hidden');document.body.classList.remove('travel-native','has-itinerary','workspace-board-open');
     render();renderTravelLibrary();
   },
   busy:travelBusy,canLeave:()=>!scheduleDialog.open || JSON.stringify(draftFields())===activeDraftInitialFields,
   notify:showToast,backup:downloadTravelBackup,
+  onSaveStatus:(active, state, message)=>{
+    if (active?.id !== travelId) return;
+    setTravelSaveStatus(state === 'conflict' ? 'error' : state, message);
+  },
 });
+travelEl('travelSaveBackup').onclick = downloadTravelBackup;
+travelEl('travelSaveRetry').onclick = () => { if (!travelBusy()) saveTravelNow({retry:true}); };

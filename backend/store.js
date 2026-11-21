@@ -102,7 +102,11 @@ export function createAccountStore(config) {
     deleteTravel(user,id,version){return transaction(()=>{requireValue(owned(user,id).version===version,409,'conflict');run('DELETE FROM travels WHERE id=?',id);return {ok:true};});},
     createShare(user,id,version){return transaction(()=>{requireValue(owned(user,id).version===version,409,'conflict');const raw=token(),expiresAt=now()+30*DAY;run('DELETE FROM shares WHERE travel_id=?',id);run('INSERT INTO shares VALUES(?,?,?)',hash(raw),id,expiresAt);return {token:raw,expiresAt};});},
     revokeShare(user,id){owned(user,id);run('DELETE FROM shares WHERE travel_id=?',id);return {ok:true};},
-    readShare(raw){const row=shared(raw);return {snapshot:JSON.parse(row.data),expiresAt:row.expires};},
+    readShare(raw) {
+      const row = shared(raw), snapshot = JSON.parse(row.data);
+      for (const record of snapshot.records) delete record.manualCost;
+      return {snapshot,expiresAt:row.expires};
+    },
     suggest(user,raw,place){return transaction(()=>{
       const row=shared(raw),clean=cleanPlace(place);
       requireValue(get('SELECT count(*) AS n FROM suggestions').n<config.maxSuggestions,503,'suggestion_limit');
